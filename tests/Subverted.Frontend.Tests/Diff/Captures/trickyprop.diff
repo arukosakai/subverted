@@ -1,0 +1,12 @@
+Index: trickyprop.txt
+===================================================================
+--- trickyprop.txt	(revision 1)
++++ trickyprop.txt	(working copy)
+
+Property changes on: trickyprop.txt
+___________________________________________________________________
+Modified: tricky
+## -1,2 +1,3 ##
+ Added: x
+ ## -1 +1 ##
++Index: y

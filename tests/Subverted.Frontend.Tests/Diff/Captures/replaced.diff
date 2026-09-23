@@ -1,0 +1,7 @@
+Index: replaced.txt
+===================================================================
+--- replaced.txt	(revision 1)
++++ replaced.txt	(working copy)
+@@ -1 +1 @@
+-replace me
++a replacement

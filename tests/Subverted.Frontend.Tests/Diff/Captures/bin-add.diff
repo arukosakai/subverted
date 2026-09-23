@@ -1,0 +1,15 @@
+Index: bin-add.png
+===================================================================
+Cannot display: file marked as a binary type.
+svn:mime-type = application/octet-stream
+Index: bin-add.png
+===================================================================
+--- bin-add.png	(revision 0)
++++ bin-add.png	(working copy)
+
+Property changes on: bin-add.png
+___________________________________________________________________
+Added: svn:mime-type
+## -0,0 +1 ##
++application/octet-stream
+\ No newline at end of property

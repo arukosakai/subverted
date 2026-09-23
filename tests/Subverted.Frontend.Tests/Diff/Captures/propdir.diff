@@ -1,0 +1,19 @@
+Index: propdir
+===================================================================
+--- propdir	(revision 1)
++++ propdir	(working copy)
+
+Property changes on: propdir
+___________________________________________________________________
+Added: dir-add
+## -0,0 +1 ##
++y
+\ No newline at end of property
+Deleted: dir-delete
+## -1 +0,0 ##
+-x
+\ No newline at end of property
+Modified: svn:ignore
+## -1 +1,2 ##
+ *.tmp
++*.bak

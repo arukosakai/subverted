@@ -12,4 +12,10 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Subverted.Frontend\Subverted.Frontend.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <!-- capture.cs is the standalone script that produced the captures, not part of the suite. -->
+    <Compile Remove="Diff\Captures\**" />
+    <None Include="Diff\Captures\*.diff" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
 </Project>

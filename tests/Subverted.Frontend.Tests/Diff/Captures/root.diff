@@ -1,0 +1,346 @@
+Index: added.txt
+===================================================================
+--- added.txt	(revision 0)
++++ added.txt	(working copy)
+@@ -0,0 +1,2 @@
++fresh file
++second line
+Index: addeddir/inner.txt
+===================================================================
+--- addeddir/inner.txt	(revision 0)
++++ addeddir/inner.txt	(working copy)
+@@ -0,0 +1 @@
++inside added dir
+Index: bin-add.png
+===================================================================
+Cannot display: file marked as a binary type.
+svn:mime-type = application/octet-stream
+Index: bin-add.png
+===================================================================
+--- bin-add.png	(revision 0)
++++ bin-add.png	(working copy)
+
+Property changes on: bin-add.png
+___________________________________________________________________
+Added: svn:mime-type
+## -0,0 +1 ##
++application/octet-stream
+\ No newline at end of property
+Index: bin-del.bin
+===================================================================
+Cannot display: file marked as a binary type.
+svn:mime-type = application/octet-stream
+Index: bin-mod-props.bin
+===================================================================
+Cannot display: file marked as a binary type.
+svn:mime-type = application/octet-stream
+Index: bin-mod-props.bin
+===================================================================
+--- bin-mod-props.bin	(revision 1)
++++ bin-mod-props.bin	(working copy)
+
+Property changes on: bin-mod-props.bin
+___________________________________________________________________
+Added: extra
+## -0,0 +1 ##
++e
+\ No newline at end of property
+Index: bin-mod.bin
+===================================================================
+Cannot display: file marked as a binary type.
+svn:mime-type = application/octet-stream
+Index: crlf-raw.txt
+===================================================================
+--- crlf-raw.txt	(revision 1)
++++ crlf-raw.txt	(working copy)
+@@ -1,3 +1,3 @@
+ one
+-two
++TWO
+ three
+Index: crlf-styled.txt
+===================================================================
+--- crlf-styled.txt	(revision 1)
++++ crlf-styled.txt	(working copy)
+@@ -1,3 +1,3 @@
+ one
+-two
++TWO
+ three
+Index: del-props.txt
+===================================================================
+--- del-props.txt	(revision 1)
++++ del-props.txt	(working copy)
+@@ -1 +0,0 @@
+-deleted with props
+Index: del.txt
+===================================================================
+--- del.txt	(revision 1)
++++ del.txt	(working copy)
+@@ -1,2 +0,0 @@
+-doomed
+-content
+Index: empty-props.txt
+===================================================================
+
+Property changes on: empty-props.txt
+___________________________________________________________________
+Added: flag
+## -0,0 +1 ##
++on
+\ No newline at end of property
+Index: empty.txt
+===================================================================
+Index: headers.txt
+===================================================================
+--- headers.txt	(revision 1)
++++ headers.txt	(working copy)
+@@ -1,7 +1,7 @@
+ plain
+ Index: foo
+ ===================================================================
+---- x	(revision 1)
++--- x	(revision 2)
+ +++ y	(working copy)
+ @@ -1 +1 @@
+ Property changes on: z
+@@ -10,4 +10,5 @@
+ ## -0,0 +1 ##
+ \ No newline at end of file
+ Cannot display: file marked as a binary type.
++Index: added inside
+ tail
+Index: icon@2x.txt
+===================================================================
+--- icon@2x.txt	(revision 1)
++++ icon@2x.txt	(working copy)
+@@ -1 +1 @@
+-retina
++retina edited
+Index: mac-cr.txt
+===================================================================
+--- mac-cr.txt	(revision 1)
++++ mac-cr.txt	(working copy)
+@@ -1,3 +1,3 @@
+ one-two+TWO three
+Index: mergedir
+===================================================================
+--- mergedir	(revision 1)
++++ mergedir	(working copy)
+
+Property changes on: mergedir
+___________________________________________________________________
+Added: svn:mergeinfo
+   Merged /branches/feature:r2
+Index: mergemod
+===================================================================
+--- mergemod	(revision 1)
++++ mergemod	(working copy)
+
+Property changes on: mergemod
+___________________________________________________________________
+Modified: svn:mergeinfo
+   Reverse-merged /branches/gone:r3
+   Merged /branches/a:r3-4
+   Merged /branches/b:r5
+Index: mod.txt
+===================================================================
+--- mod.txt	(revision 1)
++++ mod.txt	(working copy)
+@@ -1,6 +1,6 @@
+ line 1
+ line 2
+-line 3
++line three
+ line 4
+ line 5
+ line 6
+@@ -24,7 +24,7 @@
+ line 24
+ line 25
+ line 26
+-line 27
++line twenty-seven
+ line 28
+ line 29
+ line 30
+Index: movededit.txt
+===================================================================
+--- movededit.txt	(revision 1)
++++ movededit.txt	(working copy)
+@@ -1 +1,2 @@
+ moving and editing
++edited after the move
+Index: moveedit.txt
+===================================================================
+--- moveedit.txt	(revision 1)
++++ moveedit.txt	(working copy)
+@@ -1 +0,0 @@
+-moving and editing
+Index: moveme.txt
+===================================================================
+--- moveme.txt	(revision 1)
++++ moveme.txt	(working copy)
+@@ -1 +0,0 @@
+-moving
+Index: noeol-both.txt
+===================================================================
+--- noeol-both.txt	(revision 1)
++++ noeol-both.txt	(working copy)
+@@ -1,2 +1,2 @@
+ first
+-last without
+\ No newline at end of file
++last changed
+\ No newline at end of file
+Index: noeol-new.txt
+===================================================================
+--- noeol-new.txt	(revision 1)
++++ noeol-new.txt	(working copy)
+@@ -1 +1,2 @@
+ ends with newline
++but not any more
+\ No newline at end of file
+Index: noeol-old.txt
+===================================================================
+--- noeol-old.txt	(revision 1)
++++ noeol-old.txt	(working copy)
+@@ -1 +1,2 @@
+-no newline at end
+\ No newline at end of file
++no newline at end
++now with more
+Index: propdir
+===================================================================
+--- propdir	(revision 1)
++++ propdir	(working copy)
+
+Property changes on: propdir
+___________________________________________________________________
+Added: dir-add
+## -0,0 +1 ##
++y
+\ No newline at end of property
+Deleted: dir-delete
+## -1 +0,0 ##
+-x
+\ No newline at end of property
+Modified: svn:ignore
+## -1 +1,2 ##
+ *.tmp
++*.bak
+Index: propfile.txt
+===================================================================
+--- propfile.txt	(revision 1)
++++ propfile.txt	(working copy)
+
+Property changes on: propfile.txt
+___________________________________________________________________
+Modified: multi
+## -1,3 +1,3 ##
+ first
+-second
++SECOND
+ third
+Added: to-add
+## -0,0 +1 ##
++hello
+\ No newline at end of property
+Deleted: to-delete
+## -1 +0,0 ##
+-bye
+\ No newline at end of property
+Modified: to-modify
+## -1 +1 ##
+-old value
+\ No newline at end of property
++new value
+\ No newline at end of property
+Index: proponly.txt
+===================================================================
+--- proponly.txt	(revision 1)
++++ proponly.txt	(working copy)
+
+Property changes on: proponly.txt
+___________________________________________________________________
+Added: only
+## -0,0 +1 ##
++yes
+\ No newline at end of property
+Index: replaced.txt
+===================================================================
+--- replaced.txt	(revision 1)
++++ replaced.txt	(working copy)
+@@ -1 +1 @@
+-replace me
++a replacement
+Index: sub/a.txt
+===================================================================
+--- sub/a.txt	(revision 1)
++++ sub/a.txt	(working copy)
+@@ -1 +1 @@
+-a
++a edited
+Index: sub/b.txt
+===================================================================
+--- sub/b.txt	(revision 1)
++++ sub/b.txt	(working copy)
+@@ -1 +0,0 @@
+-b
+Index: sub/d.txt
+===================================================================
+--- sub/d.txt	(revision 0)
++++ sub/d.txt	(working copy)
+@@ -0,0 +1 @@
++d
+Index: textprops.txt
+===================================================================
+--- textprops.txt	(revision 1)
++++ textprops.txt	(working copy)
+@@ -1 +1 @@
+-text and props
++text and props changed
+
+Property changes on: textprops.txt
+___________________________________________________________________
+Added: svn:mime-type
+## -0,0 +1 ##
++text/plain
+\ No newline at end of property
+Index: trickyprop.txt
+===================================================================
+--- trickyprop.txt	(revision 1)
++++ trickyprop.txt	(working copy)
+
+Property changes on: trickyprop.txt
+___________________________________________________________________
+Modified: tricky
+## -1,2 +1,3 ##
+ Added: x
+ ## -1 +1 ##
++Index: y
+Index: with space.txt
+===================================================================
+--- with space.txt	(revision 1)
++++ with space.txt	(working copy)
+@@ -1 +1 @@
+-spaced
++spaced out
+Index: zażółć.txt
+===================================================================
+--- zażółć.txt	(revision 1)
++++ zażółć.txt	(working copy)
+@@ -1 +1 @@
+-polish
++polish edited
+Index: .
+===================================================================
+--- .	(revision 1)
++++ .	(working copy)
+
+Property changes on: .
+___________________________________________________________________
+Added: root-prop
+## -0,0 +1 ##
++r
+\ No newline at end of property

@@ -1,0 +1,15 @@
+Index: bin-mod-props.bin
+===================================================================
+Cannot display: file marked as a binary type.
+svn:mime-type = application/octet-stream
+Index: bin-mod-props.bin
+===================================================================
+--- bin-mod-props.bin	(revision 1)
++++ bin-mod-props.bin	(working copy)
+
+Property changes on: bin-mod-props.bin
+___________________________________________________________________
+Added: extra
+## -0,0 +1 ##
++e
+\ No newline at end of property
