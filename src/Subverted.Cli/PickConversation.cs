@@ -14,9 +14,9 @@ public static class PickConversation
     {
         prompt.WriteLine(PickReport.Opening(count));
 
-        while (picker.Current is { } entry)
+        while (picker.Current is { } candidate)
         {
-            prompt.Write(PickReport.Question(entry, paint));
+            prompt.Write(PickReport.Question(candidate, paint));
             var answer = PickAnswers.Of(prompt.ReadLine());
 
             if (answer is null or PickAnswer.Explain)

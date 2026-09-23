@@ -26,6 +26,7 @@ try
         RemoveCommand remove => await RemoveAsync(remove, parsed.Output),
         MoveCommand move => await MoveAsync(move, parsed.Output),
         CommitCommand commit => await CommitAsync(commit, parsed.Output),
+        MarkingCommitCommand marking => await MarkingCommitAsync(marking, parsed.Output),
         LockCommand take => await LockAsync(take, parsed.Output),
         UnlockCommand release => await UnlockAsync(release, parsed.Output),
         ResolveCommand resolve => await ResolveAsync(resolve, parsed.Output),
@@ -620,12 +621,54 @@ async Task<bool> HeldLockAsync(string path)
 
 async Task<int> CommitAsync(CommitCommand command, OutputOptions output)
 {
+    var response = await channel.SendAsync(command.Request, CancellationToken.None);
+
+    return ReportCommit(response, output);
+}
+
+/// <summary>
+/// <c>sv commit --mark</c>: everything changed under the paths, marked on the way. The listing is
+/// read here only to name the nodes — what each one needs is the daemon's decision, from its own status.
+/// </summary>
+async Task<int> MarkingCommitAsync(MarkingCommitCommand command, OutputOptions output)
+{
     var response = await channel.SendAsync(
-        new CommitRequest(command.Paths, command.Message),
+        new StatusRequest(
+            command.Paths[0],
+            IncludeUnmodified: false,
+            IncludeIgnored: false,
+            Scope: command.Paths
+        ),
         CancellationToken.None
     );
 
-    return ReportCommit(response, output);
+    if (response is ErrorResponse statusError)
+    {
+        return Complain(statusError);
+    }
+
+    if (response is not StatusResponse status)
+    {
+        return Unexpected(response);
+    }
+
+    var targets = MarkingCommitTargets.Under(status, command.Paths, PathComparison());
+    if (targets.Count == 0)
+    {
+        Console.WriteLine("nothing to commit");
+        return ExitCode.Success;
+    }
+
+    return ReportSelectionCommit(
+        await channel.SendAsync(
+            new CommitSelectionRequest(
+                [.. targets.Select(relPath => Absolute(status.Info.RootPath, relPath))],
+                command.Message
+            ),
+            CancellationToken.None
+        ),
+        output
+    );
 }
 
 /// <summary>
@@ -685,12 +728,15 @@ async Task<int> PickAsync(PickCommand command, OutputOptions output)
 
     Emit(PickReport.Sending(picker, paint), output);
 
-    return ReportCommit(
+    return ReportSelectionCommit(
         await channel.SendAsync(
-            new CommitRequest(
-                [.. picker.Picked.Select(entry => Absolute(status.Info.RootPath, entry.RelPath))],
-                command.Message,
-                CommitScope.ExactlyTheseNodes
+            new CommitSelectionRequest(
+                [
+                    .. picker
+                        .Picked.SelectMany(candidate => candidate.RelPaths)
+                        .Select(relPath => Absolute(status.Info.RootPath, relPath)),
+                ],
+                command.Message
             ),
             CancellationToken.None
         ),
@@ -701,6 +747,31 @@ async Task<int> PickAsync(PickCommand command, OutputOptions output)
 /// <summary>An entry's slash-separated relative path, back as a path this platform's `svn` accepts.</summary>
 string Absolute(string rootPath, string relPath) =>
     Path.Combine(rootPath, relPath.Replace('/', Path.DirectorySeparatorChar));
+
+/// <summary>
+/// A selection that stopped part-way exits <see cref="ExitCode.SvnFailure"/> like any failed
+/// commit, and still prints what it marked — those marks are in the working copy now.
+/// </summary>
+int ReportSelectionCommit(DaemonResponse response, OutputOptions output)
+{
+    switch (response)
+    {
+        case CommitSelectionResponse committed:
+            Emit(SelectionReport.Committed(committed), output);
+            return ExitCode.Success;
+
+        case SelectionNotCommittedResponse stopped:
+            Console.Error.WriteLine($"sv: {SelectionReport.Failure(stopped)}");
+            Emit(SelectionReport.LeftInPlace(stopped), output);
+            return ExitCode.SvnFailure;
+
+        case ErrorResponse error:
+            return Complain(error);
+
+        default:
+            return Unexpected(response);
+    }
+}
 
 int ReportCommit(DaemonResponse response, OutputOptions output)
 {
