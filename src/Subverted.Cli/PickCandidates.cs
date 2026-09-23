@@ -4,9 +4,9 @@ using Subverted.Protocol;
 namespace Subverted.Cli;
 
 /// <summary>
-/// The changed nodes a picker may offer, in the order it must offer them. Pure, because the two
-/// rules in it — which nodes <c>svn commit</c> will take as a target, and that a directory has to
-/// be answered before anything under it — are what keep a picked set committable.
+/// The changes a picker may offer, in the order it must offer them. Pure, because the rules in it
+/// — which nodes a selection commit will take, that a rename is one question and not two, and that
+/// a directory has to be answered before anything under it — are what keep a picked set committable.
 /// </summary>
 public static class PickCandidates
 {
@@ -15,36 +15,79 @@ public static class PickCandidates
     /// <param name="comparison">How this platform compares paths.</param>
     /// <returns>
     /// Committable changes under <paramref name="path"/>, ancestors first — ordinal order puts
-    /// <c>src</c> before <c>src/a.txt</c> because <c>/</c> sorts below every name character.
+    /// <c>src</c> before <c>src/a.txt</c> because <c>/</c> sorts below every name character. A
+    /// rename sorts by its new path.
     /// </returns>
-    public static IReadOnlyList<WorkingCopyEntry> Under(
+    public static IReadOnlyList<PickCandidate> Under(
         StatusResponse status,
         string path,
         StringComparison comparison
     )
     {
         var target = TargetCoverage.RelativeTo(status.Info.RootPath, path);
+        bool Covered(string relPath) => TargetCoverage.Covers(target, relPath, comparison);
+
+        var entryAt = new Dictionary<string, WorkingCopyEntry>(
+            StringComparer.FromComparison(comparison)
+        );
+        foreach (var entry in status.Entries)
+        {
+            entryAt.TryAdd(entry.RelPath, entry);
+        }
+
+        List<PickCandidate> renames = [];
+        foreach (var move in status.UnrecordedMoves)
+        {
+            // Half a rename cannot be sent, and sent as a plain delete or add it would end the
+            // file's history — so a pair the path cuts in two is not offered at all.
+            if (
+                Covered(move.FromRelPath)
+                && Covered(move.ToRelPath)
+                && entryAt.TryGetValue(move.FromRelPath, out var from)
+                && entryAt.TryGetValue(move.ToRelPath, out var to)
+            )
+            {
+                renames.Add(new PickCandidate(to, RenamedFrom: from));
+            }
+        }
 
         return
         [
             .. status
-                .Entries.Where(IsCommittable)
-                .Where(entry => TargetCoverage.Covers(target, entry.RelPath, comparison))
-                .OrderBy(entry => entry.RelPath, StringComparer.Ordinal),
+                .Entries.Where(entry => !IsHalfOfARename(entry, status.UnrecordedMoves, comparison))
+                .Where(IsCommittable)
+                .Where(entry => Covered(entry.RelPath))
+                .Select(entry => new PickCandidate(entry))
+                .Concat(renames)
+                .OrderBy(candidate => candidate.RelPath, StringComparer.Ordinal),
         ];
     }
 
+    private static bool IsHalfOfARename(
+        WorkingCopyEntry entry,
+        IReadOnlyList<UnrecordedMove> moves,
+        StringComparison comparison
+    ) =>
+        moves.Any(move =>
+            move.FromRelPath.Equals(entry.RelPath, comparison)
+            || move.ToRelPath.Equals(entry.RelPath, comparison)
+        );
+
     /// <summary>
-    /// What <c>svn commit</c> accepts as a target. A conflicted, missing or obstructed node is left
-    /// out because naming one fails the whole commit, and an unversioned one because it has to be
-    /// added first; <c>sv st</c> still shows every one of them.
+    /// What a selection commit accepts. An unversioned node is added and a missing one has its
+    /// deletion recorded on the way. A conflicted or obstructed node is left out because SVN
+    /// refuses it; <c>sv st</c> still shows every one of them.
     /// </summary>
     private static bool IsCommittable(WorkingCopyEntry entry) =>
         !entry.IsConflicted
         && entry.Status switch
         {
-            NodeStatus.Modified or NodeStatus.Added or NodeStatus.Deleted or NodeStatus.Replaced =>
-                true,
+            NodeStatus.Modified
+            or NodeStatus.Added
+            or NodeStatus.Deleted
+            or NodeStatus.Replaced
+            or NodeStatus.Unversioned
+            or NodeStatus.Missing => true,
 
             // The metadata fast path can prove unmodified but never modified, so an undecided node
             // is offered rather than hidden: a commit sends nothing for one that turns out clean.

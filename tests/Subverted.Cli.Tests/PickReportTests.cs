@@ -14,7 +14,10 @@ public sealed class PickReportTests
     [Test]
     public async Task The_question_shows_the_node_the_way_sv_st_shows_it()
     {
-        var question = PickReport.Question(Modified("src/a.txt"), StatusPalette.Plain);
+        var question = PickReport.Question(
+            new PickCandidate(Modified("src/a.txt")),
+            StatusPalette.Plain
+        );
 
         await Assert.That(question).IsEqualTo("M       src/a.txt  send? [y,n,a,d,q,?] ");
     }
@@ -26,7 +29,10 @@ public sealed class PickReportTests
     [Test]
     public async Task The_question_does_not_end_the_line()
     {
-        var question = PickReport.Question(Modified("src/a.txt"), StatusPalette.Plain);
+        var question = PickReport.Question(
+            new PickCandidate(Modified("src/a.txt")),
+            StatusPalette.Plain
+        );
 
         await Assert.That(question).DoesNotContain("\n");
         await Assert.That(question.EndsWith(' ')).IsTrue();
@@ -35,7 +41,10 @@ public sealed class PickReportTests
     [Test]
     public async Task The_question_takes_the_colour_it_was_given()
     {
-        var question = PickReport.Question(Modified("src/a.txt"), StatusPalette.Ansi);
+        var question = PickReport.Question(
+            new PickCandidate(Modified("src/a.txt")),
+            StatusPalette.Ansi
+        );
 
         await Assert.That(question).StartsWith("\e[33m");
     }
@@ -60,7 +69,10 @@ public sealed class PickReportTests
     [Test]
     public async Task What_is_about_to_be_sent_is_listed_with_its_count()
     {
-        var picker = new ChangePicker([Modified("src/a.txt"), Modified("src/b.txt")], Sensitive);
+        var picker = new ChangePicker(
+            Of([Modified("src/a.txt"), Modified("src/b.txt")]),
+            Sensitive
+        );
         picker.Answer(PickAnswer.Send);
         picker.Answer(PickAnswer.Skip);
 
@@ -77,7 +89,7 @@ public sealed class PickReportTests
     public async Task Nodes_a_directory_settled_are_accounted_for_rather_than_left_unexplained()
     {
         var picker = new ChangePicker(
-            [Directory("art", NodeStatus.Deleted), Deleted("art/hero.png")],
+            Of([Directory("art", NodeStatus.Deleted), Deleted("art/hero.png")]),
             Sensitive
         );
         picker.Answer(PickAnswer.Send);
@@ -91,12 +103,126 @@ public sealed class PickReportTests
     [Test]
     public async Task Nothing_was_settled_by_a_directory_means_no_line_about_it()
     {
-        var picker = new ChangePicker([Modified("src/a.txt")], Sensitive);
+        var picker = new ChangePicker(Of([Modified("src/a.txt")]), Sensitive);
         picker.Answer(PickAnswer.Send);
 
         var lines = PickReport.Sending(picker, StatusPalette.Plain);
 
         await Assert.That(lines.Count).IsEqualTo(2);
+    }
+
+    /// <summary>
+    /// Saying yes to one of these now marks it on the way, which used to be a separate command.
+    /// The question says which mark, so nobody adds or deletes a file without being told.
+    /// </summary>
+    [Test]
+    [Arguments(NodeStatus.Unversioned, NodeKind.File, "?       new.txt  (new — sending adds it)")]
+    [Arguments(
+        NodeStatus.Unversioned,
+        NodeKind.Directory,
+        "?       new.txt  (new — sending adds it and everything in it that is not ignored)"
+    )]
+    [Arguments(
+        NodeStatus.Missing,
+        NodeKind.File,
+        "!       new.txt  (gone from disk — sending records the deletion)"
+    )]
+    [Arguments(
+        NodeStatus.Missing,
+        NodeKind.Directory,
+        "!       new.txt  (gone from disk — sending records it and everything under it as deleted)"
+    )]
+    [Arguments(NodeStatus.Added, NodeKind.Directory, "A       new.txt")]
+    [Arguments(NodeStatus.Modified, NodeKind.File, "M       new.txt")]
+    public async Task A_node_that_is_marked_on_the_way_says_what_the_mark_is(
+        NodeStatus status,
+        NodeKind kind,
+        string expected
+    )
+    {
+        var candidate = new PickCandidate(
+            Modified("new.txt") with
+            {
+                Status = status,
+                Kind = kind,
+            }
+        );
+
+        await Assert.That(PickReport.Describe(candidate, StatusPalette.Plain)).IsEqualTo(expected);
+    }
+
+    [Test]
+    public async Task A_rename_names_both_paths_and_says_it_is_sent_as_a_move()
+    {
+        var candidate = new PickCandidate(
+            Modified("art/protagonist.png") with
+            {
+                Status = NodeStatus.Unversioned,
+            },
+            RenamedFrom: Modified("art/hero.png") with
+            {
+                Status = NodeStatus.Missing,
+            }
+        );
+
+        await Assert
+            .That(PickReport.Question(candidate, StatusPalette.Plain))
+            .IsEqualTo(
+                "!       art/hero.png -> art/protagonist.png  "
+                    + "(renamed outside SVN — sent as a move, history kept)  send? [y,n,a,d,q,?] "
+            );
+    }
+
+    /// <summary>
+    /// <c>a</c> passes over new nodes. Saying how many keeps the count honest against
+    /// <c>sv st</c>, which still shows them as <c>?</c> afterwards.
+    /// </summary>
+    [Test]
+    public async Task New_nodes_all_passed_over_are_counted_in_what_is_about_to_be_sent()
+    {
+        var picker = new ChangePicker(
+            Of([Modified("a.txt"), Modified("junk.txt") with { Status = NodeStatus.Unversioned }]),
+            Sensitive
+        );
+        picker.Answer(PickAnswer.SendRest);
+
+        var lines = PickReport.Sending(picker, StatusPalette.Plain);
+
+        await Assert
+            .That(lines)
+            .IsEquivalentTo([
+                "sending 1 node(s):",
+                "M       a.txt",
+                "(1 new node(s) left unversioned — `a` does not add; answer y to each one you want "
+                    + "added)",
+            ]);
+    }
+
+    [Test]
+    public async Task What_is_sent_is_described_with_its_mark()
+    {
+        var picker = new ChangePicker(
+            Of([Modified("gone.txt") with { Status = NodeStatus.Missing }]),
+            Sensitive
+        );
+        picker.Answer(PickAnswer.Send);
+
+        var lines = PickReport.Sending(picker, StatusPalette.Plain);
+
+        await Assert
+            .That(lines)
+            .IsEquivalentTo([
+                "sending 1 node(s):",
+                "!       gone.txt  (gone from disk — sending records the deletion)",
+            ]);
+    }
+
+    [Test]
+    public async Task The_explanation_says_all_never_adds_a_new_node()
+    {
+        await Assert
+            .That(string.Join("\n", PickReport.Explanation))
+            .Contains("except new (?) nodes");
     }
 
     private static WorkingCopyEntry Modified(string relPath) =>
@@ -125,4 +251,7 @@ public sealed class PickReportTests
             Kind = NodeKind.Directory,
             Status = status,
         };
+
+    private static IReadOnlyList<PickCandidate> Of(IReadOnlyList<WorkingCopyEntry> entries) =>
+        [.. entries.Select(entry => new PickCandidate(entry))];
 }

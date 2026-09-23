@@ -1442,6 +1442,34 @@ delete, rename with `copyfrom` read back from the log, a mixed set in one revisi
 unticked edit local, a pre-commit hook refusal followed by a retry, and a refused half-rename that
 touched nothing. The GUI half is not built.*
 
+**The CLI adopted it in two places, and plain `sv commit` was not one of them.** The operator
+decided that `sv commit PATH` keeps SVN's meaning and marks nothing. It still sends a
+`CommitRequest`, and a test pins that. Marking is opt-in:
+
+- **`sv pick`** sends its picked set as a `CommitSelectionRequest`, and now offers `?` and `!`
+  nodes as well. A D27 pair is one question that sends both halves, and the question says which
+  mark a yes makes. A pair the named path cuts in two is not offered at all. `a` sweeps up edits,
+  `!` and renames but leaves the remaining `?` local, which matches the GUI's unticked `?`. That
+  part was not confirmed by the operator.
+- **`sv commit --mark PATH...`** names every changed node under the paths one by one. Conflicted,
+  obstructed and incomplete nodes are named on purpose, so the daemon refuses the lot the way
+  plain `svn commit` would, instead of committing around them.
+
+Measured on 1.8.15 for the picker: `svn status` lists every missing child of a missing directory,
+and `svn delete` on the directory records the whole subtree. With the directory left alone, a
+missing child deletes and commits on its own. So a *sent* missing directory settles its missing
+subtree and a declined one settles nothing. `ChangePicker` holds that rule for now, because
+`DecidedSubtrees` does not have it yet. It belongs there, since the GUI's tick list hits the same
+case.
+
+*Status: CLI half implemented, all seven binaries green (2128). Driven through the published `sv`
+and daemon on throwaway copies of a fixture: plain `sv commit` sent the two edits and left every
+`?` and `!` as it was. `--mark` recorded the rename (`copyfrom` in the log), the missing
+directory's deletion and the added folder in one revision. Half a rename was refused with nothing
+written. A pre-commit hook refusal printed the step, the marks and "nothing was rolled back",
+exited 3, and the retry committed. The interactive `sv pick` walk itself was not driven, since
+there is no terminal here. It is covered by `IPrompt` tests only.*
+
 ### D3 — The working copy is authoritative
 
 Local history (M3) lives in a separate content-addressed store that is purely derived. It is never

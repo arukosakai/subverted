@@ -103,7 +103,7 @@ public sealed class PickConversationTests
     [Test]
     public async Task Nothing_to_ask_about_writes_the_opening_line_and_asks_nothing()
     {
-        var picker = new ChangePicker([], Sensitive);
+        var picker = new ChangePicker(Of([]), Sensitive);
         var prompt = new FakePrompt();
 
         PickConversation.Walk(picker, StatusPalette.Plain, prompt, 0);
@@ -112,7 +112,7 @@ public sealed class PickConversationTests
     }
 
     private static ChangePicker Picker(params WorkingCopyEntry[] candidates) =>
-        new(candidates, Sensitive);
+        new(Of(candidates), Sensitive);
 
     private static WorkingCopyEntry Modified(string relPath) =>
         new(
@@ -127,4 +127,7 @@ public sealed class PickConversationTests
             IsWriteLocked: false,
             IsCopied: false
         );
+
+    private static IReadOnlyList<PickCandidate> Of(IReadOnlyList<WorkingCopyEntry> entries) =>
+        [.. entries.Select(entry => new PickCandidate(entry))];
 }

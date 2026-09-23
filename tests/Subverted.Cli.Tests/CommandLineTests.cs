@@ -1,4 +1,5 @@
 using Subverted.Core;
+using Subverted.Protocol;
 
 namespace Subverted.Cli.Tests;
 
@@ -553,6 +554,50 @@ public sealed class CommandLineTests
     public async Task An_unknown_option_is_never_read_as_a_path_to_commit()
     {
         await Assert.That(Command(["commit", "-m", "x", "--force"])).IsTypeOf<HelpCommand>();
+    }
+
+    /// <summary>
+    /// The default must stay SVN's commit: it adds nothing and deletes nothing. What proves it is
+    /// the request itself, a plain recursive commit with only the paths it was given.
+    /// </summary>
+    [Test]
+    public async Task Plain_commit_sends_a_recursive_commit_that_marks_nothing()
+    {
+        var command = Command(["commit", "hero.png", "-m", "both"]);
+
+        await Assert.That(command).IsTypeOf<CommitCommand>();
+        var request = ((CommitCommand)command).Request;
+        await Assert.That(request.GetType()).IsEqualTo(typeof(CommitRequest));
+        await Assert.That(request.Paths).IsEquivalentTo([Path.Combine(Cwd, "hero.png")]);
+        await Assert.That(request.Message).IsEqualTo("both");
+        await Assert.That(request.Scope).IsEqualTo(CommitScope.WholeSubtree);
+    }
+
+    [Test]
+    [Arguments(new[] { "commit", "--mark", "-m", "sync art", "art" }, "flag first")]
+    [Arguments(new[] { "ci", "art", "-m", "sync art", "--mark" }, "flag last, short verb")]
+    public async Task Mark_asks_for_a_commit_that_marks_on_the_way(string[] arguments, string why)
+    {
+        var command = Command(arguments);
+
+        await Assert.That(command).IsTypeOf<MarkingCommitCommand>().Because(why);
+        var marking = (MarkingCommitCommand)command;
+        await Assert.That(marking.Paths).IsEquivalentTo([Path.Combine(Cwd, "art")]);
+        await Assert.That(marking.Message).IsEqualTo("sync art");
+    }
+
+    [Test]
+    public async Task Mark_defaults_to_the_working_directory_when_no_path_was_given()
+    {
+        var command = (MarkingCommitCommand)Command(["commit", "--mark", "-m", "x"]);
+
+        await Assert.That(command.Paths).IsEquivalentTo([Cwd]);
+    }
+
+    [Test]
+    public async Task Mark_without_a_usable_message_still_refuses()
+    {
+        await Assert.That(Command(["commit", "--mark", "-m", " "])).IsTypeOf<HelpCommand>();
     }
 
     [Test]

@@ -261,6 +261,7 @@ public static class CommandLine
     {
         var paths = new List<string>();
         string? message = null;
+        var marking = false;
 
         for (var index = 0; index < words.Count; index++)
         {
@@ -276,6 +277,10 @@ public static class CommandLine
                     message = words[++index];
                     break;
 
+                case "--mark":
+                    marking = true;
+                    break;
+
                 default:
                     if (word.StartsWith('-'))
                     {
@@ -289,9 +294,15 @@ public static class CommandLine
 
         // An editor is what SVN would open, and the daemon that runs the commit has no terminal to
         // open one in. Asking for -m is honest; pretending to have an editor would not be.
-        return message?.Trim() is not { Length: > 0 }
-            ? new HelpCommand("'sv commit' needs a log message: -m \"what changed\".")
-            : new CommitCommand(ResolveAll(paths, workingDirectory), message);
+        if (message?.Trim() is not { Length: > 0 })
+        {
+            return new HelpCommand("'sv commit' needs a log message: -m \"what changed\".");
+        }
+
+        var resolved = ResolveAll(paths, workingDirectory);
+        return marking
+            ? new MarkingCommitCommand(resolved, message)
+            : new CommitCommand(resolved, message);
     }
 
     private static CliCommand Lock(List<string> words, string workingDirectory)

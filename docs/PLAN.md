@@ -200,6 +200,9 @@ A resident process that keeps status warm, and a CLI worth using.
 - `sv pick` — **M3's file-level staging, pulled forward** (D20). It needed none of the object
   store: a picked set is a commit that stops at the nodes it names. See M3 below for what that
   leaves M3 owning.
+  Since D32 it sends a `CommitSelectionRequest`, so a yes to a `?`, `!` or hand-rename adds,
+  deletes or moves it on the way; `sv commit --mark` is the same thing, opt-in, for a whole path.
+  Plain `sv commit` is unchanged (operator's call, 2026-09-23).
 - `sv up` — the command the studio runs most, and the one that was missing (D21). Same route as the
   other three that change a working copy. It exists as its own decision rather than as a fourth
   bullet on D19 because **`svn update` exits zero on a conflict**: the exit code says the client
