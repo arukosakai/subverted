@@ -1400,6 +1400,48 @@ because it is what wc.db, Explorer and file dialogs all use. Three pieces:
 *Status: implemented. All seven test binaries green (1626). The two pure types are at 100% line and
 branch. Through the shipped binaries, the app given the short spelling of a fixture now lists it.*
 
+### D32 — A ticked set is one request: the daemon marks what the disk says happened, then commits
+
+GUI slice 3's commit needs no manual marking: ticking a `?` adds it, ticking a `!` deletes it, and a
+D27 pair records a move. That is `CommitSelectionRequest(Paths, Message)`, not front-end glue over
+`add` + `delete` + `move` + `commit`, so what decides a commit lives once, in the daemon, and
+`sv commit` can adopt it later. `CommitSelectionPlanner` (pure) reads each ticked path against the
+session's status; `SelectionCommitter` runs moves, then adds, then deletions, then one
+`--depth empty` commit naming every ticked node.
+
+Measured on 1.8.15 before it was built, on a fixture made for it:
+
+- **Both halves of a recorded move must be in one commit** — naming either alone is `E200009`. So a
+  ticked half without the other is refused up front rather than committed as a plain delete or add,
+  which is exactly the history loss this exists to prevent.
+- **`svn add dir` recurses, and `--depth empty` then commits the folder alone**, leaving its
+  contents `A`. So after adding an unversioned directory the committer reads status again and names
+  everything the add scheduled beneath it. Ignored files are skipped by the add and so never named.
+  Recursive is the operator's call: a folder of new assets is the common case.
+- **Deletions are recorded without `--force`** (`SvnRecordDeletionCommand`). A missing node is
+  scheduled either way; a file that came back with edits is refused (`E195006`) and left alone,
+  where `--force` would unlink it. That is what makes it safe to plan from the warm index instead
+  of paying a second scan: the rename route is read off disk too, so no step trusts status alone.
+- **A hook refusing the commit leaves `A` and `D` in place, and the retry commits.**
+
+**Three answers, and the difference between the last two is the contract.** `CommitSelectionResponse`
+is committed (or nothing to send). `SelectionNotCommittedResponse` means a step that writes ran
+and then something failed: `FailedStep` says where, `Scheduled` lists what finished, `Failure` is
+SVN's own text, and nothing is rolled back — rolling back would be a second write on a failure path.
+`ErrorResponse` from this request always means nothing was written: a plan refusal (conflicted,
+obstructed, ignored, external, incomplete, unknown, half a rename) or a rename route that refused
+before any other write.
+
+D20's directory rules moved out of `ChangePicker` into `Frontend.DecidedSubtrees`, so `sv pick` and
+the GUI's tick list obey one copy. On the CLI fallback there are no D27 pairs, so a hand rename
+there commits as delete and add — the same answer `sv st` already gives it on that reader.
+
+*Status: implemented. All seven test binaries green (1934). Planner, committer and `DecidedSubtrees`
+at 100% line and branch. Against real repositories: add, a folder with an ignored file inside it,
+delete, rename with `copyfrom` read back from the log, a mixed set in one revision leaving an
+unticked edit local, a pre-commit hook refusal followed by a retry, and a refused half-rename that
+touched nothing. The GUI half is not built.*
+
 ### D3 — The working copy is authoritative
 
 Local history (M3) lives in a separate content-addressed store that is purely derived. It is never

@@ -29,7 +29,8 @@ public sealed class DaemonRequestHandler(
     ReleaseLocks releaseLocks,
     ResolveConflicts resolveConflicts,
     CleanUpWorkingCopy cleanUpWorkingCopy,
-    RespellPath respellPath
+    RespellPath respellPath,
+    SelectionCommitter selectionCommitter
 )
 {
     private static readonly string Version =
@@ -67,6 +68,10 @@ public sealed class DaemonRequestHandler(
             DeleteRequest delete => await DeleteAsync(delete, cancellationToken),
             MoveRequest move => await MoveAsync(move, cancellationToken),
             CommitRequest commit => await CommitAsync(commit, cancellationToken),
+            CommitSelectionRequest selection => await CommitSelectionAsync(
+                selection,
+                cancellationToken
+            ),
             UpdateRequest update => await UpdateAsync(update, cancellationToken),
             LockRequest take => await LockAsync(take, cancellationToken),
             UnlockRequest release => await UnlockAsync(release, cancellationToken),
@@ -250,6 +255,17 @@ public sealed class DaemonRequestHandler(
                 );
                 return new CommitResponse(outcome.Revision, outcome.Notifications);
             },
+            cancellationToken
+        );
+
+    private Task<DaemonResponse> CommitSelectionAsync(
+        CommitSelectionRequest request,
+        CancellationToken cancellationToken
+    ) =>
+        WritingAsync(
+            request.Paths,
+            "commit",
+            session => selectionCommitter.CommitAsync(session, request, cancellationToken),
             cancellationToken
         );
 

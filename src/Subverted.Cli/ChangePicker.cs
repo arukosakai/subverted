@@ -1,26 +1,20 @@
 using Subverted.Core;
+using Subverted.Frontend;
 
 namespace Subverted.Cli;
 
 /// <summary>
 /// Walks the changed nodes one at a time and accumulates the set to commit. It is handed answers
-/// and never reads a console, so the two rules SVN imposes on directories are tests rather than
-/// something found out halfway through someone's commit.
+/// and never reads a console, so the walk is a test rather than something found out halfway
+/// through someone's commit. Which nodes a directory's answer settles is
+/// <see cref="DecidedSubtrees"/>'s business, shared with every other front-end.
 /// </summary>
-/// <remarks>
-/// Both rules were taken from <c>svn</c> 1.8.15 rather than from the documentation. A child whose
-/// added or replaced parent is not in the same commit is refused outright (E200009), and a deletion
-/// below a deleted or replaced directory travels with that directory whichever way it was answered.
-/// Either way the node is not a choice, so it is not offered as one.
-/// </remarks>
 public sealed class ChangePicker
 {
     private readonly IReadOnlyList<WorkingCopyEntry> _candidates;
-    private readonly StringComparison _comparison;
+    private readonly DecidedSubtrees _decided;
     private readonly List<WorkingCopyEntry> _picked = [];
     private readonly List<WorkingCopyEntry> _decidedByAnAncestor = [];
-    private readonly List<string> _unavailableUnder = [];
-    private readonly List<string> _carriedUnder = [];
     private int _index;
     private bool _sendRest;
     private bool _finished;
@@ -33,7 +27,7 @@ public sealed class ChangePicker
     public ChangePicker(IReadOnlyList<WorkingCopyEntry> candidates, StringComparison comparison)
     {
         _candidates = candidates;
-        _comparison = comparison;
+        _decided = new DecidedSubtrees(comparison);
         Settle();
     }
 
@@ -88,7 +82,7 @@ public sealed class ChangePicker
                 break;
 
             case PickAnswer.Skip:
-                Leave(entry);
+                _decided.Left(entry);
                 break;
 
             default:
@@ -113,7 +107,7 @@ public sealed class ChangePicker
         while (_index < _candidates.Count)
         {
             var entry = _candidates[_index];
-            if (IsDecidedByAnAncestor(entry))
+            if (_decided.Decides(entry))
             {
                 _decidedByAnAncestor.Add(entry);
             }
@@ -133,39 +127,6 @@ public sealed class ChangePicker
     private void Take(WorkingCopyEntry entry)
     {
         _picked.Add(entry);
-        RecordWhatItCarries(entry);
+        _decided.Sent(entry);
     }
-
-    private void Leave(WorkingCopyEntry entry)
-    {
-        RecordWhatItCarries(entry);
-        if (
-            entry.Kind == NodeKind.Directory
-            && entry.Status is NodeStatus.Added or NodeStatus.Replaced
-        )
-        {
-            _unavailableUnder.Add(entry.RelPath);
-        }
-    }
-
-    private void RecordWhatItCarries(WorkingCopyEntry entry)
-    {
-        if (
-            entry.Kind == NodeKind.Directory
-            && entry.Status is NodeStatus.Deleted or NodeStatus.Replaced
-        )
-        {
-            _carriedUnder.Add(entry.RelPath);
-        }
-    }
-
-    private bool IsDecidedByAnAncestor(WorkingCopyEntry entry) =>
-        _unavailableUnder.Any(ancestor => Below(ancestor, entry))
-        || (
-            entry.Status == NodeStatus.Deleted
-            && _carriedUnder.Any(ancestor => Below(ancestor, entry))
-        );
-
-    private bool Below(string ancestor, WorkingCopyEntry entry) =>
-        TargetCoverage.Below(ancestor, entry.RelPath, _comparison);
 }

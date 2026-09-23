@@ -20,6 +20,7 @@ public static class RequestSpelling
         typeof(DeleteRequest),
         typeof(MoveRequest),
         typeof(CommitRequest),
+        typeof(CommitSelectionRequest),
         typeof(UpdateRequest),
         typeof(LockRequest),
         typeof(UnlockRequest),
@@ -50,6 +51,10 @@ public static class RequestSpelling
                 Destination = respell(move.Destination),
             },
             CommitRequest commit => commit with { Paths = All(commit.Paths, respell) },
+            CommitSelectionRequest selection => selection with
+            {
+                Paths = All(selection.Paths, respell),
+            },
             UpdateRequest update => update with { Path = respell(update.Path) },
             LockRequest take => take with { Paths = All(take.Paths, respell) },
             UnlockRequest release => release with { Paths = All(release.Paths, respell) },

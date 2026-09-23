@@ -1134,7 +1134,8 @@ public sealed class DaemonRequestHandlerTests
         ReleaseLocks? releaseLocks = null,
         ResolveConflicts? resolveConflicts = null,
         CleanUpWorkingCopy? cleanUpWorkingCopy = null,
-        RespellPath? respellPath = null
+        RespellPath? respellPath = null,
+        RecordDeletion? recordDeletion = null
     ) =>
         new(
             // Opening is asynchronous because the CLI fallback is a child process; nothing the
@@ -1154,7 +1155,13 @@ public sealed class DaemonRequestHandlerTests
             releaseLocks ?? NoUnlock,
             resolveConflicts ?? NoResolve,
             cleanUpWorkingCopy ?? NoCleanup,
-            respellPath ?? (path => path)
+            respellPath ?? (path => path),
+            new SelectionCommitter(
+                renameNode ?? NoRename,
+                scheduleAddition ?? NoAdd,
+                recordDeletion ?? NoRecordDeletion,
+                commitChanges ?? NoCommit
+            )
         );
 
     private static Task<IReadOnlyList<RevisionEntry>> NoLog(
@@ -1191,6 +1198,12 @@ public sealed class DaemonRequestHandlerTests
         IReadOnlyList<string> paths,
         CancellationToken cancellationToken
     ) => throw new InvalidOperationException("This test should not have deleted anything.");
+
+    private static Task<string> NoRecordDeletion(
+        string root,
+        IReadOnlyList<string> paths,
+        CancellationToken cancellationToken
+    ) => throw new InvalidOperationException("This test should not have recorded a deletion.");
 
     private static Task<MoveOutcome> NoRename(
         string root,

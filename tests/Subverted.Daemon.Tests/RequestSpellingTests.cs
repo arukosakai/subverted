@@ -70,6 +70,19 @@ public sealed class RequestSpellingTests
     }
 
     [Test]
+    public async Task A_commit_selection_respells_its_paths_and_keeps_its_message()
+    {
+        var respelled = (CommitSelectionRequest)
+            RequestSpelling.Respell(
+                new CommitSelectionRequest(["/wc/a", "/wc/b"], "a message"),
+                Mark
+            );
+
+        await Assert.That(respelled.Paths).IsEquivalentTo(new[] { "long:/wc/a", "long:/wc/b" });
+        await Assert.That(respelled.Message).IsEqualTo("a message");
+    }
+
+    [Test]
     public async Task A_lock_respells_its_paths_and_keeps_its_comment_and_foreign_rule()
     {
         var respelled = (LockRequest)
