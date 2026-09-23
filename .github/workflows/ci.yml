@@ -23,7 +23,7 @@ jobs:
     name: CSharpier
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-dotnet@v4
         with:
           global-json-file: global.json
@@ -45,7 +45,7 @@ jobs:
           - { os: ubuntu-latest, svn: system }
           - { os: macos-latest, svn: system }
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: ./.github/actions/setup-toolchain
         with:
           svn-version: ${{ matrix.svn }}
@@ -65,7 +65,7 @@ jobs:
           - { os: ubuntu-latest, rid: linux-x64 }
           - { os: macos-latest, rid: osx-arm64 }
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-dotnet@v4
         with:
           global-json-file: global.json
