@@ -25,20 +25,24 @@ public sealed class SvnRevisionDiffCommand(SvnCommand command)
         CancellationToken cancellationToken
     )
     {
-        var result = await command.RunAsync(
-            workingCopyRoot,
-            [
-                "diff",
-                "--non-interactive",
-                "--change",
-                revision.ToString(CultureInfo.InvariantCulture),
-                SvnTarget.InRepository(repositoryRoot, repositoryPath, revision),
-            ],
-            cancellationToken
-        );
+        string[] arguments =
+        [
+            "diff",
+            "--non-interactive",
+            "--change",
+            revision.ToString(CultureInfo.InvariantCulture),
+            SvnTarget.InRepository(repositoryRoot, repositoryPath, revision),
+        ];
+        var result = await command.RunAsync(workingCopyRoot, arguments, cancellationToken);
 
         return result.ExitCode == 0
-            ? result.StandardOutput
+            ? await SvnDiffNames.RespelledAsync(
+                command,
+                workingCopyRoot,
+                arguments,
+                result.StandardOutput,
+                cancellationToken
+            )
             : throw new SvnCommandException(result.Complaint);
     }
 }
