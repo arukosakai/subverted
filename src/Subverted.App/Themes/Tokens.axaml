@@ -25,6 +25,7 @@
       <SolidColorBrush x:Key="Tone.Added" Color="#34D399" />
       <SolidColorBrush x:Key="Tone.Deleted" Color="#F87171" />
       <SolidColorBrush x:Key="Tone.Replaced" Color="#A78BFA" />
+      <SolidColorBrush x:Key="Tone.Renamed" Color="#60A5FA" />
       <SolidColorBrush x:Key="Tone.Conflict" Color="#FB5C8C" />
       <SolidColorBrush x:Key="Tone.Missing" Color="#FB923C" />
       <SolidColorBrush x:Key="Tone.Unversioned" Color="#94A3B8" />
@@ -33,6 +34,7 @@
       <SolidColorBrush x:Key="Tone.Added.Soft" Color="#2634D399" />
       <SolidColorBrush x:Key="Tone.Deleted.Soft" Color="#26F87171" />
       <SolidColorBrush x:Key="Tone.Replaced.Soft" Color="#26A78BFA" />
+      <SolidColorBrush x:Key="Tone.Renamed.Soft" Color="#2660A5FA" />
       <SolidColorBrush x:Key="Tone.Conflict.Soft" Color="#2EFB5C8C" />
       <SolidColorBrush x:Key="Tone.Missing.Soft" Color="#26FB923C" />
       <SolidColorBrush x:Key="Tone.Unversioned.Soft" Color="#1F94A3B8" />
@@ -67,6 +69,7 @@
       <SolidColorBrush x:Key="Tone.Added" Color="#0F9F6E" />
       <SolidColorBrush x:Key="Tone.Deleted" Color="#DC2626" />
       <SolidColorBrush x:Key="Tone.Replaced" Color="#7C3AED" />
+      <SolidColorBrush x:Key="Tone.Renamed" Color="#2563EB" />
       <SolidColorBrush x:Key="Tone.Conflict" Color="#DB2777" />
       <SolidColorBrush x:Key="Tone.Missing" Color="#EA580C" />
       <SolidColorBrush x:Key="Tone.Unversioned" Color="#64748B" />
@@ -75,6 +78,7 @@
       <SolidColorBrush x:Key="Tone.Added.Soft" Color="#1F0F9F6E" />
       <SolidColorBrush x:Key="Tone.Deleted.Soft" Color="#1FDC2626" />
       <SolidColorBrush x:Key="Tone.Replaced.Soft" Color="#1F7C3AED" />
+      <SolidColorBrush x:Key="Tone.Renamed.Soft" Color="#1F2563EB" />
       <SolidColorBrush x:Key="Tone.Conflict.Soft" Color="#24DB2777" />
       <SolidColorBrush x:Key="Tone.Missing.Soft" Color="#1FEA580C" />
       <SolidColorBrush x:Key="Tone.Unversioned.Soft" Color="#1A64748B" />

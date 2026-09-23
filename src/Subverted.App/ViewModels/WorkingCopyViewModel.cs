@@ -11,16 +11,23 @@ namespace Subverted.App.ViewModels;
 /// <param name="launcher">Opens a row's file, for Enter.</param>
 /// <param name="revealer">Shows a line's path in the file manager, for the context menu.</param>
 /// <param name="clipboard">Takes a line's path, for the context menu.</param>
+/// <param name="commits">Sends the ticked lines, for the commit box.</param>
+/// <param name="reverts">Reverts a confirmed line, for the context menu.</param>
 public sealed partial class WorkingCopyViewModel(
     string path,
     IWorkingCopyStatus status,
     DiffPaneViewModel diff,
     IFileLauncher launcher,
     IFileRevealer revealer,
-    ITextClipboard clipboard
+    ITextClipboard clipboard,
+    IWorkingCopyCommit commits,
+    IWorkingCopyRevert reverts
 ) : ObservableObject
 {
     private readonly TickedPaths _ticks = new();
+    private IReadOnlySet<string> _shown = new HashSet<string>();
+    private CommitComposerViewModel? _composer;
+    private RevertPromptViewModel? _revertPrompt;
 
     /// <summary>
     /// The record the diff was last asked for. A resync updates a changed line's row in place, and
@@ -64,8 +71,8 @@ public sealed partial class WorkingCopyViewModel(
     public partial string? HiddenText { get; private set; }
 
     /// <summary>
-    /// The ticked paths, relative to the root. A tick outlives every resync that still lists its
-    /// path, and is dropped by the first one that does not.
+    /// The ticked paths, relative to the root. A path starts at its <see cref="DefaultTick"/>, its
+    /// tick outlives every resync that still lists it, and is dropped by the first one that does not.
     /// </summary>
     public IReadOnlySet<string> Ticked => _ticks.Paths;
 
@@ -88,6 +95,11 @@ public sealed partial class WorkingCopyViewModel(
     }
 
     public DiffPaneViewModel Diff { get; } = diff;
+
+    /// <summary>The message and the button that commit what is ticked and shown.</summary>
+    public CommitComposerViewModel Composer => _composer ??= new(commits, Untick);
+
+    public RevertPromptViewModel RevertPrompt => _revertPrompt ??= new(reverts);
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(Headline))]
@@ -179,11 +191,11 @@ public sealed partial class WorkingCopyViewModel(
 
     private void ShowListing(StatusResponse listing)
     {
-        var rows = ChangeOrder.Of(listing.Entries.Select(ChangeRow.From));
+        var rows = ChangeOrder.Of(ChangeRows.From(listing.Entries, listing.UnrecordedMoves));
 
         RootPath = listing.Info.RootPath;
         ChangeListSynchronizer.Apply(Changes, rows);
-        _ticks.KeepOnly(rows.Select(row => row.RelPath));
+        _ticks.Follow(rows);
         OnPropertyChanged(nameof(Ticked));
         LayOut();
         RepositoryRoot = listing.Info.RepositoryRoot;
@@ -231,11 +243,8 @@ public sealed partial class WorkingCopyViewModel(
         try
         {
             ListSlotSynchronizer.Apply(Entries, items, item => item.Key, Create);
-            foreach (var entry in Entries)
-            {
-                entry.IsTicked = entry.Row is { } row && _ticks.IsTicked(row.RelPath);
-            }
-
+            _shown = kept.Select(row => row.RelPath).ToHashSet(StringComparer.Ordinal);
+            ShowTicks();
             SelectedEntry = Entries.FirstOrDefault(entry => entry.Key == selectedKey);
         }
         finally
@@ -271,11 +280,48 @@ public sealed partial class WorkingCopyViewModel(
     [RelayCommand(CanExecute = nameof(CanTick))]
     private void ToggleTick(ChangeListEntry? entry)
     {
-        entry!.IsTicked = _ticks.Toggle(entry.Row!.RelPath);
+        _ticks.Toggle(entry!.Row!.RelPath);
         OnPropertyChanged(nameof(Ticked));
+        ShowTicks();
+        ToggleTickCommand.NotifyCanExecuteChanged();
     }
 
-    private static bool CanTick(ChangeListEntry? entry) => entry?.Row is not null;
+    private static bool CanTick(ChangeListEntry? entry) => entry?.IsTickable == true;
+
+    /// <summary>After a commit reached a revision: what it sent is no longer ticked.</summary>
+    private void Untick(IReadOnlyList<string> relPaths)
+    {
+        _ticks.Untick(relPaths);
+        OnPropertyChanged(nameof(Ticked));
+        ShowTicks();
+        ToggleTickCommand.NotifyCanExecuteChanged();
+    }
+
+    /// <summary>
+    /// Puts every line's tick back from the paths, marks the lines a directory decides, and tells
+    /// the commit box what it would now send. A tick can change what the lines below it may do.
+    /// </summary>
+    private void ShowTicks()
+    {
+        var selection = TickedSelection.Of(Changes, _ticks.Paths, _shown);
+        foreach (var entry in Entries)
+        {
+            entry.IsTicked = entry.Row is { } row && _ticks.IsTicked(row.RelPath);
+            entry.IsDecidedByFolder =
+                entry.Row is { } decided && selection.DecidedByFolder.Contains(decided.RelPath);
+        }
+
+        Composer.Offer(selection, Location);
+    }
+
+    [RelayCommand(CanExecute = nameof(CanRevert))]
+    private void Revert(ChangeListEntry? entry) =>
+        RevertPrompt.Ask(RevertConfirmation.For(entry!.Row!, Changes), Location);
+
+    /// <summary>Only where revert would do something: never a rename, an unversioned file or a folder that only holds others.</summary>
+    private bool CanRevert(ChangeListEntry? entry) =>
+        entry?.Row is { RenamedFrom: null } row
+        && RevertConfirmation.For(row, Changes).Lines.Count > 0;
 
     [RelayCommand(CanExecute = nameof(CanOpen))]
     private Task OpenAsync(ChangeListEntry? entry) =>
@@ -320,6 +366,7 @@ public sealed partial class WorkingCopyViewModel(
         ToggleTickCommand.NotifyCanExecuteChanged();
         OpenCommand.NotifyCanExecuteChanged();
         ShowHistoryCommand.NotifyCanExecuteChanged();
+        RevertCommand.NotifyCanExecuteChanged();
     }
 
     /// <summary>A failure leaves <see cref="Changes"/> as it was; see <see cref="IsStale"/>.</summary>

@@ -12,11 +12,26 @@ public sealed partial class ChangeListEntry(ChangeListItem content)
         IListSlot<ChangeListItem>
 {
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(Key), nameof(Row), nameof(CanTick))]
+    [NotifyPropertyChangedFor(nameof(Key), nameof(Row), nameof(CanTick), nameof(IsTickable))]
     public partial ChangeListItem Content { get; set; } = content;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(TickMark))]
     public partial bool IsTicked { get; set; }
+
+    /// <summary>
+    /// A directory above this line has already settled whether it goes (D20), so its tick is not a
+    /// choice and is not sent.
+    /// </summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(TickMark), nameof(IsTickable))]
+    public partial bool IsDecidedByFolder { get; set; }
+
+    /// <summary>What the tick box shows: the tick, or neither ticked nor unticked when not a choice.</summary>
+    public bool? TickMark => IsDecidedByFolder ? null : IsTicked;
+
+    /// <summary>A change whose tick is the person's to set.</summary>
+    public bool IsTickable => CanTick && !IsDecidedByFolder;
 
     public string Key => Content.Key;
 

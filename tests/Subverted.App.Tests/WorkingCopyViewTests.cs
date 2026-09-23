@@ -127,7 +127,7 @@ public sealed class WorkingCopyViewTests
 
         await Assert
             .That(names)
-            .IsEqualTo("a.png, Modified|b.png, Modified|hero.png in sub, Added");
+            .IsEqualTo("a.png, Not versioned|b.png, Not versioned|hero.png in sub, Not versioned");
     }
 
     [Test]
@@ -176,7 +176,7 @@ public sealed class WorkingCopyViewTests
         await Assert
             .That(headers)
             .IsEqualTo(
-                $"Open|{RevealMenuText.For(FileRevealers.ThisPlatform)}|Copy path|History of this file"
+                $"Open|{RevealMenuText.For(FileRevealers.ThisPlatform)}|Copy path|Revert…|History of this file"
             );
         await Assert.That(historyEnabled).IsFalse();
     }
@@ -196,7 +196,12 @@ public sealed class WorkingCopyViewTests
             async () =>
             {
                 var status = new FakeWorkingCopyStatus().Answers(
-                    Listing(Entry("a.png"), Entry("b.png"), Entry("sub/hero.png", NodeStatus.Added))
+                    // Unversioned, so they start unticked and a key's ticks are its own.
+                    Listing(
+                        Entry("a.png", NodeStatus.Unversioned),
+                        Entry("b.png", NodeStatus.Unversioned),
+                        Entry("sub/hero.png", NodeStatus.Unversioned)
+                    )
                 );
                 var view = WorkingCopies.View(status, launcher: launcher);
                 await view.RefreshAsync(CancellationToken.None);

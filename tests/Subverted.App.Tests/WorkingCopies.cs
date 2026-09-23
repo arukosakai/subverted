@@ -11,7 +11,9 @@ internal static class WorkingCopies
         string path = "/studio/game",
         IFileLauncher? launcher = null,
         IFileRevealer? revealer = null,
-        ITextClipboard? clipboard = null
+        ITextClipboard? clipboard = null,
+        IWorkingCopyCommit? commits = null,
+        IWorkingCopyRevert? reverts = null
     ) =>
         new(
             path,
@@ -19,7 +21,9 @@ internal static class WorkingCopies
             pane ?? DiffPanes.Pane(),
             launcher ?? new FakeFileLauncher(),
             revealer ?? new FakeFileRevealer(),
-            clipboard ?? new FakeTextClipboard()
+            clipboard ?? new FakeTextClipboard(),
+            commits ?? new FakeWorkingCopyCommit(),
+            reverts ?? new FakeWorkingCopyRevert()
         );
 
     /// <summary>Picks the shown line for a path, as clicking it would.</summary>

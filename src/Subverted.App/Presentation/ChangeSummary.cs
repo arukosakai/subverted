@@ -14,6 +14,7 @@ public static class ChangeSummary
         ChangeTone.Added,
         ChangeTone.Deleted,
         ChangeTone.Replaced,
+        ChangeTone.Renamed,
         ChangeTone.Unversioned,
     ];
 
@@ -39,6 +40,7 @@ public static class ChangeSummary
             ChangeTone.Added => $"{count} added",
             ChangeTone.Deleted => $"{count} deleted",
             ChangeTone.Replaced => $"{count} replaced",
+            ChangeTone.Renamed => $"{count} renamed",
             _ => $"{count} not versioned",
         };
 }

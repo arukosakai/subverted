@@ -1,0 +1,27 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Subverted.App.ViewModels"
+             xmlns:v="using:Subverted.App.Views"
+             x:Class="Subverted.App.Views.CommitComposerView"
+             x:DataType="vm:CommitComposerViewModel">
+  <!-- Self-contained, so it can move to wherever the layout keeps the commit box. -->
+  <UserControl.KeyBindings>
+    <KeyBinding Gesture="Ctrl+Enter" Command="{Binding CommitCommand}" />
+  </UserControl.KeyBindings>
+
+  <StackPanel Spacing="8">
+    <TextBox x:Name="MessageBox" Text="{Binding Message, Mode=TwoWay}" PlaceholderText="Commit message…"
+             AcceptsReturn="True" TextWrapping="Wrap" MinHeight="64" MaxHeight="160"
+             IsEnabled="{Binding !IsCommitting}" AutomationProperties.Name="Commit message" />
+    <Grid ColumnDefinitions="*,Auto">
+      <TextBlock Classes="faint" FontSize="12" VerticalAlignment="Center" Text="Ctrl+Enter" />
+      <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10">
+        <ProgressBar IsIndeterminate="True" Width="60" VerticalAlignment="Center"
+                     IsVisible="{Binding IsCommitting}" />
+        <Button x:Name="CommitButton" Classes="accent" Content="{Binding ButtonText}"
+                Command="{Binding CommitCommand}" AutomationProperties.Name="{Binding ButtonText}" />
+      </StackPanel>
+    </Grid>
+    <v:NoticeView x:Name="CommitNotice" Notice="{Binding Notice}" DismissCommand="{Binding DismissNoticeCommand}" />
+  </StackPanel>
+</UserControl>

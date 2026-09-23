@@ -4,9 +4,16 @@ namespace Subverted.App.Presentation;
 /// Which changes the person has ticked, kept by path beside the rows rather than on them, so the
 /// once-a-second resync — which replaces any row that changed — never clears a tick.
 /// </summary>
+/// <remarks>
+/// A path gets its <see cref="DefaultTick"/> once, when it first appears; after that only the
+/// person changes it, so an untick survives every resync that still lists the path.
+/// </remarks>
 public sealed class TickedPaths
 {
     private readonly HashSet<string> _paths = new(StringComparer.Ordinal);
+
+    /// <summary>Every listed path, and whether it was last seen as a rename row.</summary>
+    private readonly Dictionary<string, bool> _seenAsRename = new(StringComparer.Ordinal);
 
     public IReadOnlySet<string> Paths => _paths;
 
@@ -24,10 +31,40 @@ public sealed class TickedPaths
         return true;
     }
 
+    /// <summary>Unticks these paths, as after they were committed.</summary>
+    public void Untick(IEnumerable<string> relPaths) => _paths.ExceptWith(relPaths);
+
     /// <summary>
-    /// Forgets ticks on paths the listing no longer has. A change committed from elsewhere that
-    /// later comes back is a new change, and must not come back already ticked.
+    /// Brings the ticks up to date with a fresh listing: a path it no longer has is forgotten, so
+    /// if it comes back it is a new change with its default again; a path appearing for the first
+    /// time takes its default; a path already seen keeps whatever the person left it as.
     /// </summary>
-    /// <param name="listed">Every path in the fresh listing — not only what the filter shows.</param>
-    public void KeepOnly(IEnumerable<string> listed) => _paths.IntersectWith(listed);
+    /// <remarks>
+    /// A path that turns into a rename row counts as new: the unversioned half of a rename can be
+    /// listed a scan before its missing half, and then the pair must still start ticked.
+    /// </remarks>
+    /// <param name="listed">Every row in the fresh listing — not only what the filter shows.</param>
+    public void Follow(IEnumerable<ChangeRow> listed)
+    {
+        var rows = listed.ToList();
+        var paths = rows.Select(row => row.RelPath).ToHashSet(StringComparer.Ordinal);
+        _paths.IntersectWith(paths);
+        foreach (var gone in _seenAsRename.Keys.Where(path => !paths.Contains(path)).ToList())
+        {
+            _seenAsRename.Remove(gone);
+        }
+
+        foreach (var row in rows)
+        {
+            var isRename = row.RenamedFrom is not null;
+            var isNew =
+                !_seenAsRename.TryGetValue(row.RelPath, out var wasRename)
+                || (isRename && !wasRename);
+            _seenAsRename[row.RelPath] = isRename;
+            if (isNew && DefaultTick.For(row))
+            {
+                _paths.Add(row.RelPath);
+            }
+        }
+    }
 }

@@ -38,6 +38,8 @@ public sealed partial class App : Application
         );
         var status = new DaemonWorkingCopyStatus(channel);
         var diffs = new DaemonWorkingCopyDiff(channel);
+        var commits = new DaemonWorkingCopyCommit(channel);
+        var reverts = new DaemonWorkingCopyRevert(channel);
         var sizes = new FileSizeReader();
         var launcher = new SystemFileLauncher(() => desktop.MainWindow);
         var revealer = FileRevealers.For(FileRevealers.ThisPlatform);
@@ -52,7 +54,9 @@ public sealed partial class App : Application
                 new DiffPaneViewModel(diffs, sizes, launcher, TimeProvider.System),
                 launcher,
                 revealer,
-                clipboard
+                clipboard,
+                commits,
+                reverts
             ),
             TimeProvider.System,
             OperatingSystem.IsWindows()

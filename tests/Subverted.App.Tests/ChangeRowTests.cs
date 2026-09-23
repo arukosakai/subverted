@@ -77,6 +77,34 @@ public sealed class ChangeRowTests
     }
 
     [Test]
+    public async Task A_row_carries_the_entry_it_was_made_from_and_is_no_rename()
+    {
+        var entry = Entry("a.png", NodeStatus.Added);
+
+        var row = ChangeRow.From(entry);
+
+        await Assert.That(row.Entry).IsEqualTo(entry);
+        await Assert.That(row.RenamedFrom).IsNull();
+    }
+
+    /// <summary>`svn log` on the new name is E155010 until the move is committed.</summary>
+    [Test]
+    public async Task A_rename_row_is_the_new_path_badged_as_renamed_with_no_history_to_offer()
+    {
+        var unversioned = Entry("art/protagonist.png", NodeStatus.Unversioned);
+
+        var row = ChangeRow.Rename(unversioned, "art/hero.png");
+
+        await Assert.That(row.RelPath).IsEqualTo("art/protagonist.png");
+        await Assert.That(row.Name).IsEqualTo("protagonist.png");
+        await Assert.That(row.Folder).IsEqualTo("art");
+        await Assert.That(row.Badge).IsEqualTo(new ChangeBadge("Renamed", ChangeTone.Renamed));
+        await Assert.That(row.RenamedFrom).IsEqualTo("art/hero.png");
+        await Assert.That(row.HasHistory).IsFalse();
+        await Assert.That(row.Entry).IsEqualTo(unversioned);
+    }
+
+    [Test]
     public async Task A_row_carries_the_fingerprint_it_was_listed_with()
     {
         var onDisk = new FileFingerprint(10, new DateTime(2030, 1, 1, 0, 0, 0, DateTimeKind.Utc));

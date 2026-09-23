@@ -1,4 +1,6 @@
 using Subverted.App.Presentation;
+using Subverted.Core;
+using static Subverted.App.Tests.Entries;
 
 namespace Subverted.App.Tests;
 
@@ -48,14 +50,115 @@ public sealed class TickedPathsTests
     }
 
     [Test]
+    public async Task A_path_appearing_for_the_first_time_takes_its_default()
+    {
+        var ticks = new TickedPaths();
+
+        ticks.Follow([Row(Entry("edit.png")), Row(Entry("new.log", NodeStatus.Unversioned))]);
+
+        await Assert.That(ticks.Paths).IsEquivalentTo(new[] { "edit.png" });
+    }
+
+    /// <summary>The once-a-second resync must not tick back what the person unticked.</summary>
+    [Test]
+    public async Task An_untick_survives_every_resync_that_still_lists_the_path()
+    {
+        var ticks = new TickedPaths();
+        ticks.Follow([Row(Entry("edit.png"))]);
+        ticks.Toggle("edit.png");
+
+        ticks.Follow([Row(Entry("edit.png"))]);
+        ticks.Follow([Row(Entry("edit.png", NodeStatus.Added))]);
+
+        await Assert.That(ticks.Paths).IsEmpty();
+    }
+
+    [Test]
+    public async Task A_tick_on_something_unticked_by_default_survives_the_resync()
+    {
+        var ticks = new TickedPaths();
+        ticks.Follow([Row(Entry("new.png", NodeStatus.Unversioned))]);
+        ticks.Toggle("new.png");
+
+        ticks.Follow([Row(Entry("new.png", NodeStatus.Unversioned))]);
+
+        await Assert.That(ticks.Paths).IsEquivalentTo(new[] { "new.png" });
+    }
+
+    [Test]
     public async Task A_path_still_listed_keeps_its_tick_and_one_gone_loses_it()
     {
         var ticks = new TickedPaths();
-        ticks.Toggle("kept.png");
-        ticks.Toggle("gone.png");
+        ticks.Follow([Row(Entry("kept.png")), Row(Entry("gone.png"))]);
 
-        ticks.KeepOnly(["kept.png", "never-ticked.png"]);
+        ticks.Follow([Row(Entry("kept.png"))]);
 
         await Assert.That(ticks.Paths).IsEquivalentTo(new[] { "kept.png" });
     }
+
+    /// <summary>Committed from elsewhere, then edited again: a new change, with its default again.</summary>
+    [Test]
+    public async Task A_path_that_leaves_and_comes_back_takes_its_default_again()
+    {
+        var ticks = new TickedPaths();
+        ticks.Follow([Row(Entry("edit.png"))]);
+        ticks.Toggle("edit.png");
+        ticks.Follow([]);
+
+        ticks.Follow([Row(Entry("edit.png"))]);
+
+        await Assert.That(ticks.Paths).IsEquivalentTo(new[] { "edit.png" });
+    }
+
+    /// <summary>The unversioned half of a rename can be listed a scan before the missing half.</summary>
+    [Test]
+    public async Task A_path_that_becomes_a_rename_row_takes_the_rename_s_default()
+    {
+        var ticks = new TickedPaths();
+        ticks.Follow([Row(Entry("new.png", NodeStatus.Unversioned))]);
+
+        ticks.Follow([ChangeRow.Rename(Entry("new.png", NodeStatus.Unversioned), "old.png")]);
+
+        await Assert.That(ticks.Paths).IsEquivalentTo(new[] { "new.png" });
+    }
+
+    [Test]
+    public async Task A_rename_row_already_seen_keeps_its_untick()
+    {
+        var rename = ChangeRow.Rename(Entry("new.png", NodeStatus.Unversioned), "old.png");
+        var ticks = new TickedPaths();
+        ticks.Follow([rename]);
+        ticks.Toggle("new.png");
+
+        ticks.Follow([rename]);
+
+        await Assert.That(ticks.Paths).IsEmpty();
+    }
+
+    /// <summary>A pair that stops pairing is two unrelated changes, and `?` stays as it was left.</summary>
+    [Test]
+    public async Task A_rename_row_that_splits_back_is_not_a_new_path()
+    {
+        var ticks = new TickedPaths();
+        ticks.Follow([ChangeRow.Rename(Entry("new.png", NodeStatus.Unversioned), "old.png")]);
+        ticks.Toggle("new.png");
+
+        ticks.Follow([Row(Entry("new.png", NodeStatus.Unversioned))]);
+
+        await Assert.That(ticks.Paths).IsEmpty();
+    }
+
+    [Test]
+    public async Task Unticking_after_a_commit_clears_only_what_was_sent_and_it_stays_clear()
+    {
+        var ticks = new TickedPaths();
+        ticks.Follow([Row(Entry("sent.png")), Row(Entry("kept.png"))]);
+
+        ticks.Untick(["sent.png"]);
+        ticks.Follow([Row(Entry("sent.png")), Row(Entry("kept.png"))]);
+
+        await Assert.That(ticks.Paths).IsEquivalentTo(new[] { "kept.png" });
+    }
+
+    private static ChangeRow Row(WorkingCopyEntry entry) => ChangeRow.From(entry);
 }

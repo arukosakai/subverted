@@ -28,6 +28,21 @@ public sealed class ChangeFilterTests
         await Assert.That(ChangeFilter.Keeps(Row("art/hero.png"), text)).IsEqualTo(kept);
     }
 
+    /// <summary>A rename is found by either name, and kept whole — never half a pair.</summary>
+    [Test]
+    [Arguments("protagonist", true)]
+    [Arguments("HERO", true)]
+    [Arguments("villain", false)]
+    public async Task A_rename_row_is_kept_when_either_of_its_paths_matches(string text, bool kept)
+    {
+        var rename = ChangeRow.Rename(
+            Entry("art/protagonist.png", Subverted.Core.NodeStatus.Unversioned),
+            "old/hero.png"
+        );
+
+        await Assert.That(ChangeFilter.Keeps(rename, text)).IsEqualTo(kept);
+    }
+
     [Test]
     public async Task Applying_keeps_the_matching_rows_in_the_order_they_came()
     {

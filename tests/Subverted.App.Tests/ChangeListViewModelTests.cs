@@ -116,7 +116,7 @@ public sealed class ChangeListViewModelTests
     [Test]
     public async Task Ticking_a_line_ticks_its_path()
     {
-        var view = await ListedAsync(Entry("a.png"), Entry("b.png"));
+        var view = await ListedAsync(New("a.png"), New("b.png"));
 
         view.ToggleTickCommand.Execute(view.Entries[1]);
 
@@ -128,7 +128,7 @@ public sealed class ChangeListViewModelTests
     [Test]
     public async Task Ticking_it_again_unticks_it()
     {
-        var view = await ListedAsync(Entry("a.png"));
+        var view = await ListedAsync(New("a.png"));
         view.ToggleTickCommand.Execute(view.Entries[0]);
 
         view.ToggleTickCommand.Execute(view.Entries[0]);
@@ -142,7 +142,7 @@ public sealed class ChangeListViewModelTests
     public async Task A_tick_survives_a_resync_that_changed_its_line()
     {
         var status = new FakeWorkingCopyStatus()
-            .Answers(Listing(Entry("a.png")))
+            .Answers(Listing(New("a.png")))
             .Answers(Listing(Entry("a.png", NodeStatus.Conflicted)));
         var view = View(status);
         await view.RefreshAsync(None);
@@ -157,7 +157,7 @@ public sealed class ChangeListViewModelTests
     [Test]
     public async Task A_tick_survives_the_filter_hiding_its_line_and_is_shown_when_it_comes_back()
     {
-        var view = await ListedAsync(Entry("art/a.png"), Entry("src/b.cs"));
+        var view = await ListedAsync(New("art/a.png"), New("src/b.cs"));
         view.ToggleTickCommand.Execute(view.Entries[0]);
 
         view.Filter = "src";
@@ -171,7 +171,7 @@ public sealed class ChangeListViewModelTests
     [Test]
     public async Task A_tick_survives_switching_to_the_tree()
     {
-        var view = await ListedAsync(Entry("art/a.png"));
+        var view = await ListedAsync(New("art/a.png"));
         view.ToggleTickCommand.Execute(view.Entries[0]);
 
         view.ShowTreeCommand.Execute(null);
@@ -180,14 +180,14 @@ public sealed class ChangeListViewModelTests
         await Assert.That(view.Entries.Single(entry => entry.Key == "art/").IsTicked).IsFalse();
     }
 
-    /// <summary>Committed from elsewhere, then edited again: a new change, which must not come back ticked.</summary>
+    /// <summary>Committed from elsewhere, then edited again: a new change, which does not bring back the old tick.</summary>
     [Test]
     public async Task A_tick_is_dropped_when_its_path_leaves_the_listing()
     {
         var status = new FakeWorkingCopyStatus()
-            .Answers(Listing(Entry("a.png"), Entry("b.png")))
-            .Answers(Listing(Entry("b.png")))
-            .Answers(Listing(Entry("a.png"), Entry("b.png")));
+            .Answers(Listing(New("a.png"), New("b.png")))
+            .Answers(Listing(New("b.png")))
+            .Answers(Listing(New("a.png"), New("b.png")));
         var view = View(status);
         await view.RefreshAsync(None);
         view.ToggleTickCommand.Execute(view.Entries[0]);
@@ -204,7 +204,7 @@ public sealed class ChangeListViewModelTests
     [Test]
     public async Task A_failed_refresh_keeps_every_tick()
     {
-        var status = new FakeWorkingCopyStatus().Answers(Listing(Entry("a.png"))).IsUnreachable();
+        var status = new FakeWorkingCopyStatus().Answers(Listing(New("a.png"))).IsUnreachable();
         var view = View(status);
         await view.RefreshAsync(None);
         view.ToggleTickCommand.Execute(view.Entries[0]);
@@ -300,6 +300,15 @@ public sealed class ChangeListViewModelTests
     }
 
     [Test]
+    public async Task With_a_listener_but_no_line_there_is_no_history_to_ask_for()
+    {
+        var view = await ListedAsync(Entry("a.png"));
+        view.HistoryRequested += _ => { };
+
+        await Assert.That(view.ShowHistoryCommand.CanExecute(null)).IsFalse();
+    }
+
+    [Test]
     public async Task Asking_for_history_raises_the_change_s_absolute_path()
     {
         var view = await ListedAsync(Entry("art/hero.png"));
@@ -354,10 +363,11 @@ public sealed class ChangeListViewModelTests
         view.ToggleTickCommand.CanExecuteChanged += (_, _) => raised.Add("tick");
         view.OpenCommand.CanExecuteChanged += (_, _) => raised.Add("open");
         view.ShowHistoryCommand.CanExecuteChanged += (_, _) => raised.Add("history");
+        view.RevertCommand.CanExecuteChanged += (_, _) => raised.Add("revert");
 
         await view.RefreshAsync(None);
 
-        await Assert.That(raised).IsEquivalentTo(new[] { "tick", "open", "history" });
+        await Assert.That(raised).IsEquivalentTo(new[] { "tick", "open", "history", "revert" });
     }
 
     private async Task<WorkingCopyViewModel> ListedAsync(params WorkingCopyEntry[] entries)
@@ -369,6 +379,9 @@ public sealed class ChangeListViewModelTests
 
     private WorkingCopyViewModel View(FakeWorkingCopyStatus status) =>
         WorkingCopies.View(status, launcher: _launcher, revealer: _revealer, clipboard: _clipboard);
+
+    /// <summary>An unversioned file, which starts unticked, so a test's ticks are its own.</summary>
+    private static WorkingCopyEntry New(string relPath) => Entry(relPath, NodeStatus.Unversioned);
 
     private static string Keys(WorkingCopyViewModel view) =>
         string.Join(",", view.Entries.Select(entry => entry.Key));

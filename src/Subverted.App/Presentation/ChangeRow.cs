@@ -18,6 +18,11 @@ namespace Subverted.App.Presentation;
 /// plain add (E195002); a copy carries its source's. A plain add that has since gone missing reads
 /// as missing and is offered anyway — the listing does not say how it was scheduled.
 /// </param>
+/// <param name="Entry">The node as the daemon listed it; for a rename, the unversioned half.</param>
+/// <param name="RenamedFrom">
+/// For a rename made outside SVN (D27), the missing path it was paired with; <c>null</c> otherwise.
+/// Committing the row has to name both paths, or the daemon refuses half a pair.
+/// </param>
 public sealed record ChangeRow(
     string RelPath,
     string Name,
@@ -27,9 +32,29 @@ public sealed record ChangeRow(
     bool HasPropertyChange,
     bool IsLocked,
     FileFingerprint? OnDisk,
-    bool HasHistory
+    bool HasHistory,
+    WorkingCopyEntry Entry,
+    string? RenamedFrom = null
 )
 {
+    /// <summary>Where a renamed row came from, drawn beside its name; <c>null</c> unless renamed.</summary>
+    public string? RenameCaption =>
+        RenamedFrom is null ? null : Presentation.RenameCaption.For(RenamedFrom, RelPath);
+
+    /// <summary>
+    /// One row for a D27 pair: the new path, badged as a rename. Its <c>svn log</c> lives under the
+    /// old name until the move is committed, so it offers none.
+    /// </summary>
+    /// <param name="unversioned">The half on disk under its new name.</param>
+    /// <param name="fromRelPath">The missing half's path.</param>
+    public static ChangeRow Rename(WorkingCopyEntry unversioned, string fromRelPath) =>
+        From(unversioned) with
+        {
+            Badge = new ChangeBadge("Renamed", ChangeTone.Renamed),
+            HasHistory = false,
+            RenamedFrom = fromRelPath,
+        };
+
     public static ChangeRow From(WorkingCopyEntry entry)
     {
         var separator = entry.RelPath.LastIndexOf('/');
@@ -53,7 +78,8 @@ public sealed record ChangeRow(
                 NodeStatus.Unversioned or NodeStatus.Ignored => false,
                 NodeStatus.Added => entry.IsCopied,
                 _ => true,
-            }
+            },
+            entry
         );
     }
 }

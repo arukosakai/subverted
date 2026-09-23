@@ -9,6 +9,7 @@ using Microsoft.Extensions.Time.Testing;
 using Subverted.App.ViewModels;
 using Subverted.App.Views;
 using Subverted.Core;
+using Subverted.Protocol;
 using static Subverted.App.Tests.Entries;
 
 namespace Subverted.App.Tests;
@@ -83,6 +84,55 @@ public sealed class MainWindowRenderTests
         await Assert.That(rows).IsEqualTo(4);
     }
 
+    /// <summary>A commit stopped after marking: the notice says which step, SVN's text, and that a retry carries on.</summary>
+    [Test]
+    public async Task A_commit_left_marked_renders_its_notice_under_the_message()
+    {
+        var commits = new FakeWorkingCopyCommit().Answers(
+            new SelectionNotCommittedResponse(
+                new SelectionSchedule(["notes.txt"], ["sound/theme.ogg"], []),
+                SelectionStep.Commit,
+                "",
+                "svn: E165001: Commit blocked by pre-commit hook (exit code 1) with output:\nRefused by the studio hook"
+            )
+        );
+        var shown = false;
+        await RenderAsync(
+            "Dark",
+            Studio(),
+            "commit-left-marked-dark.png",
+            view =>
+            {
+                view.Composer.Message = "Hero pass";
+                view.Composer.CommitCommand.Execute(null);
+                shown = view.Composer.Notice?.Kind == NoticeKind.LeftMarked;
+            },
+            commits
+        );
+
+        await Assert.That(shown).IsTrue();
+    }
+
+    [Test]
+    public async Task The_revert_question_renders_over_the_list()
+    {
+        var asking = false;
+        await RenderAsync(
+            "Dark",
+            Studio(),
+            "revert-prompt-dark.png",
+            view =>
+            {
+                view.RevertCommand.Execute(
+                    view.Entries.Single(entry => entry.Key == "art/props/crate.png")
+                );
+                asking = view.RevertPrompt.IsAsking;
+            }
+        );
+
+        await Assert.That(asking).IsTrue();
+    }
+
     private static FakeWorkingCopyStatus Studio() =>
         new FakeWorkingCopyStatus().Answers(
             Listing(
@@ -150,7 +200,8 @@ public sealed class MainWindowRenderTests
         string variant,
         FakeWorkingCopyStatus status,
         string file,
-        Action<WorkingCopyViewModel>? arrange = null
+        Action<WorkingCopyViewModel>? arrange = null,
+        FakeWorkingCopyCommit? commits = null
     ) =>
         HeadlessApp.Session.Dispatch(
             async () =>
@@ -158,7 +209,8 @@ public sealed class MainWindowRenderTests
                 var window = await ShowAsync(
                     variant,
                     new FakeRecentStore("/studio/game", "/studio/tools", "/studio/website"),
-                    status
+                    status,
+                    commits
                 );
                 if (arrange is not null)
                 {
@@ -177,7 +229,8 @@ public sealed class MainWindowRenderTests
     private static async Task<MainWindow> ShowAsync(
         string variant,
         FakeRecentStore store,
-        FakeWorkingCopyStatus status
+        FakeWorkingCopyStatus status,
+        FakeWorkingCopyCommit? commits = null
     )
     {
         Application.Current!.RequestedThemeVariant =
@@ -185,7 +238,7 @@ public sealed class MainWindowRenderTests
         var viewModel = new MainWindowViewModel(
             store,
             new FakeFolderPicker(null),
-            path => WorkingCopies.View(status, path: path),
+            path => WorkingCopies.View(status, path: path, commits: commits),
             new FakeTimeProvider(),
             StringComparison.Ordinal
         );
