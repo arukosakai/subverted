@@ -1,0 +1,49 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <!-- Apple Music: oto's palette of the same name. -->
+  <Color x:Key="BgColor">#0A0A0A</Color>
+  <Color x:Key="SurfaceColor">#1A1A1A</Color>
+  <Color x:Key="RaisedColor">#282828</Color>
+  <Color x:Key="RailColor">#080808</Color>
+  <Color x:Key="LineColor">#2A2A2A</Color>
+  <Color x:Key="TextColor">#FFFFFF</Color>
+  <Color x:Key="MutedColor">#98989D</Color>
+  <Color x:Key="FaintColor">#5F5F62</Color>
+  <Color x:Key="AccentColor">#FA243C</Color>
+  <Color x:Key="AccentHoverColor">#FF4459</Color>
+  <Color x:Key="AccentPressedColor">#D81B30</Color>
+  <Color x:Key="OnAccentColor">#FFFFFF</Color>
+  <Color x:Key="HoverColor">#12FFFFFF</Color>
+  <Color x:Key="SelectedColor">#38FA243C</Color>
+
+  <!-- Fluent's own controls follow the accent too. -->
+  <Color x:Key="SystemAccentColor">#FA243C</Color>
+  <Color x:Key="SystemAccentColorLight1">#FF4459</Color>
+  <Color x:Key="SystemAccentColorLight2">#FF4459</Color>
+  <Color x:Key="SystemAccentColorLight3">#FF4459</Color>
+  <Color x:Key="SystemAccentColorDark1">#D81B30</Color>
+  <Color x:Key="SystemAccentColorDark2">#D81B30</Color>
+  <Color x:Key="SystemAccentColorDark3">#D81B30</Color>
+
+  <SolidColorBrush x:Key="BgBrush" Color="{StaticResource BgColor}" />
+  <SolidColorBrush x:Key="SurfaceBrush" Color="{StaticResource SurfaceColor}" />
+  <SolidColorBrush x:Key="RaisedBrush" Color="{StaticResource RaisedColor}" />
+  <SolidColorBrush x:Key="RailBrush" Color="{StaticResource RailColor}" />
+  <SolidColorBrush x:Key="LineBrush" Color="{StaticResource LineColor}" />
+  <SolidColorBrush x:Key="TextBrush" Color="{StaticResource TextColor}" />
+  <SolidColorBrush x:Key="MutedBrush" Color="{StaticResource MutedColor}" />
+  <SolidColorBrush x:Key="FaintBrush" Color="{StaticResource FaintColor}" />
+  <SolidColorBrush x:Key="AccentBrush" Color="{StaticResource AccentColor}" />
+  <SolidColorBrush x:Key="AccentHoverBrush" Color="{StaticResource AccentHoverColor}" />
+  <SolidColorBrush x:Key="AccentPressedBrush" Color="{StaticResource AccentPressedColor}" />
+  <SolidColorBrush x:Key="OnAccentBrush" Color="{StaticResource OnAccentColor}" />
+  <SolidColorBrush x:Key="HoverBrush" Color="{StaticResource HoverColor}" />
+  <SolidColorBrush x:Key="SelectedBrush" Color="{StaticResource SelectedColor}" />
+
+  <!-- The names the first views were written against, kept so they keep resolving. -->
+  <SolidColorBrush x:Key="WindowFallbackBrush" Color="{StaticResource BgColor}" />
+  <SolidColorBrush x:Key="SidebarBrush" Color="{StaticResource RailColor}" />
+  <SolidColorBrush x:Key="PanelBrush" Color="{StaticResource SurfaceColor}" />
+  <SolidColorBrush x:Key="DividerBrush" Color="{StaticResource LineColor}" />
+  <SolidColorBrush x:Key="GlassEdgeBrush" Color="{StaticResource LineColor}" />
+</ResourceDictionary>

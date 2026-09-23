@@ -3,6 +3,7 @@
 
   <Style Selector="Window">
     <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+    <Setter Property="Background" Value="{DynamicResource BgBrush}" />
   </Style>
 
   <!-- Type ramp. Negative tracking on the large sizes is what makes them read as display type. -->
@@ -46,13 +47,12 @@
     <Setter Property="Height" Value="16" />
   </Style>
 
-  <!-- Glass surfaces. -->
+  <!-- Flat surfaces: a pane is told apart by a 1px line, not by a shadow or a glass edge. -->
   <Style Selector="Border.panel">
-    <Setter Property="Background" Value="{DynamicResource PanelBrush}" />
-    <Setter Property="BorderBrush" Value="{DynamicResource GlassEdgeBrush}" />
+    <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
     <Setter Property="BorderThickness" Value="1" />
     <Setter Property="CornerRadius" Value="{StaticResource PanelRadius}" />
-    <Setter Property="BoxShadow" Value="0 12 32 -12 #40000000" />
   </Style>
   <Style Selector="Border.sidebar">
     <Setter Property="Background" Value="{DynamicResource SidebarBrush}" />
@@ -63,7 +63,7 @@
     <Setter Property="CornerRadius" Value="{StaticResource CapsuleRadius}" />
     <Setter Property="Padding" Value="10,4" />
     <Setter Property="Background" Value="{DynamicResource RaisedBrush}" />
-    <Setter Property="BorderBrush" Value="{DynamicResource GlassEdgeBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
     <Setter Property="BorderThickness" Value="1" />
   </Style>
   <Style Selector="Border.badge">
@@ -93,20 +93,20 @@
   </Style>
   <Style Selector="Button.accent">
     <Setter Property="Padding" Value="16,9" />
-    <Setter Property="Background" Value="{DynamicResource SystemAccentColor}" />
-    <Setter Property="Foreground" Value="White" />
+    <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource OnAccentBrush}" />
     <Setter Property="FontWeight" Value="SemiBold" />
   </Style>
   <Style Selector="Button.accent:pointerover /template/ ContentPresenter">
-    <Setter Property="Background" Value="{DynamicResource SystemAccentColorLight1}" />
-    <Setter Property="Foreground" Value="White" />
+    <Setter Property="Background" Value="{DynamicResource AccentHoverBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource OnAccentBrush}" />
   </Style>
   <Style Selector="Button.accent:pressed /template/ ContentPresenter">
-    <Setter Property="Background" Value="{DynamicResource SystemAccentColorDark1}" />
-    <Setter Property="Foreground" Value="White" />
+    <Setter Property="Background" Value="{DynamicResource AccentPressedBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource OnAccentBrush}" />
   </Style>
   <Style Selector="Button.accent Path.icon">
-    <Setter Property="Stroke" Value="White" />
+    <Setter Property="Stroke" Value="{DynamicResource OnAccentBrush}" />
     <Setter Property="StrokeThickness" Value="2" />
   </Style>
   <Style Selector="Button.sidebar-item">
@@ -133,10 +133,10 @@
     <Setter Property="FontWeight" Value="SemiBold" />
   </Style>
   <Style Selector="Button.sidebar-item.current Path.icon">
-    <Setter Property="Stroke" Value="{DynamicResource SystemAccentColor}" />
+    <Setter Property="Stroke" Value="{DynamicResource AccentBrush}" />
   </Style>
 
-  <!-- Lists own their hover and selection; Fluent's defaults would paint a square over the glass. -->
+  <!-- Lists own their hover and selection; Fluent's defaults would paint a square over the rounded row. -->
   <Style Selector="ListBox.plain">
     <Setter Property="Background" Value="Transparent" />
     <Setter Property="BorderThickness" Value="0" />

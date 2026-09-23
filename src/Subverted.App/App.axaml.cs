@@ -1,6 +1,7 @@
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
+using Avalonia.Platform;
 using Subverted.App.Infrastructure;
 using Subverted.App.ViewModels;
 using Subverted.App.Views;
@@ -22,6 +23,11 @@ public sealed partial class App : Application
         // Headless tests run the app without a desktop lifetime and build their own windows.
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
+            _ = new ThemePickerViewModel(
+                new ThemeChoiceFile(ThemeChoiceFile.DefaultPath),
+                new ResourceSlotThemeApplier(this),
+                PlatformSettings?.GetColorValues().ThemeVariant != PlatformThemeVariant.Light
+            );
             desktop.MainWindow = CreateMainWindow(desktop);
         }
 

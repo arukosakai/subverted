@@ -1,26 +1,9 @@
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-  <!-- Surfaces are translucent on purpose: over Mica (Windows 11) or a blurred backdrop (macOS) they
-       read as layered glass, and over the solid fallback they resolve to plain tinted panels. -->
+  <!-- What stays put when the preset changes: status tones and diff washes, one set per light and
+       dark, so every preset of a variant reads a change the same way. Surfaces are the preset's. -->
   <ResourceDictionary.ThemeDictionaries>
     <ResourceDictionary x:Key="Dark">
-      <Color x:Key="WindowFallbackColor">#16181D</Color>
-      <SolidColorBrush x:Key="WindowFallbackBrush" Color="{StaticResource WindowFallbackColor}" />
-      <SolidColorBrush x:Key="SidebarBrush" Color="#0AFFFFFF" />
-      <SolidColorBrush x:Key="PanelBrush" Color="#10FFFFFF" />
-      <SolidColorBrush x:Key="RaisedBrush" Color="#17FFFFFF" />
-      <SolidColorBrush x:Key="HoverBrush" Color="#0FFFFFFF" />
-      <SolidColorBrush x:Key="SelectedBrush" Color="#1CFFFFFF" />
-      <SolidColorBrush x:Key="DividerBrush" Color="#14FFFFFF" />
-      <SolidColorBrush x:Key="TextBrush" Color="#F3F4F6" />
-      <SolidColorBrush x:Key="MutedBrush" Color="#A3A8B2" />
-      <SolidColorBrush x:Key="FaintBrush" Color="#6E737D" />
-      <!-- The glass edge: brighter along the top, where light would catch it, fading downwards. -->
-      <LinearGradientBrush x:Key="GlassEdgeBrush" StartPoint="0%,0%" EndPoint="0%,100%">
-        <GradientStop Offset="0" Color="#38FFFFFF" />
-        <GradientStop Offset="1" Color="#08FFFFFF" />
-      </LinearGradientBrush>
-
       <SolidColorBrush x:Key="Tone.Modified" Color="#FFB547" />
       <SolidColorBrush x:Key="Tone.Added" Color="#34D399" />
       <SolidColorBrush x:Key="Tone.Deleted" Color="#F87171" />
@@ -47,22 +30,6 @@
     </ResourceDictionary>
 
     <ResourceDictionary x:Key="Light">
-      <Color x:Key="WindowFallbackColor">#F2F3F6</Color>
-      <SolidColorBrush x:Key="WindowFallbackBrush" Color="{StaticResource WindowFallbackColor}" />
-      <SolidColorBrush x:Key="SidebarBrush" Color="#59FFFFFF" />
-      <SolidColorBrush x:Key="PanelBrush" Color="#A6FFFFFF" />
-      <SolidColorBrush x:Key="RaisedBrush" Color="#D9FFFFFF" />
-      <SolidColorBrush x:Key="HoverBrush" Color="#0A000000" />
-      <SolidColorBrush x:Key="SelectedBrush" Color="#12000000" />
-      <SolidColorBrush x:Key="DividerBrush" Color="#12000000" />
-      <SolidColorBrush x:Key="TextBrush" Color="#15171C" />
-      <SolidColorBrush x:Key="MutedBrush" Color="#5B616B" />
-      <SolidColorBrush x:Key="FaintBrush" Color="#8B919B" />
-      <LinearGradientBrush x:Key="GlassEdgeBrush" StartPoint="0%,0%" EndPoint="0%,100%">
-        <GradientStop Offset="0" Color="#FFFFFFFF" />
-        <GradientStop Offset="1" Color="#1A000000" />
-      </LinearGradientBrush>
-
       <SolidColorBrush x:Key="Tone.Modified" Color="#B7791F" />
       <SolidColorBrush x:Key="Tone.Added" Color="#0F9F6E" />
       <SolidColorBrush x:Key="Tone.Deleted" Color="#DC2626" />
@@ -88,10 +55,10 @@
     </ResourceDictionary>
   </ResourceDictionary.ThemeDictionaries>
 
-  <!-- WinUI 3's radii are 4/8; Liquid Glass leans rounder. These sit between, and capsules are 999. -->
-  <CornerRadius x:Key="RowRadius">8</CornerRadius>
-  <CornerRadius x:Key="CardRadius">14</CornerRadius>
-  <CornerRadius x:Key="PanelRadius">18</CornerRadius>
+  <!-- oto's radii: small enough that a dense table still reads as rows, not as cards. -->
+  <CornerRadius x:Key="RowRadius">6</CornerRadius>
+  <CornerRadius x:Key="CardRadius">8</CornerRadius>
+  <CornerRadius x:Key="PanelRadius">10</CornerRadius>
   <CornerRadius x:Key="CapsuleRadius">999</CornerRadius>
 
   <!-- Whichever the platform has: Windows ships Cascadia Mono and Consolas, macOS ships Menlo. -->

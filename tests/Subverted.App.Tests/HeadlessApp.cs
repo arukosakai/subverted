@@ -19,5 +19,6 @@ public static class HeadlessApp
         AppBuilder
             .Configure<App>()
             .UseSkia()
+            .WithInterFont()
             .UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing = false });
 }

@@ -13,6 +13,7 @@ public static class Program
         AppBuilder
             .Configure<App>()
             .UsePlatformDetect()
+            .WithInterFont()
             .With(
                 new Win32PlatformOptions
                 {
