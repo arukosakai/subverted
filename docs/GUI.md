@@ -69,6 +69,16 @@ One at a time, each shippable, in this order.
 - ↑/↓ moves the selection and the diff follows it; Space ticks; Enter opens the file.
 - Context menu: reveal in Explorer / Finder, copy path, history of this file.
 
+*Status: built.* Pinned rows stay above the tree as flat lines rather than inside their folders
+(operator's call). Lines are per-path slots updated in place, so a resync or a tick never replaces
+the container under the keyboard focus. "History of this file" raises `HistoryRequested` and is
+disabled until slice 4 listens. `explorer /select,` opened the folder without selecting on
+Windows 11 in every quoting, so Windows reveals through `SHOpenFolderAndSelectItems`. Seen in the
+real app on `subverted-copy`: pinned rows, Tree, the diff following selection, the filter's hidden
+count. Not seen there: Space, Enter and the context menu (headless tests only; the Windows reveal
+was run directly), and anything on macOS. Tree has no collapse, and the filter re-lays out the
+whole list per keystroke, unmeasured on a large listing.
+
 ### 3. Commit, add, revert — with no manual marking
 
 - A tick box per row, a message box beneath the list, "Commit N files" and Ctrl+Enter.
