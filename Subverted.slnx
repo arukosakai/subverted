@@ -1,0 +1,23 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Subverted.App/Subverted.App.csproj" />
+    <Project Path="src/Subverted.Cli/Subverted.Cli.csproj" />
+    <Project Path="src/Subverted.Core/Subverted.Core.csproj" />
+    <Project Path="src/Subverted.Daemon/Subverted.Daemon.csproj" />
+    <Project Path="src/Subverted.Frontend/Subverted.Frontend.csproj" />
+    <Project Path="src/Subverted.Protocol/Subverted.Protocol.csproj" />
+    <Project Path="src/Subverted.Svn/Subverted.Svn.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Subverted.App.Tests/Subverted.App.Tests.csproj" />
+    <Project Path="tests/Subverted.Cli.Tests/Subverted.Cli.Tests.csproj" />
+    <Project Path="tests/Subverted.Core.Tests/Subverted.Core.Tests.csproj" />
+    <Project Path="tests/Subverted.Daemon.Tests/Subverted.Daemon.Tests.csproj" />
+    <Project Path="tests/Subverted.Frontend.Tests/Subverted.Frontend.Tests.csproj" />
+    <Project Path="tests/Subverted.Protocol.Tests/Subverted.Protocol.Tests.csproj" />
+    <Project Path="tests/Subverted.Svn.Tests/Subverted.Svn.Tests.csproj" />
+  </Folder>
+  <Folder Name="/tools/">
+    <Project Path="tools/Subverted.Probe/Subverted.Probe.csproj" />
+  </Folder>
+</Solution>

@@ -1,0 +1,27 @@
+<Project>
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageVersion Include="Microsoft.Data.Sqlite" Version="10.0.0" />
+    <PackageVersion Include="Microsoft.Extensions.Hosting" Version="10.0.0" />
+    <!-- Microsoft.Data.Sqlite 10.0.0 still pulls 2.1.11, which carries GHSA-2m69-gcr7-jv3q. -->
+    <PackageVersion Include="SQLitePCLRaw.bundle_e_sqlite3" Version="2.1.13" />
+  </ItemGroup>
+
+  <ItemGroup Label="App">
+    <PackageVersion Include="Avalonia" Version="12.1.3" />
+    <PackageVersion Include="Avalonia.Desktop" Version="12.1.3" />
+    <PackageVersion Include="Avalonia.Headless" Version="12.1.3" />
+    <PackageVersion Include="Avalonia.Skia" Version="12.1.3" />
+    <PackageVersion Include="Avalonia.Themes.Fluent" Version="12.1.3" />
+    <PackageVersion Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+  </ItemGroup>
+
+  <ItemGroup Label="Testing">
+    <PackageVersion Include="Microsoft.Extensions.TimeProvider.Testing" Version="10.10.0" />
+    <PackageVersion Include="Microsoft.Testing.Extensions.CodeCoverage" Version="18.11.2" />
+    <PackageVersion Include="TUnit" Version="1.68.4" />
+  </ItemGroup>
+</Project>

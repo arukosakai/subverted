@@ -1,0 +1,94 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <!-- Surfaces are translucent on purpose: over Mica (Windows 11) or a blurred backdrop (macOS) they
+       read as layered glass, and over the solid fallback they resolve to plain tinted panels. -->
+  <ResourceDictionary.ThemeDictionaries>
+    <ResourceDictionary x:Key="Dark">
+      <Color x:Key="WindowFallbackColor">#16181D</Color>
+      <SolidColorBrush x:Key="WindowFallbackBrush" Color="{StaticResource WindowFallbackColor}" />
+      <SolidColorBrush x:Key="SidebarBrush" Color="#0AFFFFFF" />
+      <SolidColorBrush x:Key="PanelBrush" Color="#10FFFFFF" />
+      <SolidColorBrush x:Key="RaisedBrush" Color="#17FFFFFF" />
+      <SolidColorBrush x:Key="HoverBrush" Color="#0FFFFFFF" />
+      <SolidColorBrush x:Key="SelectedBrush" Color="#1CFFFFFF" />
+      <SolidColorBrush x:Key="DividerBrush" Color="#14FFFFFF" />
+      <SolidColorBrush x:Key="TextBrush" Color="#F3F4F6" />
+      <SolidColorBrush x:Key="MutedBrush" Color="#A3A8B2" />
+      <SolidColorBrush x:Key="FaintBrush" Color="#6E737D" />
+      <!-- The glass edge: brighter along the top, where light would catch it, fading downwards. -->
+      <LinearGradientBrush x:Key="GlassEdgeBrush" StartPoint="0%,0%" EndPoint="0%,100%">
+        <GradientStop Offset="0" Color="#38FFFFFF" />
+        <GradientStop Offset="1" Color="#08FFFFFF" />
+      </LinearGradientBrush>
+
+      <SolidColorBrush x:Key="Tone.Modified" Color="#FFB547" />
+      <SolidColorBrush x:Key="Tone.Added" Color="#34D399" />
+      <SolidColorBrush x:Key="Tone.Deleted" Color="#F87171" />
+      <SolidColorBrush x:Key="Tone.Replaced" Color="#A78BFA" />
+      <SolidColorBrush x:Key="Tone.Conflict" Color="#FB5C8C" />
+      <SolidColorBrush x:Key="Tone.Missing" Color="#FB923C" />
+      <SolidColorBrush x:Key="Tone.Unversioned" Color="#94A3B8" />
+      <SolidColorBrush x:Key="Tone.Quiet" Color="#6E737D" />
+      <SolidColorBrush x:Key="Tone.Modified.Soft" Color="#26FFB547" />
+      <SolidColorBrush x:Key="Tone.Added.Soft" Color="#2634D399" />
+      <SolidColorBrush x:Key="Tone.Deleted.Soft" Color="#26F87171" />
+      <SolidColorBrush x:Key="Tone.Replaced.Soft" Color="#26A78BFA" />
+      <SolidColorBrush x:Key="Tone.Conflict.Soft" Color="#2EFB5C8C" />
+      <SolidColorBrush x:Key="Tone.Missing.Soft" Color="#26FB923C" />
+      <SolidColorBrush x:Key="Tone.Unversioned.Soft" Color="#1F94A3B8" />
+      <SolidColorBrush x:Key="Tone.Quiet.Soft" Color="#1A6E737D" />
+    </ResourceDictionary>
+
+    <ResourceDictionary x:Key="Light">
+      <Color x:Key="WindowFallbackColor">#F2F3F6</Color>
+      <SolidColorBrush x:Key="WindowFallbackBrush" Color="{StaticResource WindowFallbackColor}" />
+      <SolidColorBrush x:Key="SidebarBrush" Color="#59FFFFFF" />
+      <SolidColorBrush x:Key="PanelBrush" Color="#A6FFFFFF" />
+      <SolidColorBrush x:Key="RaisedBrush" Color="#D9FFFFFF" />
+      <SolidColorBrush x:Key="HoverBrush" Color="#0A000000" />
+      <SolidColorBrush x:Key="SelectedBrush" Color="#12000000" />
+      <SolidColorBrush x:Key="DividerBrush" Color="#12000000" />
+      <SolidColorBrush x:Key="TextBrush" Color="#15171C" />
+      <SolidColorBrush x:Key="MutedBrush" Color="#5B616B" />
+      <SolidColorBrush x:Key="FaintBrush" Color="#8B919B" />
+      <LinearGradientBrush x:Key="GlassEdgeBrush" StartPoint="0%,0%" EndPoint="0%,100%">
+        <GradientStop Offset="0" Color="#FFFFFFFF" />
+        <GradientStop Offset="1" Color="#1A000000" />
+      </LinearGradientBrush>
+
+      <SolidColorBrush x:Key="Tone.Modified" Color="#B7791F" />
+      <SolidColorBrush x:Key="Tone.Added" Color="#0F9F6E" />
+      <SolidColorBrush x:Key="Tone.Deleted" Color="#DC2626" />
+      <SolidColorBrush x:Key="Tone.Replaced" Color="#7C3AED" />
+      <SolidColorBrush x:Key="Tone.Conflict" Color="#DB2777" />
+      <SolidColorBrush x:Key="Tone.Missing" Color="#EA580C" />
+      <SolidColorBrush x:Key="Tone.Unversioned" Color="#64748B" />
+      <SolidColorBrush x:Key="Tone.Quiet" Color="#9CA3AF" />
+      <SolidColorBrush x:Key="Tone.Modified.Soft" Color="#1FB7791F" />
+      <SolidColorBrush x:Key="Tone.Added.Soft" Color="#1F0F9F6E" />
+      <SolidColorBrush x:Key="Tone.Deleted.Soft" Color="#1FDC2626" />
+      <SolidColorBrush x:Key="Tone.Replaced.Soft" Color="#1F7C3AED" />
+      <SolidColorBrush x:Key="Tone.Conflict.Soft" Color="#24DB2777" />
+      <SolidColorBrush x:Key="Tone.Missing.Soft" Color="#1FEA580C" />
+      <SolidColorBrush x:Key="Tone.Unversioned.Soft" Color="#1A64748B" />
+      <SolidColorBrush x:Key="Tone.Quiet.Soft" Color="#149CA3AF" />
+    </ResourceDictionary>
+  </ResourceDictionary.ThemeDictionaries>
+
+  <!-- WinUI 3's radii are 4/8; Liquid Glass leans rounder. These sit between, and capsules are 999. -->
+  <CornerRadius x:Key="RowRadius">8</CornerRadius>
+  <CornerRadius x:Key="CardRadius">14</CornerRadius>
+  <CornerRadius x:Key="PanelRadius">18</CornerRadius>
+  <CornerRadius x:Key="CapsuleRadius">999</CornerRadius>
+
+  <!-- Drawn at 24x24 and stroked, so they scale and take the text colour like a glyph would. -->
+  <StreamGeometry x:Key="Icon.Folder">M3 7.5A2.5 2.5 0 0 1 5.5 5H9l2 2h7.5A2.5 2.5 0 0 1 21 9.5v7A2.5 2.5 0 0 1 18.5 19h-13A2.5 2.5 0 0 1 3 16.5Z</StreamGeometry>
+  <StreamGeometry x:Key="Icon.Plus">M12 5v14M5 12h14</StreamGeometry>
+  <StreamGeometry x:Key="Icon.Check">M5 12.5l4.5 4.5L19 7.5</StreamGeometry>
+  <StreamGeometry x:Key="Icon.Alert">M12 4L21 19.5H3Z M12 10v4.5M12 17.2v.3</StreamGeometry>
+  <StreamGeometry x:Key="Icon.Unplugged">M9 7V3M15 7V3M7 7h10v4a5 5 0 0 1-10 0Z M12 16v5</StreamGeometry>
+  <StreamGeometry x:Key="Icon.Server">M4 5h16v5H4Z M4 14h16v5H4Z M8 7.5v.1M8 16.5v.1</StreamGeometry>
+  <StreamGeometry x:Key="Icon.Lock">M6 11h12v9H6Z M8.5 11V8a3.5 3.5 0 0 1 7 0v3</StreamGeometry>
+  <StreamGeometry x:Key="Icon.History">M4 12a8 8 0 1 0 2.4-5.7L4 8.5 M4 4v4.5h4.5 M12 8v4l3 2</StreamGeometry>
+  <StreamGeometry x:Key="Icon.Branch">M7 4v11 M7 15a2.5 2.5 0 1 0 0 5a2.5 2.5 0 1 0 0-5Z M17 4a2.5 2.5 0 1 0 0 5a2.5 2.5 0 1 0 0-5Z M17 9c0 4-10 2-10 6</StreamGeometry>
+</ResourceDictionary>

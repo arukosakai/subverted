@@ -1,0 +1,184 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <Style Selector="Window">
+    <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+  </Style>
+
+  <!-- Type ramp. Negative tracking on the large sizes is what makes them read as display type. -->
+  <Style Selector="TextBlock.title">
+    <Setter Property="FontSize" Value="26" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="LetterSpacing" Value="-0.4" />
+  </Style>
+  <Style Selector="TextBlock.brand">
+    <Setter Property="FontSize" Value="15" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="LetterSpacing" Value="-0.2" />
+  </Style>
+  <Style Selector="TextBlock.section">
+    <Setter Property="FontSize" Value="11" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="LetterSpacing" Value="1" />
+    <Setter Property="Foreground" Value="{DynamicResource FaintBrush}" />
+  </Style>
+  <Style Selector="TextBlock.muted">
+    <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
+  </Style>
+  <Style Selector="TextBlock.faint">
+    <Setter Property="Foreground" Value="{DynamicResource FaintBrush}" />
+  </Style>
+  <Style Selector="TextBlock.empty-title">
+    <Setter Property="FontSize" Value="18" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="LetterSpacing" Value="-0.2" />
+    <Setter Property="HorizontalAlignment" Value="Center" />
+  </Style>
+
+  <!-- Stroked, not filled: the geometry resources are line drawings. -->
+  <Style Selector="Path.icon">
+    <Setter Property="Stroke" Value="{DynamicResource MutedBrush}" />
+    <Setter Property="StrokeThickness" Value="1.75" />
+    <Setter Property="StrokeLineCap" Value="Round" />
+    <Setter Property="StrokeJoin" Value="Round" />
+    <Setter Property="Stretch" Value="Uniform" />
+    <Setter Property="Width" Value="16" />
+    <Setter Property="Height" Value="16" />
+  </Style>
+
+  <!-- Glass surfaces. -->
+  <Style Selector="Border.panel">
+    <Setter Property="Background" Value="{DynamicResource PanelBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource GlassEdgeBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="{StaticResource PanelRadius}" />
+    <Setter Property="BoxShadow" Value="0 12 32 -12 #40000000" />
+  </Style>
+  <Style Selector="Border.sidebar">
+    <Setter Property="Background" Value="{DynamicResource SidebarBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource DividerBrush}" />
+    <Setter Property="BorderThickness" Value="0,0,1,0" />
+  </Style>
+  <Style Selector="Border.chip">
+    <Setter Property="CornerRadius" Value="{StaticResource CapsuleRadius}" />
+    <Setter Property="Padding" Value="10,4" />
+    <Setter Property="Background" Value="{DynamicResource RaisedBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource GlassEdgeBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+  </Style>
+  <Style Selector="Border.badge">
+    <Setter Property="CornerRadius" Value="{StaticResource CapsuleRadius}" />
+    <Setter Property="Padding" Value="9,2" />
+    <!-- Wide enough for the longest label, so every file name starts on one line. -->
+    <Setter Property="MinWidth" Value="116" />
+  </Style>
+  <Style Selector="Border.tag">
+    <Setter Property="CornerRadius" Value="{StaticResource CapsuleRadius}" />
+    <Setter Property="Padding" Value="7,1" />
+    <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
+  </Style>
+
+  <!-- Buttons: capsules, a quick ease on hover and a slight press-in. -->
+  <Style Selector="Button.accent">
+    <Setter Property="CornerRadius" Value="{StaticResource CapsuleRadius}" />
+    <Setter Property="RenderTransform" Value="none" />
+    <Setter Property="Transitions">
+      <Transitions>
+        <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.12" Easing="CubicEaseOut" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="Button.accent:pressed">
+    <Setter Property="RenderTransform" Value="scale(0.97)" />
+  </Style>
+  <Style Selector="Button.accent">
+    <Setter Property="Padding" Value="16,9" />
+    <Setter Property="Background" Value="{DynamicResource SystemAccentColor}" />
+    <Setter Property="Foreground" Value="White" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+  </Style>
+  <Style Selector="Button.accent:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource SystemAccentColorLight1}" />
+    <Setter Property="Foreground" Value="White" />
+  </Style>
+  <Style Selector="Button.accent:pressed /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource SystemAccentColorDark1}" />
+    <Setter Property="Foreground" Value="White" />
+  </Style>
+  <Style Selector="Button.accent Path.icon">
+    <Setter Property="Stroke" Value="White" />
+    <Setter Property="StrokeThickness" Value="2" />
+  </Style>
+  <Style Selector="Button.sidebar-item">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Padding" Value="12,9" />
+    <Setter Property="Margin" Value="0,1" />
+    <Setter Property="CornerRadius" Value="{StaticResource RowRadius}" />
+  </Style>
+  <Style Selector="Button.sidebar-item /template/ ContentPresenter">
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="Background" Duration="0:0:0.15" Easing="CubicEaseOut" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="Button.sidebar-item:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
+  </Style>
+  <Style Selector="Button.sidebar-item.current /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource SelectedBrush}" />
+  </Style>
+  <Style Selector="Button.sidebar-item.current TextBlock">
+    <Setter Property="FontWeight" Value="SemiBold" />
+  </Style>
+  <Style Selector="Button.sidebar-item.current Path.icon">
+    <Setter Property="Stroke" Value="{DynamicResource SystemAccentColor}" />
+  </Style>
+
+  <!-- Lists own their hover and selection; Fluent's defaults would paint a square over the glass. -->
+  <Style Selector="ListBox.plain">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+  </Style>
+  <Style Selector="ListBox.plain ListBoxItem">
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="Margin" Value="0,1" />
+    <Setter Property="CornerRadius" Value="{StaticResource RowRadius}" />
+  </Style>
+  <Style Selector="ListBox.plain ListBoxItem /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="CornerRadius" Value="{StaticResource RowRadius}" />
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="Background" Duration="0:0:0.15" Easing="CubicEaseOut" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="ListBox.plain ListBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
+  </Style>
+  <Style Selector="ListBox.plain ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource SelectedBrush}" />
+  </Style>
+  <Style Selector="ListBox.plain ListBoxItem:selected:focus /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource SelectedBrush}" />
+  </Style>
+
+  <!-- The live indicator breathes while the list is being kept current, and holds still otherwise. -->
+  <Style Selector="Ellipse.live">
+    <Setter Property="Width" Value="7" />
+    <Setter Property="Height" Value="7" />
+    <Setter Property="Fill" Value="{DynamicResource Tone.Added}" />
+    <Style.Animations>
+      <Animation Duration="0:0:1.6" IterationCount="Infinite" Easing="SineEaseInOut" PlaybackDirection="Alternate">
+        <KeyFrame Cue="0%">
+          <Setter Property="Opacity" Value="1" />
+        </KeyFrame>
+        <KeyFrame Cue="100%">
+          <Setter Property="Opacity" Value="0.35" />
+        </KeyFrame>
+      </Animation>
+    </Style.Animations>
+  </Style>
+</Styles>

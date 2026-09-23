@@ -1,0 +1,13 @@
+{
+  "stryker-config": {
+    "project": "Subverted.Svn.csproj",
+    "test-projects": ["tests/Subverted.Svn.Tests/Subverted.Svn.Tests.csproj"],
+    "mutation-level": "Complete",
+    "thresholds": {
+      "high": 90,
+      "low": 85,
+      "break": 85
+    },
+    "reporters": ["html", "progress"]
+  }
+}

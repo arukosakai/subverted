@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>sv</AssemblyName>
+    <RootNamespace>Subverted.Cli</RootNamespace>
+    <!-- `sv st` is measured end to end, and on a warm index the runtime starting up is most of
+         that number — so the front-end is compiled ahead of time to make the daemon's speed
+         visible to the person typing. The protocol is reflection-free (see ProtocolJsonContext),
+         so `-p:PublishAot=true` also compiles clean and is faster again; it needs a platform
+         linker, which ReadyToRun does not, so ReadyToRun is what ships by default. -->
+    <PublishReadyToRun>true</PublishReadyToRun>
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Subverted.Frontend\Subverted.Frontend.csproj" />
+  </ItemGroup>
+</Project>

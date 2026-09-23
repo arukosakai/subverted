@@ -1,0 +1,139 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Subverted.App.ViewModels"
+             xmlns:p="using:Subverted.App.Presentation"
+             xmlns:v="using:Subverted.App.Views"
+             x:Class="Subverted.App.Views.WorkingCopyView"
+             x:DataType="vm:WorkingCopyViewModel">
+  <Grid RowDefinitions="Auto,Auto,*" Margin="28,4,28,28">
+
+    <!-- Header: what this is, where it is, and that the answer is current. -->
+    <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
+      <StackPanel Spacing="4">
+        <TextBlock Classes="title" Text="{Binding Name}" />
+        <StackPanel Orientation="Horizontal" Spacing="6">
+          <Path Classes="icon" Data="{StaticResource Icon.Folder}" Width="13" Height="13" />
+          <TextBlock Classes="muted" FontSize="12" Text="{Binding Location}"
+                     TextTrimming="CharacterEllipsis" />
+        </StackPanel>
+        <StackPanel Orientation="Horizontal" Spacing="6" IsVisible="{Binding RepositoryRoot, Converter={x:Static ObjectConverters.IsNotNull}}">
+          <Path Classes="icon" Data="{StaticResource Icon.Server}" Width="13" Height="13" />
+          <TextBlock Classes="faint" FontSize="12" Text="{Binding RepositoryRoot}" TextTrimming="CharacterEllipsis" />
+        </StackPanel>
+      </StackPanel>
+
+      <Border Grid.Column="1" Classes="chip" VerticalAlignment="Top"
+              IsVisible="{Binding State, Converter={x:Static v:StateIs.Ready}}"
+              ToolTip.Tip="Kept current by the daemon while this window is in front">
+        <StackPanel Orientation="Horizontal" Spacing="7">
+          <Ellipse Classes="live" VerticalAlignment="Center" />
+          <TextBlock Text="Live" FontSize="12" FontWeight="SemiBold" />
+        </StackPanel>
+      </Border>
+    </Grid>
+
+    <!-- One glance: what needs a person first. -->
+    <ItemsControl Grid.Row="1" Margin="0,18,0,14" ItemsSource="{Binding Summary}">
+      <ItemsControl.ItemsPanel>
+        <ItemsPanelTemplate>
+          <WrapPanel Orientation="Horizontal" ItemSpacing="8" LineSpacing="8" />
+        </ItemsPanelTemplate>
+      </ItemsControl.ItemsPanel>
+      <ItemsControl.ItemTemplate>
+        <DataTemplate x:DataType="p:ChangeCount">
+          <Border Classes="chip">
+            <StackPanel Orientation="Horizontal" Spacing="7">
+              <Ellipse Width="7" Height="7" VerticalAlignment="Center"
+                       Fill="{Binding Tone, Converter={x:Static v:ToneBrush.Solid}}" />
+              <TextBlock Text="{Binding Text}" FontSize="12" FontWeight="Medium" />
+            </StackPanel>
+          </Border>
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
+    </ItemsControl>
+
+    <Border Grid.Row="2" Classes="panel" Padding="8">
+      <DockPanel>
+        <Border DockPanel.Dock="Top" IsVisible="{Binding IsStale}" Margin="2,2,2,6" Padding="12,8"
+                CornerRadius="{StaticResource RowRadius}" Background="{DynamicResource Tone.Missing.Soft}">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <Path Classes="icon" Data="{StaticResource Icon.Unplugged}" Width="14" Height="14"
+                  Stroke="{DynamicResource Tone.Missing}" />
+            <TextBlock FontWeight="SemiBold" Foreground="{DynamicResource Tone.Missing}" Text="{Binding Headline}" />
+            <TextBlock Classes="muted" Text="— showing the last listing that came back." />
+          </StackPanel>
+        </Border>
+      <Panel>
+        <ListBox Classes="plain" ItemsSource="{Binding Changes}" IsVisible="{Binding !!Changes.Count}">
+          <ListBox.ItemTemplate>
+            <DataTemplate x:DataType="p:ChangeRow">
+              <Grid ColumnDefinitions="Auto,*,Auto" Margin="10,8" MinHeight="24">
+                <Border Classes="badge" VerticalAlignment="Center"
+                        Background="{Binding Badge.Tone, Converter={x:Static v:ToneBrush.Soft}}">
+                  <StackPanel Orientation="Horizontal" Spacing="6">
+                    <Ellipse Width="6" Height="6" VerticalAlignment="Center"
+                             Fill="{Binding Badge.Tone, Converter={x:Static v:ToneBrush.Solid}}" />
+                    <TextBlock Text="{Binding Badge.Label}" FontSize="11.5" FontWeight="SemiBold"
+                               Foreground="{Binding Badge.Tone, Converter={x:Static v:ToneBrush.Solid}}" />
+                  </StackPanel>
+                </Border>
+
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" Margin="14,0,8,0"
+                            VerticalAlignment="Center">
+                  <TextBlock Text="{Binding Name}" FontWeight="Medium" />
+                  <TextBlock Classes="faint" Text="{Binding Folder}" TextTrimming="CharacterEllipsis" />
+                </StackPanel>
+
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                  <Border Classes="tag" IsVisible="{Binding IsCopied}" ToolTip.Tip="Scheduled with history — a copy or a move">
+                    <StackPanel Orientation="Horizontal" Spacing="4">
+                      <Path Classes="icon" Data="{StaticResource Icon.History}" Width="11" Height="11" />
+                      <TextBlock Classes="muted" Text="history" FontSize="11" />
+                    </StackPanel>
+                  </Border>
+                  <Border Classes="tag" IsVisible="{Binding HasPropertyChange}" ToolTip.Tip="Its properties changed too">
+                    <TextBlock Classes="muted" Text="props" FontSize="11" />
+                  </Border>
+                  <Path Classes="icon" Data="{StaticResource Icon.Lock}" Width="13" Height="13"
+                        IsVisible="{Binding IsLocked}" ToolTip.Tip="You hold the lock on this file" />
+                </StackPanel>
+              </Grid>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+
+        <!-- Clean is an answer, and says so rather than showing an empty box. -->
+        <StackPanel Spacing="10" HorizontalAlignment="Center" VerticalAlignment="Center"
+                    IsVisible="{Binding IsClean}">
+          <Border Width="52" Height="52" CornerRadius="26" HorizontalAlignment="Center"
+                  Background="{DynamicResource Tone.Added.Soft}">
+            <Path Classes="icon" Data="{StaticResource Icon.Check}" Width="24" Height="24"
+                  Stroke="{DynamicResource Tone.Added}" StrokeThickness="2.25" />
+          </Border>
+          <TextBlock Classes="empty-title" Text="No local changes" />
+          <TextBlock Classes="muted" HorizontalAlignment="Center"
+                     Text="Everything here matches the revision you last updated to." />
+        </StackPanel>
+
+        <StackPanel Spacing="10" HorizontalAlignment="Center" VerticalAlignment="Center"
+                    IsVisible="{Binding State, Converter={x:Static v:StateIs.Loading}}">
+          <ProgressBar IsIndeterminate="True" Width="140" />
+          <TextBlock Classes="muted" HorizontalAlignment="Center" Text="Reading the working copy…" />
+        </StackPanel>
+
+        <StackPanel Spacing="10" HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="440"
+                    IsVisible="{Binding IsBlocked}">
+          <Border Width="52" Height="52" CornerRadius="26" HorizontalAlignment="Center"
+                  Background="{DynamicResource Tone.Missing.Soft}">
+            <Path Classes="icon" Data="{StaticResource Icon.Alert}" Width="24" Height="24"
+                  Stroke="{DynamicResource Tone.Missing}" StrokeThickness="2" />
+          </Border>
+          <TextBlock Classes="empty-title" Text="{Binding Headline}" />
+          <TextBlock Classes="muted" HorizontalAlignment="Center" TextAlignment="Center"
+                     TextWrapping="Wrap" Text="{Binding Message}" />
+        </StackPanel>
+      </Panel>
+      </DockPanel>
+    </Border>
+  </Grid>
+</UserControl>
