@@ -762,6 +762,70 @@ public sealed class DaemonEndToEndTests
         return order == "long-then-short" ? (longForm, shortForm) : (shortForm, longForm);
     }
 
+    /// <summary>
+    /// The second save is the one that matters: the file is <c>M</c> both times, so only the
+    /// fingerprint tells the front-end its diff went stale — and only if the watcher reported the
+    /// write and the warm path re-read the file rather than handing back what it held.
+    /// </summary>
+    [Test]
+    public async Task A_modified_file_saved_again_after_the_index_was_warm_arrives_with_its_new_fingerprint()
+    {
+        using var copy = Committed(("readme.txt", "hello"));
+        var firstSave = new DateTime(2030, 1, 1, 12, 0, 0, DateTimeKind.Utc);
+        var secondSave = firstSave.AddSeconds(1);
+
+        await WithDaemon(
+            copy,
+            async client =>
+            {
+                await StatusAsync(client, copy.Root);
+                copy.Write("readme.txt", "first edit");
+                File.SetLastWriteTimeUtc(copy.Absolute("readme.txt"), firstSave);
+                var first = await ListedAsync(
+                    client,
+                    copy.Root,
+                    entry => entry.OnDisk == new FileFingerprint(10, firstSave)
+                );
+
+                copy.Write("readme.txt", "the second edit");
+                File.SetLastWriteTimeUtc(copy.Absolute("readme.txt"), secondSave);
+                var second = await ListedAsync(
+                    client,
+                    copy.Root,
+                    entry => entry.OnDisk == new FileFingerprint(15, secondSave)
+                );
+
+                await Assert.That(first?.Status).IsEqualTo(NodeStatus.Modified);
+                await Assert.That(second?.Status).IsEqualTo(NodeStatus.Modified);
+                await Assert.That(second?.OnDisk).IsEqualTo(new FileFingerprint(15, secondSave));
+            }
+        );
+    }
+
+    /// <summary>Polls, like <see cref="NoticedAsync"/>, until readme.txt is listed as asked.</summary>
+    /// <returns>The entry, or null if it never got there within the watcher's patience.</returns>
+    private static async Task<WorkingCopyEntry?> ListedAsync(
+        DaemonClient client,
+        string root,
+        Func<WorkingCopyEntry, bool> matches
+    )
+    {
+        var deadline = DateTime.UtcNow + WatcherPatience;
+        while (DateTime.UtcNow < deadline)
+        {
+            var status = await StatusAsync(client, root);
+            var entry = status.Entries.SingleOrDefault(entry => entry.RelPath == "readme.txt");
+            if (entry is not null && matches(entry))
+            {
+                return entry;
+            }
+
+            await Task.Delay(50);
+        }
+
+        return null;
+    }
+
     private static async Task<StatusResponse> StatusAsync(DaemonClient client, string path)
     {
         var response = await client.SendAsync(

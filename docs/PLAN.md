@@ -399,10 +399,13 @@ Avalonia front-end over the same daemon. Update, commit, diff, log. Nothing clev
   list: debounced, the stale request cancelled, the selection kept across the once-a-second resync.
   `UnifiedDiffParser` is tested on 24 byte-exact `svn diff` 1.8.15 captures. Seen running on
   Windows 11 against `subverted-diff`, selected through UI Automation rather than by hand, and the
-  50k-line virtualisation was measured headless only. Known gaps: a second edit to an
-  already-modified file does not refetch until status entries carry a size+mtime fingerprint
-  (decided, next); the root row diffs the whole working copy, since `DiffRequest` has no depth;
-  list rows expose their record's `ToString()` as the automation name.
+  50k-line virtualisation was measured headless only. A second save of an already-modified file
+  now refetches: status entries carry the file's size and write time (`FileFingerprint`), filled
+  from the stat the scan already made, and a row that differs by one tick is a new row. Tested
+  through the daemon's watcher end to end, not yet seen in the app. The `svn status` fallback
+  cannot fill it, so under the fallback, and against a daemon older than the field, the gap
+  remains. Known gaps: the root row diffs the whole working copy, since `DiffRequest` has no depth;
+  list rows expose their record's `ToString()` as the automation name, fingerprint included.
 - Commit, log and update — the next slices, one at a time. Their order and the screens they
   build are in `docs/GUI.md`.
 - **macOS's Liquid Glass is not built.** The styling speaks the same language, but the real material

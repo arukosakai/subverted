@@ -126,6 +126,14 @@ public sealed class SvnStatusXmlTests
         """;
 
     [Test]
+    public async Task The_fallback_claims_no_fingerprint_because_svn_status_never_gives_one()
+    {
+        var entries = SvnStatusXml.Parse(RealDocument, '\\');
+
+        await Assert.That(entries.All(entry => entry.OnDisk is null)).IsTrue();
+    }
+
+    [Test]
     public async Task A_real_verbose_status_document_is_read_node_for_node()
     {
         var entries = SvnStatusXml.Parse(RealDocument, '\\');

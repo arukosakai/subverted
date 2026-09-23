@@ -33,4 +33,39 @@ public sealed class DiffFreshnessTests
 
         await Assert.That(DiffFreshness.NeedsRefetch(shown, listed)).IsTrue();
     }
+
+    /// <summary>
+    /// The edit the status axis cannot see: a file already <c>M</c> saved again. A tick is the
+    /// smallest step NTFS records, so it is the boundary that has to count.
+    /// </summary>
+    [Test]
+    public async Task A_modified_file_written_again_a_tick_later_needs_a_refetch()
+    {
+        var shown = ChangeRow.From(Entry("a.png", onDisk: new FileFingerprint(10, Saved)));
+        var listed = ChangeRow.From(
+            Entry("a.png", onDisk: new FileFingerprint(10, Saved.AddTicks(1)))
+        );
+
+        await Assert.That(DiffFreshness.NeedsRefetch(shown, listed)).IsTrue();
+    }
+
+    [Test]
+    public async Task A_modified_file_that_changed_only_its_length_needs_a_refetch()
+    {
+        var shown = ChangeRow.From(Entry("a.png", onDisk: new FileFingerprint(10, Saved)));
+        var listed = ChangeRow.From(Entry("a.png", onDisk: new FileFingerprint(11, Saved)));
+
+        await Assert.That(DiffFreshness.NeedsRefetch(shown, listed)).IsTrue();
+    }
+
+    [Test]
+    public async Task An_unchanged_fingerprint_needs_no_refetch()
+    {
+        var shown = ChangeRow.From(Entry("a.png", onDisk: new FileFingerprint(10, Saved)));
+        var listed = ChangeRow.From(Entry("a.png", onDisk: new FileFingerprint(10, Saved)));
+
+        await Assert.That(DiffFreshness.NeedsRefetch(shown, listed)).IsFalse();
+    }
+
+    private static readonly DateTime Saved = new(2030, 1, 1, 12, 0, 0, DateTimeKind.Utc);
 }

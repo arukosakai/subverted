@@ -9,6 +9,10 @@ namespace Subverted.App.Presentation;
 /// <param name="RelPath">The key — slash-separated and relative to the root, as the daemon sends it.</param>
 /// <param name="Name">The last segment, which is what a person looks for first.</param>
 /// <param name="Folder">Everything before it, or empty at the root.</param>
+/// <param name="OnDisk">
+/// Not shown. Here so a file saved again at the same status is a new row, which is the only way the
+/// diff pane learns that what it is showing went out of date.
+/// </param>
 public sealed record ChangeRow(
     string RelPath,
     string Name,
@@ -16,7 +20,8 @@ public sealed record ChangeRow(
     ChangeBadge Badge,
     bool IsCopied,
     bool HasPropertyChange,
-    bool IsLocked
+    bool IsLocked,
+    FileFingerprint? OnDisk
 )
 {
     public static ChangeRow From(WorkingCopyEntry entry)
@@ -35,7 +40,8 @@ public sealed record ChangeRow(
             // node whose content changed as well, where the badge cannot say both.
             entry.PropertyStatus == PropertyStatus.Modified
                 && entry.Status != NodeStatus.Unmodified,
-            entry.HasLockToken
+            entry.HasLockToken,
+            entry.OnDisk
         );
     }
 }

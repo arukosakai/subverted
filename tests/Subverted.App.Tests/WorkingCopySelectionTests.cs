@@ -81,6 +81,31 @@ public sealed class WorkingCopySelectionTests
         await Assert.That(states).DoesNotContain(DiffPaneState.NothingSelected);
     }
 
+    /// <summary>
+    /// A file already <c>M</c> saved again lists at the same status; only its fingerprint moves.
+    /// That has to reach the pane the same way a status change does, selection and all.
+    /// </summary>
+    [Test]
+    public async Task A_selected_file_saved_again_is_asked_about_again_and_stays_selected()
+    {
+        var saved = new DateTime(2030, 1, 1, 12, 0, 0, DateTimeKind.Utc);
+        var status = new FakeWorkingCopyStatus()
+            .Answers(Listing(Entry("a.png", onDisk: new FileFingerprint(10, saved))))
+            .Answers(Listing(Entry("a.png", onDisk: new FileFingerprint(10, saved.AddTicks(1)))));
+        var view = new WorkingCopyViewModel("/studio/game", status, Pane());
+        await view.RefreshAsync(None);
+        await SelectAsync(view, 0);
+        DropSelectionOnReplace(view);
+
+        await view.RefreshAsync(None);
+        await Settle();
+
+        await Assert.That(view.SelectedChange).IsSameReferenceAs(view.Changes[0]);
+        await Assert.That(view.Diff.Row).IsSameReferenceAs(view.Changes[0]);
+        await Assert.That(view.Changes[0].OnDisk!.LastWriteTimeUtc).IsEqualTo(saved.AddTicks(1));
+        await Assert.That(_diffs.Paths.Count).IsEqualTo(2);
+    }
+
     [Test]
     public async Task A_row_the_resync_left_alone_is_not_asked_about_again()
     {

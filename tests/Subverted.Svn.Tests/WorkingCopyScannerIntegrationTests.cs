@@ -450,6 +450,92 @@ public sealed class WorkingCopyScannerIntegrationTests
         await Assert.That(Comparable(applied!)).IsEquivalentTo(Comparable(Scan(copy)));
     }
 
+    [Test]
+    public async Task A_versioned_file_carries_its_size_and_write_time()
+    {
+        using var copy = Committed(("readme.txt", "hello"));
+        copy.Write("readme.txt", "hello, world");
+        File.SetLastWriteTimeUtc(copy.Absolute("readme.txt"), SomeInstant);
+
+        await Assert
+            .That(OnDiskOf(Scan(copy), "readme.txt"))
+            .IsEqualTo(new FileFingerprint(12, SomeInstant));
+    }
+
+    /// <summary>
+    /// The node the metadata fast path hands to the content compare is rebuilt with its verdict, and
+    /// rebuilding it must not drop what the walk already knew about the file.
+    /// </summary>
+    [Test]
+    public async Task A_file_settled_by_content_keeps_its_fingerprint()
+    {
+        using var copy = Committed(("readme.txt", "hello"));
+        copy.Write("readme.txt", "world");
+        File.SetLastWriteTimeUtc(copy.Absolute("readme.txt"), SomeInstant);
+
+        var entry = Scan(copy).Single(e => e.RelPath == "readme.txt");
+
+        await Assert.That(entry.Status).IsEqualTo(NodeStatus.Modified);
+        await Assert.That(entry.OnDisk).IsEqualTo(new FileFingerprint(5, SomeInstant));
+    }
+
+    [Test]
+    public async Task An_unversioned_file_carries_its_fingerprint()
+    {
+        using var copy = Committed(("readme.txt", "hello"));
+        copy.Write("scratch.txt", "junk");
+        File.SetLastWriteTimeUtc(copy.Absolute("scratch.txt"), SomeInstant);
+
+        await Assert
+            .That(OnDiskOf(Scan(copy), "scratch.txt"))
+            .IsEqualTo(new FileFingerprint(4, SomeInstant));
+    }
+
+    [Test]
+    public async Task A_directory_and_a_missing_file_have_no_fingerprint()
+    {
+        using var copy = Committed(("assets/hero.png", "pixels"), ("gone.txt", "bye"));
+        copy.Delete("gone.txt");
+
+        var entries = Scan(copy);
+
+        await Assert.That(OnDiskOf(entries, "assets")).IsNull();
+        await Assert.That(OnDiskOf(entries, "gone.txt")).IsNull();
+        await Assert.That(OnDiskOf(entries, "assets/hero.png")).IsNotNull();
+    }
+
+    /// <summary>
+    /// The case the fingerprint exists for: a file already <c>M</c> edited again reads as the same
+    /// status, so without this the incremental path hands back an entry nothing can tell from the old.
+    /// </summary>
+    [Test]
+    public async Task Re_editing_a_modified_file_is_applied_as_a_new_fingerprint()
+    {
+        using var copy = Committed(("readme.txt", "hello"));
+        copy.Write("readme.txt", "first edit");
+        File.SetLastWriteTimeUtc(copy.Absolute("readme.txt"), SomeInstant);
+        var held = Scan(copy);
+        copy.Write("readme.txt", "second edit");
+        File.SetLastWriteTimeUtc(copy.Absolute("readme.txt"), SomeInstant.AddTicks(1));
+
+        using var reader = WcDbReader.Open(copy.Root);
+        var scanner = new WorkingCopyScanner(reader, GlobalIgnoreConfiguration.SubversionDefault);
+        var applied = scanner.TryApplyChanges(held, Paths("readme.txt"));
+
+        await Assert.That(StatusOf(applied!, "readme.txt")).IsEqualTo(NodeStatus.Modified);
+        await Assert
+            .That(OnDiskOf(applied!, "readme.txt"))
+            .IsEqualTo(new FileFingerprint(11, SomeInstant.AddTicks(1)));
+        await Assert.That(Comparable(applied!)).IsEquivalentTo(Comparable(Scan(copy)));
+    }
+
+    private static readonly DateTime SomeInstant = new(2030, 1, 1, 12, 0, 0, DateTimeKind.Utc);
+
+    private static FileFingerprint? OnDiskOf(
+        IReadOnlyList<WorkingCopyEntry> entries,
+        string relPath
+    ) => entries.Single(entry => entry.RelPath == relPath).OnDisk;
+
     private static IReadOnlySet<string> Paths(params string[] relPaths) =>
         new HashSet<string>(relPaths, StringComparer.Ordinal);
 
@@ -458,7 +544,8 @@ public sealed class WorkingCopyScannerIntegrationTests
         entries
             .Select(entry =>
                 $"{entry.RelPath}|{entry.Kind}|{entry.Status}|{entry.PropertyStatus}|"
-                + $"{entry.Revision}|{entry.Changelist}|{entry.IsConflicted}|{entry.HasLockToken}"
+                + $"{entry.Revision}|{entry.Changelist}|{entry.IsConflicted}|{entry.HasLockToken}|"
+                + $"{entry.OnDisk?.Length}|{entry.OnDisk?.LastWriteTimeUtc.Ticks}"
             )
             .Order(StringComparer.Ordinal);
 

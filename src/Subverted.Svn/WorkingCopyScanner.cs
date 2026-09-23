@@ -156,7 +156,8 @@ public sealed class WorkingCopyScanner(
 
             // The metadata fast path answers most nodes. The ones it cannot prove clean are set
             // aside rather than hashed here, so the whole batch can be hashed at once below.
-            var status = NodeStatusResolver.Resolve(row, index.Find(row.RelPath));
+            var onDisk = index.Find(row.RelPath);
+            var status = NodeStatusResolver.Resolve(row, onDisk);
             if (status == NodeStatus.NeedsPristineCompare)
             {
                 undecided.Add(new UndecidedNode(entries.Count, row));
@@ -173,7 +174,8 @@ public sealed class WorkingCopyScanner(
                     IsConflicted: row.HasConflict,
                     HasLockToken: row.HasLockToken,
                     IsWriteLocked: writeLocks.Reaches(row.Kind, row.RelPath),
-                    IsCopied: CopyHistoryResolver.IsCopied(row, status)
+                    IsCopied: CopyHistoryResolver.IsCopied(row, status),
+                    OnDisk: (onDisk as FileNode)?.Fingerprint
                 )
             );
         }
@@ -267,7 +269,8 @@ public sealed class WorkingCopyScanner(
     private WorkingCopyEntry Resolve(WcDbRow row, WriteLockCoverage writeLocks)
     {
         var absolutePath = ToAbsolutePath(row.RelPath);
-        var status = NodeStatusResolver.Resolve(row, WorkingCopyFileIndex.Snapshot(absolutePath));
+        var onDisk = WorkingCopyFileIndex.Snapshot(absolutePath);
+        var status = NodeStatusResolver.Resolve(row, onDisk);
         if (status == NodeStatus.NeedsPristineCompare)
         {
             status = _pristineComparer.Compare(row, absolutePath);
@@ -283,7 +286,8 @@ public sealed class WorkingCopyScanner(
             IsConflicted: row.HasConflict,
             HasLockToken: row.HasLockToken,
             IsWriteLocked: writeLocks.Reaches(row.Kind, row.RelPath),
-            IsCopied: CopyHistoryResolver.IsCopied(row, status)
+            IsCopied: CopyHistoryResolver.IsCopied(row, status),
+            OnDisk: (onDisk as FileNode)?.Fingerprint
         );
     }
 
@@ -412,7 +416,8 @@ public sealed class WorkingCopyScanner(
                     IsConflicted: false,
                     HasLockToken: false,
                     IsWriteLocked: false,
-                    IsCopied: false
+                    IsCopied: false,
+                    OnDisk: (snapshot as FileNode)?.Fingerprint
                 )
             );
         }

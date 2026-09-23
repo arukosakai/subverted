@@ -23,6 +23,10 @@ namespace Subverted.Core;
 /// and everything it carried, and false when the node is missing or obstructed, because what is on
 /// disk is then not the copy. Not something to report on its own: an untouched copied file is clean.
 /// </param>
+/// <param name="OnDisk">
+/// The file on disk at that path, whatever wc.db thinks it is. Null for a directory, for nothing
+/// on disk, and from a reader that never stats the file — <c>svn status</c> does not say.
+/// </param>
 public sealed record WorkingCopyEntry(
     string RelPath,
     NodeKind Kind,
@@ -33,5 +37,6 @@ public sealed record WorkingCopyEntry(
     bool IsConflicted,
     bool HasLockToken,
     bool IsWriteLocked,
-    bool IsCopied
+    bool IsCopied,
+    FileFingerprint? OnDisk = null
 );

@@ -52,4 +52,13 @@ public sealed class ChangeRowTests
         await Assert.That(row.IsCopied).IsEqualTo(flag);
         await Assert.That(row.IsLocked).IsEqualTo(!flag);
     }
+
+    [Test]
+    public async Task A_row_carries_the_fingerprint_it_was_listed_with()
+    {
+        var onDisk = new FileFingerprint(10, new DateTime(2030, 1, 1, 0, 0, 0, DateTimeKind.Utc));
+
+        await Assert.That(ChangeRow.From(Entry("a.png", onDisk: onDisk)).OnDisk).IsEqualTo(onDisk);
+        await Assert.That(ChangeRow.From(Entry("a.png")).OnDisk).IsNull();
+    }
 }

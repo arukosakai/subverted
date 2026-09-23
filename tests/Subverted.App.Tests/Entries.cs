@@ -19,7 +19,8 @@ internal static class Entries
         PropertyStatus propertyStatus = PropertyStatus.Unmodified,
         bool isConflicted = false,
         bool hasLockToken = false,
-        bool isCopied = false
+        bool isCopied = false,
+        FileFingerprint? onDisk = null
     ) =>
         new(
             relPath,
@@ -31,7 +32,8 @@ internal static class Entries
             IsConflicted: isConflicted,
             HasLockToken: hasLockToken,
             IsWriteLocked: false,
-            IsCopied: isCopied
+            IsCopied: isCopied,
+            OnDisk: onDisk
         );
 
     public static StatusResponse Listing(params WorkingCopyEntry[] entries) =>

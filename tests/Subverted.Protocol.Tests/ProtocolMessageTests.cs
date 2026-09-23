@@ -151,6 +151,46 @@ public sealed class ProtocolMessageTests
 
         await Assert.That(decoded.Entries[0].Revision).IsNull();
         await Assert.That(decoded.Entries[0].Changelist).IsNull();
+        await Assert.That(decoded.Entries[0].OnDisk).IsNull();
+    }
+
+    /// <summary>
+    /// Two saves a tick apart are the edit the fingerprint exists to see. A wire format that rounded
+    /// to the millisecond would hand the front-end two equal entries for them.
+    /// </summary>
+    [Test]
+    public async Task A_fingerprint_round_trips_to_the_tick_and_stays_utc()
+    {
+        var written = new DateTime(2030, 1, 1, 12, 0, 0, DateTimeKind.Utc).AddTicks(1);
+        var response = SampleStatusResponse() with
+        {
+            Entries = [SampleEntry with { OnDisk = new FileFingerprint(4096, written) }],
+        };
+
+        var decoded = (StatusResponse)
+            ProtocolMessage.DecodeResponse(ProtocolMessage.Encode(response));
+
+        var onDisk = decoded.Entries[0].OnDisk!;
+        await Assert.That(onDisk.Length).IsEqualTo(4096);
+        await Assert.That(onDisk.LastWriteTimeUtc.Ticks).IsEqualTo(written.Ticks);
+        await Assert.That(onDisk.LastWriteTimeUtc.Kind).IsEqualTo(DateTimeKind.Utc);
+    }
+
+    /// <summary>
+    /// A daemon built before the fingerprint existed sends entries without it. That reads as "not
+    /// known", which is true of it, rather than as a malformed message that fails the whole listing.
+    /// </summary>
+    [Test]
+    public async Task An_entry_from_a_daemon_that_predates_the_fingerprint_reads_as_unknown()
+    {
+        var json = Json(SampleStatusResponse());
+        var withoutField = json.Replace(",\"onDisk\":null", string.Empty, StringComparison.Ordinal);
+
+        var decoded = (StatusResponse)
+            ProtocolMessage.DecodeResponse(Encoding.UTF8.GetBytes(withoutField));
+
+        await Assert.That(withoutField).DoesNotContain("onDisk");
+        await Assert.That(decoded.Entries[0].OnDisk).IsNull();
     }
 
     [Test]
@@ -805,23 +845,23 @@ public sealed class ProtocolMessageTests
         31
     );
 
+    private static readonly WorkingCopyEntry SampleEntry = new(
+        "art/hero.png",
+        NodeKind.File,
+        NodeStatus.Modified,
+        PropertyStatus.Modified,
+        Revision: 42,
+        Changelist: "assets",
+        IsConflicted: true,
+        HasLockToken: true,
+        IsWriteLocked: false,
+        IsCopied: true
+    );
+
     private static StatusResponse SampleStatusResponse() =>
         new(
             SampleInfo,
-            [
-                new WorkingCopyEntry(
-                    "art/hero.png",
-                    NodeKind.File,
-                    NodeStatus.Modified,
-                    PropertyStatus.Modified,
-                    Revision: 42,
-                    Changelist: "assets",
-                    IsConflicted: true,
-                    HasLockToken: true,
-                    IsWriteLocked: false,
-                    IsCopied: true
-                ),
-            ],
+            [SampleEntry],
             ServedFromWarmIndex: true,
             ServerElapsedMilliseconds: 1.5,
             UnfinishedOperations: 3,

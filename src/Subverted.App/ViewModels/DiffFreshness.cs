@@ -3,8 +3,8 @@ using Subverted.App.Presentation;
 namespace Subverted.App.ViewModels;
 
 /// <summary>
-/// Whether a status refresh makes the diff on screen out of date. The one place that decides it,
-/// so a finer signal than the row itself — a size or mtime on the entry — is a change here alone.
+/// Whether a status refresh makes the diff on screen out of date. The row is the signal: it
+/// carries the file's size and write time, so a second save of an already-modified file changes it.
 /// </summary>
 public static class DiffFreshness
 {
