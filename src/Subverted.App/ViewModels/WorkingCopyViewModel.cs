@@ -15,6 +15,11 @@ public sealed partial class WorkingCopyViewModel(string path, IWorkingCopyStatus
     public ObservableCollection<ChangeRow> Changes { get; } = [];
 
     [ObservableProperty]
+    public partial ChangeRow? SelectedChange { get; set; }
+
+    public DiffPaneViewModel Diff { get; } = new();
+
+    [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(Headline))]
     public partial WorkingCopyState State { get; private set; } = WorkingCopyState.Loading;
 
