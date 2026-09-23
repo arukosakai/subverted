@@ -465,6 +465,12 @@ Where we leave Tortoise behind.
 
 These need a human decision and are deliberately not resolved in code:
 
+- **A mistyped `sv resolve` target is silent on 1.14** (D34). The daemon could check each target
+  against its index before asking svn, and refuse the ones it does not hold.
+- **On macOS the CLI fallback names a root by its real path** — `/private/var/…` for a copy reached
+  through `/var` — while requests keep the spelling they came in with. Unmeasured beyond the two
+  fallback tests; it bites only under the fallback, and only through a symlink.
+
 - **Telling a property conflict from a text one** needs `ACTUAL_NODE.conflict_data` parsed — it is
   a skel, like properties were before D8. Until then a property conflict reports the whole node
   `Conflicted` rather than ` C`. D23 shipped conflict resolution without needing it, which is worth

@@ -1528,6 +1528,55 @@ and `ドラゴン.txt` — in-process, and through the built daemon started by `
 before and passes after. Run with no console at all (`DETACHED_PROCESS`), the Svn suite's name tests
 pass through the windowless-console branch. The pre-24H2 fallback has not been run.*
 
+### D34 — svn 1.14 answers differently from 1.8.15, and both are supported
+
+Every measurement above D34 was taken on 1.8.15. CI installs what a person installing svn today
+gets — 1.14 — and 26 tests went red on it. Each difference was measured against a real 1.14.5
+(SlikSVN on Windows, apt's 1.14.3 on Ubuntu) beside 1.8.15, in scratch repositories, before any code
+changed. Supporting both is a decision taken 2026-09-23; CI runs the suite against each.
+
+- **Lock and unlock exit one when anything was refused** — D22's trap, fixed upstream. The warnings
+  and stdout are unchanged, a mixed call still locks what it could, and one line is added after the
+  warnings: `E200009: One or more locks could not be obtained` (or `released`). `SvnRefusalSummary`
+  reads "at least one warning, and no error but E200009" as refusals, not failure. Hard failures
+  (E155008 for a directory, E195013 from unlock's local check) are unchanged and still throw.
+- **Resolve has two new success lines.** `Merge conflicts in '<p>' marked as resolved.` for text and
+  `Tree conflict at '<p>' marked as resolved.` for tree conflicts; property conflicts keep 1.8's
+  wording, and a node with a text *and* a property conflict is announced once for each, so
+  `SvnResolveOutput` anchors each shape at both ends and collapses repeats. A tree conflict refused
+  anything but `working` is W195024 rather than W155027; the final error is E155027 rather than
+  E205011. Unlike 1.8, the kind of conflict settled is now in the text — the resolve bullet under
+  PLAN.md's open questions is narrower on 1.14 than it reads.
+- **Resolve says nothing about a missing target.** 1.8 refused it with W155010 and exited one; 1.14
+  exits zero, silent. A mistyped `sv resolve` target reads as "nothing was conflicted". Open question.
+- **Queued work stops writes only.** 1.14 still refuses every write with E155037, but `status`,
+  `info`, `diff` and `log` go straight through and show nothing wrong. D26's reason the fallback's
+  zero is honest — `svn status` fails first — holds on 1.8 alone. wc.db is the only reader that
+  sees queued work on 1.14; the fallback only runs when wc.db cannot be read.
+- **A file held open during resolve** warns W720005 (the move that failed) rather than W155009, and
+  on 1.14 the conflict flag is already cleared while the copy is left needing cleanup.
+- **Update of a path outside every working copy** fails with E155007 on 1.14 where 1.8 skipped it.
+- **Off Windows, plain `LC_ALL=C` breaks svn outright** on any directory holding a non-ASCII name
+  (E000022 converting the entry to UTF-8). `SvnLocale` sets C.UTF-8 on Linux and en_US.UTF-8 on
+  macOS: English messages, a charset that can name every file. Measured on Ubuntu; macOS is CI's.
+- **On Windows, svn writes its text in the ANSI code page — and that is the build, not 1.14.**
+  SlikSVN 1.8.15 does it too, as do TortoiseSVN's and VisualSVN's 1.14.5; only the Win32SVN-style
+  1.8.15 D33 was measured on follows the console. `zażółć.txt` arrives as CP1250 bytes here and
+  best-fit CP1252 (`zazólc`) on a US runner; a name outside the code page is `????`. No locale
+  changes it, and XML output is UTF-8 on every build. So `SvnOutputText` decodes each line as UTF-8
+  when it is valid UTF-8 and in the ANSI code page otherwise — per line, because a diff's content is
+  the file's own bytes — and a diff gets its true names back from `svn diff --summarize --xml`:
+  `DiffHeaderRespelling` matches each header against what `WideCharToMultiByte` makes of every
+  summarised name, the call svn's own conversion goes through, and leaves a header two names share
+  as svn wrote it. One extra svn run per non-empty diff, on Windows only. Notification text — the
+  paths `add`, `commit` and friends list — is still lossy for a name outside the code page; nothing
+  acts on those paths, since a write drops the whole index (D19). D33's console switch stays for
+  the builds that do follow it.
+- On the plus side, 1.14 takes a Japanese name as an argument, which D33's open end found 1.8 would not.
+
+*Status: the Svn and Daemon suites green against the Win32SVN-style 1.8.15 and SlikSVN 1.14.5 on
+Windows, and against apt's 1.14.3 in an Ubuntu container. macOS and the US code page are CI's.*
+
 ### D3 — The working copy is authoritative
 
 Local history (M3) lives in a separate content-addressed store that is purely derived. It is never
