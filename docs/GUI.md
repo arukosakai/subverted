@@ -21,28 +21,44 @@ having that step.
 
 ## Layout
 
+**Look: oto** (the operator's own Avalonia player): flat solid surfaces told apart by 1px lines,
+small radii, dense 28px rows, a 64px icon rail, Lucide icons, Inter, and oto's theme presets
+switchable from the rail. The accent is kept for the one primary action, Commit. **Layout:
+SmartSVN**, in that look. This replaced the first shell's glass cards on 2026-09-23.
+
 ```
-┌──────────────┬───────────────────────────────────────────────────────────┐
-│ ● Subverted  │  [⟳ Update] [✓ Commit] [↺ Revert] [🔒 Lock]      Live ●   │
-│              ├──────────────────────────┬────────────────────────────────┤
-│ WORKING COPIES│ Filter…     Flat|Tree   │ art/hero.png           MODIFIED │
-│  ▸ game  ↓3  │ ☑ M hero.png   art/     │ Unified|Split  Context: 3 ▾     │
-│  ▸ tools     │ ☑ M main.cs    src/     │ @@ -12,6 +12,7 @@               │
-│              │ ☑ R boss.png ← enemy.png│  12 12   foo();                 │
-│ VIEW         │ ☐ ? tmp.log             │     13 + bar();                 │
-│  Changes  9  │                         │                                 │
-│  History     │ ┌──────────────────────┐│                                 │
-│              │ │ Commit message…      ││                                 │
-│ [+ Open]     │ │ [Commit 3 files] ⌃⏎  ││                                 │
-│              │ └──────────────────────┘│                                 │
-├──────────────┴──────────────────────────┴────────────────────────────────┤
-│ r1824 · 9 changes · 1 locked                                daemon ok    │
-└──────────────────────────────────────────────────────────────────────────┘
+┌────┬──────────────────────────────────────────────────────────────────────┐
+│    │ 📁 game ▾   https://svn/game                                  ● Live │
+│ ☰  ├──────────────┬───────────────────────────────────────────────────────┤
+│ 🕘 │ FOLDERS      │ 🔍 Filter by path   2 changes hidden · Show all   Open  Revert… │
+│    │ ▾ game    9  │ State      Name              Folder                   │
+│    │   ▸ art   3  │ ☑ ▍Modified hero.png         art                      │
+│    │   ▸ src   2  │ ☑ ▍Missing  old.cs           src                      │
+│    │              ├───────────────────────────────────────────────────────┤
+│    │              │ ± DIFF ▍hero.png art Modified                         │
+│    │              │ @@ -12,6 +12,7 @@                                     │
+│    │              │  12 12   foo();                                       │
+│ 📁 ├──────────────┴────────────────────────┬──────────────────────────────┤
+│ 🎨 │ COMMIT                                │ OUTPUT                 Clear │
+│    │ Commit message…                       │ 14:02:11 Commit 3 paths · …  │
+│    │ Ctrl+Enter          [Commit 3 files]  │ Committed r1825              │
+│    ├───────────────────────────────────────┴──────────────────────────────┤
+│    │ C:\studio\game                     ● 3 modified  ● 1 missing  ● 1 added │
+└────┴──────────────────────────────────────────────────────────────────────┘
 ```
 
-**Changes** is the home view: the condensed list on the left, the selected file's diff on the
-right. **History** uses the same frame — revisions on top, that revision's changed paths and diff
-beneath — with a pinned "Local changes" row that returns to Changes.
+- **Rail:** Changes and History, then Open and Theme at the foot.
+- **Directory tree** on by default: every folder holding a change, with its count. Choosing one
+  narrows the table exactly as the filter does, so what it hides is neither counted nor sent.
+- **File table** top right, flat, with its diff beneath at full width.
+- **Bottom strip:** the commit box beside an output log that keeps every commit and revert of the
+  session with SVN's own text. A SmartSVN-style popup review window is an acceptable alternative the
+  operator named; it is not built.
+- **History** uses the same frame — the revisions table on top with the pinned "Local changes"
+  line, and the picked revision's paths beside its diff beneath. The bottom strip is Changes' only.
+
+The list's Flat/Tree toggle from slice 2 is still in `WorkingCopyViewModel` but no longer on
+screen: the directory tree is the tree now.
 
 ## Slices
 
