@@ -13,58 +13,75 @@ namespace Subverted.App.Tests;
 /// </summary>
 public sealed class SelectionBindingTests
 {
+    /// <summary>Its status stays Modified, so it stays where it is; a conflict pins it to the top.</summary>
     [Test]
-    public async Task A_bound_list_keeps_a_replaced_row_selected_through_the_resync()
+    [Arguments(NodeStatus.Modified)]
+    [Arguments(NodeStatus.Conflicted)]
+    public async Task A_bound_list_keeps_a_changed_line_selected_through_the_resync(
+        NodeStatus becomes
+    )
     {
-        var (selectedIsNewRecord, listSelectsIt, asked, paneWentBlank) =
-            await HeadlessApp.Session.Dispatch(
-                async () =>
-                {
-                    var diffs = new FakeWorkingCopyDiff();
-                    var status = new FakeWorkingCopyStatus()
-                        .Answers(Listing(Entry("a.png"), Entry("b.png")))
-                        .Answers(Listing(Entry("a.png"), Entry("b.png", NodeStatus.Conflicted)));
-                    var view = new WorkingCopyViewModel(
-                        "/studio/game",
-                        status,
-                        DiffPanes.Pane(diffs)
-                    );
-                    await view.RefreshAsync(CancellationToken.None);
+        var (sameEntry, listSelectsIt, _, asked, paneWentBlank) = await ResyncAsync(becomes);
 
-                    var list = new ListBox { ItemsSource = view.Changes };
-                    list.Bind(
-                        ListBox.SelectedItemProperty,
-                        new Binding(nameof(WorkingCopyViewModel.SelectedChange))
-                        {
-                            Source = view,
-                            Mode = BindingMode.TwoWay,
-                        }
-                    );
-                    var window = new Window { Content = list };
-                    window.Show();
-                    list.SelectedIndex = 1;
-                    Dispatcher.UIThread.RunJobs();
-                    var states = new List<DiffPaneState>();
-                    view.Diff.PropertyChanged += (_, _) => states.Add(view.Diff.State);
-
-                    await view.RefreshAsync(CancellationToken.None);
-                    Dispatcher.UIThread.RunJobs();
-
-                    (bool, bool, int, bool) result = (
-                        ReferenceEquals(view.SelectedChange, view.Changes[1]),
-                        ReferenceEquals(list.SelectedItem, view.Changes[1]),
-                        diffs.Paths.Count,
-                        states.Contains(DiffPaneState.NothingSelected)
-                    );
-                    window.Close();
-                    return result;
-                },
-                CancellationToken.None
-            );
-
-        await Assert.That(selectedIsNewRecord).IsTrue();
+        await Assert.That(sameEntry).IsTrue();
         await Assert.That(listSelectsIt).IsTrue();
         await Assert.That(asked).IsEqualTo(1);
         await Assert.That(paneWentBlank).IsFalse();
     }
+
+    /// <summary>An updated line keeps its container, and with it the keyboard focus.</summary>
+    [Test]
+    public async Task A_line_changed_in_place_keeps_its_container()
+    {
+        var (_, _, sameContainer, _, _) = await ResyncAsync(NodeStatus.Modified);
+
+        await Assert.That(sameContainer).IsTrue();
+    }
+
+    private static Task<(bool, bool, bool, int, bool)> ResyncAsync(NodeStatus becomes) =>
+        HeadlessApp.Session.Dispatch(
+            async () =>
+            {
+                var diffs = new FakeWorkingCopyDiff();
+                var status = new FakeWorkingCopyStatus()
+                    .Answers(Listing(Entry("a.png"), Entry("b.png")))
+                    .Answers(
+                        Listing(Entry("a.png"), Entry("b.png", becomes, PropertyStatus.Modified))
+                    );
+                var view = WorkingCopies.View(status, DiffPanes.Pane(diffs));
+                await view.RefreshAsync(CancellationToken.None);
+
+                var list = new ListBox { ItemsSource = view.Entries };
+                list.Bind(
+                    ListBox.SelectedItemProperty,
+                    new Binding(nameof(WorkingCopyViewModel.SelectedEntry))
+                    {
+                        Source = view,
+                        Mode = BindingMode.TwoWay,
+                    }
+                );
+                var window = new Window { Content = list };
+                window.Show();
+                list.SelectedIndex = 1;
+                Dispatcher.UIThread.RunJobs();
+                var selected = view.SelectedEntry;
+                var container = list.ContainerFromItem(selected!);
+                var states = new List<DiffPaneState>();
+                view.Diff.PropertyChanged += (_, _) => states.Add(view.Diff.State);
+
+                await view.RefreshAsync(CancellationToken.None);
+                Dispatcher.UIThread.RunJobs();
+
+                (bool, bool, bool, int, bool) result = (
+                    ReferenceEquals(view.SelectedEntry, selected),
+                    ReferenceEquals(list.SelectedItem, selected),
+                    ReferenceEquals(list.ContainerFromItem(selected!), container),
+                    diffs.Paths.Count,
+                    states.Contains(DiffPaneState.NothingSelected)
+                );
+                window.Close();
+                return result;
+            },
+            CancellationToken.None
+        );
 }

@@ -46,6 +46,57 @@ public sealed class MainWindowRenderTests
         await Assert.That(rows).IsEqualTo(8);
     }
 
+    /// <summary>The tree nests the listing under folder lines, with the conflict and the missing file pinned above.</summary>
+    [Test]
+    public async Task The_tree_renders_a_line_per_change_and_per_folder()
+    {
+        var lines = 0;
+        await RenderAsync(
+            "Dark",
+            Studio(),
+            "working-copy-tree-dark.png",
+            view =>
+            {
+                view.ShowTreeCommand.Execute(null);
+                view.ToggleTickCommand.Execute(
+                    view.Entries.Single(entry => entry.Key == "art/props/crate.png")
+                );
+                lines = view.Entries.Count;
+            }
+        );
+
+        // 8 changes, 2 of them pinned; the other 6 hang under art/, characters/, props/, ui/ and
+        // levels/. The list virtualises, so the lines are counted on the view model, not the screen.
+        await Assert.That(lines).IsEqualTo(13);
+    }
+
+    [Test]
+    public async Task A_filter_renders_only_what_it_keeps()
+    {
+        var rows = await RenderAsync(
+            "Dark",
+            Studio(),
+            "working-copy-filtered-dark.png",
+            view => view.Filter = "art/"
+        );
+
+        await Assert.That(rows).IsEqualTo(4);
+    }
+
+    private static FakeWorkingCopyStatus Studio() =>
+        new FakeWorkingCopyStatus().Answers(
+            Listing(
+                Entry("art/characters/hero.png"),
+                Entry("art/characters/villain.png", NodeStatus.Conflicted),
+                Entry("art/props/crate.png", NodeStatus.Added, isCopied: true),
+                Entry("levels/forest.map", NodeStatus.Modified, PropertyStatus.Modified),
+                Entry("levels/old-cave.map", NodeStatus.Deleted),
+                Entry("sound/theme.ogg", NodeStatus.Missing),
+                Entry("art/ui/button.psd", NodeStatus.Unmodified, hasLockToken: true),
+                Entry("notes.txt", NodeStatus.Unversioned)
+            )
+        );
+
     [Test]
     public async Task A_clean_working_copy_renders_no_rows()
     {
@@ -98,7 +149,8 @@ public sealed class MainWindowRenderTests
     private static Task<int> RenderAsync(
         string variant,
         FakeWorkingCopyStatus status,
-        string file
+        string file,
+        Action<WorkingCopyViewModel>? arrange = null
     ) =>
         HeadlessApp.Session.Dispatch(
             async () =>
@@ -108,6 +160,12 @@ public sealed class MainWindowRenderTests
                     new FakeRecentStore("/studio/game", "/studio/tools", "/studio/website"),
                     status
                 );
+                if (arrange is not null)
+                {
+                    arrange(((MainWindowViewModel)window.DataContext!).Current!);
+                    Dispatcher.UIThread.RunJobs();
+                }
+
                 Save(window, file);
                 var rows = window.GetVisualDescendants().OfType<ListBoxItem>().Count();
                 window.Close();
@@ -127,7 +185,7 @@ public sealed class MainWindowRenderTests
         var viewModel = new MainWindowViewModel(
             store,
             new FakeFolderPicker(null),
-            path => new WorkingCopyViewModel(path, status, DiffPanes.Pane()),
+            path => WorkingCopies.View(status, path: path),
             new FakeTimeProvider(),
             StringComparison.Ordinal
         );

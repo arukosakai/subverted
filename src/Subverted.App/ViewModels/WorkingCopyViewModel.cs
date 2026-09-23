@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using Subverted.App.Presentation;
 using Subverted.Protocol;
 
@@ -7,31 +8,84 @@ namespace Subverted.App.ViewModels;
 
 /// <summary>One working copy as the window shows it: what changed, and whether that answer is real.</summary>
 /// <param name="diff">Shows whichever row is selected; this view model tells it when that changes.</param>
+/// <param name="launcher">Opens a row's file, for Enter.</param>
+/// <param name="revealer">Shows a line's path in the file manager, for the context menu.</param>
+/// <param name="clipboard">Takes a line's path, for the context menu.</param>
 public sealed partial class WorkingCopyViewModel(
     string path,
     IWorkingCopyStatus status,
-    DiffPaneViewModel diff
+    DiffPaneViewModel diff,
+    IFileLauncher launcher,
+    IFileRevealer revealer,
+    ITextClipboard clipboard
 ) : ObservableObject
 {
+    private readonly TickedPaths _ticks = new();
+
     /// <summary>
-    /// The record the diff was last asked for. A resync replaces a changed row with a new record,
-    /// which the list control drops from its selection; this one's path is what finds it again.
+    /// The record the diff was last asked for. A resync updates a changed line's row in place, and
+    /// comparing against this one is how it knows the diff on screen went out of date.
     /// </summary>
     private ChangeRow? _followed;
 
-    private bool _isResyncing;
+    private bool _isRelayingOut;
+    private Action<string>? _historyRequested;
 
     /// <summary>The path the person opened, which may be anywhere inside the working copy.</summary>
     public string Path { get; } = path;
 
+    /// <summary>
+    /// Everything the daemon listed, pinned rows first (see <see cref="ChangeOrder"/>) — what the
+    /// header counts, whatever the filter is hiding.
+    /// </summary>
     public ObservableCollection<ChangeRow> Changes { get; } = [];
 
+    /// <summary>What the list shows: <see cref="Changes"/> through the filter, flat or as a tree.</summary>
+    public ObservableCollection<ChangeListEntry> Entries { get; } = [];
+
     /// <summary>
-    /// The row the person picked. The once-a-second resync re-points it at the row's newest record
-    /// rather than losing it, and that is not treated as a new pick.
+    /// The line the person picked. It survives the once-a-second resync, a change of layout and a
+    /// filter that still shows it; a filter that hides it takes the selection away.
     /// </summary>
     [ObservableProperty]
-    public partial ChangeRow? SelectedChange { get; set; }
+    public partial ChangeListEntry? SelectedEntry { get; set; }
+
+    [ObservableProperty]
+    public partial string Filter { get; set; } = "";
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsFlat))]
+    public partial bool IsTree { get; private set; }
+
+    public bool IsFlat => !IsTree;
+
+    /// <summary>"3 changes hidden" while the filter keeps some out of sight; <c>null</c> otherwise.</summary>
+    [ObservableProperty]
+    public partial string? HiddenText { get; private set; }
+
+    /// <summary>
+    /// The ticked paths, relative to the root. A tick outlives every resync that still lists its
+    /// path, and is dropped by the first one that does not.
+    /// </summary>
+    public IReadOnlySet<string> Ticked => _ticks.Paths;
+
+    /// <summary>
+    /// The person asked for a change's history, with its absolute path. Until something handles
+    /// it, the context menu's item for it is disabled.
+    /// </summary>
+    public event Action<string>? HistoryRequested
+    {
+        add
+        {
+            _historyRequested += value;
+            ShowHistoryCommand.NotifyCanExecuteChanged();
+        }
+        remove
+        {
+            _historyRequested -= value;
+            ShowHistoryCommand.NotifyCanExecuteChanged();
+        }
+    }
 
     public DiffPaneViewModel Diff { get; } = diff;
 
@@ -125,13 +179,13 @@ public sealed partial class WorkingCopyViewModel(
 
     private void ShowListing(StatusResponse listing)
     {
-        var rows = listing
-            .Entries.Select(ChangeRow.From)
-            .OrderBy(row => row.RelPath, StringComparer.Ordinal)
-            .ToList();
+        var rows = ChangeOrder.Of(listing.Entries.Select(ChangeRow.From));
 
         RootPath = listing.Info.RootPath;
-        Resync(rows);
+        ChangeListSynchronizer.Apply(Changes, rows);
+        _ticks.KeepOnly(rows.Select(row => row.RelPath));
+        OnPropertyChanged(nameof(Ticked));
+        LayOut();
         RepositoryRoot = listing.Info.RepositoryRoot;
         Name = FolderName.Of(listing.Info.RootPath);
         Summary = ChangeSummary.Of(rows);
@@ -140,46 +194,62 @@ public sealed partial class WorkingCopyViewModel(
         RaiseDerived();
     }
 
-    partial void OnSelectedChangeChanged(ChangeRow? value)
+    partial void OnFilterChanged(string value) => LayOut();
+
+    partial void OnIsTreeChanged(bool value) => LayOut();
+
+    partial void OnSelectedEntryChanged(ChangeListEntry? value)
     {
-        if (_isResyncing)
+        if (_isRelayingOut)
         {
             return;
         }
 
-        _followed = value;
-        if (value is null)
+        _followed = value?.Row;
+        if (_followed is null)
         {
             Diff.Clear();
             return;
         }
 
-        _ = Diff.SelectAsync(value, DiffTarget.PathOf(Location, value.RelPath));
+        _ = Diff.SelectAsync(_followed, PathOf(_followed.RelPath));
     }
 
     /// <summary>
-    /// Merges the fresh rows in, then puts the selection back on its path's newest record and asks
-    /// for its diff again if that record says it changed. A row that left the listing — committed
-    /// or reverted elsewhere — takes the selection with it.
+    /// Brings the shown lines up to date with the listing, the filter and the layout, then puts
+    /// the selection back on its line and asks for the diff again if that line's change changed.
     /// </summary>
-    private void Resync(IReadOnlyList<ChangeRow> rows)
+    private void LayOut()
     {
+        var selectedKey = SelectedEntry?.Key;
         var shownFor = _followed;
-        ChangeRow? listed;
+        var kept = ChangeFilter.Apply(Changes, Filter);
+        var items = IsTree ? ChangeTree.Of(kept) : FlatChangeList.Of(kept);
 
-        // The list control writes its dropped selection back through the binding mid-merge.
-        _isResyncing = true;
+        // The list control writes a selection it dropped back through the binding, mid-merge.
+        _isRelayingOut = true;
         try
         {
-            ChangeListSynchronizer.Apply(Changes, rows);
-            listed = Changes.FirstOrDefault(row => row.RelPath == shownFor?.RelPath);
-            SelectedChange = listed;
+            ListSlotSynchronizer.Apply(Entries, items, item => item.Key, Create);
+            foreach (var entry in Entries)
+            {
+                entry.IsTicked = entry.Row is { } row && _ticks.IsTicked(row.RelPath);
+            }
+
+            SelectedEntry = Entries.FirstOrDefault(entry => entry.Key == selectedKey);
         }
         finally
         {
-            _isResyncing = false;
+            _isRelayingOut = false;
         }
 
+        HiddenText = HiddenChanges.Text(Changes.Count, kept.Count);
+        RaiseLineCommands();
+        Refollow(shownFor, SelectedEntry?.Row);
+    }
+
+    private void Refollow(ChangeRow? shownFor, ChangeRow? listed)
+    {
         _followed = listed;
         if (shownFor is null)
         {
@@ -194,8 +264,62 @@ public sealed partial class WorkingCopyViewModel(
 
         if (DiffFreshness.NeedsRefetch(shownFor, listed))
         {
-            _ = Diff.RefetchAsync(listed, DiffTarget.PathOf(Location, listed.RelPath));
+            _ = Diff.RefetchAsync(listed, PathOf(listed.RelPath));
         }
+    }
+
+    [RelayCommand(CanExecute = nameof(CanTick))]
+    private void ToggleTick(ChangeListEntry? entry)
+    {
+        entry!.IsTicked = _ticks.Toggle(entry.Row!.RelPath);
+        OnPropertyChanged(nameof(Ticked));
+    }
+
+    private static bool CanTick(ChangeListEntry? entry) => entry?.Row is not null;
+
+    [RelayCommand(CanExecute = nameof(CanOpen))]
+    private Task OpenAsync(ChangeListEntry? entry) =>
+        launcher.OpenAsync(PathOf(entry!.Content.RelPath));
+
+    /// <summary>A folder that only holds changes is not one to open; Enter on it does nothing.</summary>
+    private static bool CanOpen(ChangeListEntry? entry) => entry?.Row is not null;
+
+    [RelayCommand(CanExecute = nameof(IsLine))]
+    private Task RevealAsync(ChangeListEntry? entry) =>
+        revealer.RevealAsync(PathOf(entry!.Content.RelPath));
+
+    [RelayCommand(CanExecute = nameof(IsLine))]
+    private Task CopyPathAsync(ChangeListEntry? entry) =>
+        clipboard.CopyAsync(PathOf(entry!.Content.RelPath));
+
+    private static bool IsLine(ChangeListEntry? entry) => entry is not null;
+
+    [RelayCommand(CanExecute = nameof(CanShowHistory))]
+    private void ShowHistory(ChangeListEntry? entry) =>
+        _historyRequested!.Invoke(PathOf(entry!.Content.RelPath));
+
+    private bool CanShowHistory(ChangeListEntry? entry) =>
+        _historyRequested is not null && entry?.Row is { HasHistory: true };
+
+    [RelayCommand]
+    private void ShowFlat() => IsTree = false;
+
+    [RelayCommand]
+    private void ShowTree() => IsTree = true;
+
+    [RelayCommand]
+    private void ClearFilter() => Filter = "";
+
+    private string PathOf(string relPath) => DiffTarget.PathOf(Location, relPath);
+
+    private static ChangeListEntry Create(ChangeListItem item) => new(item);
+
+    /// <summary>A line's content can change under the same entry, and with it what may be done to it.</summary>
+    private void RaiseLineCommands()
+    {
+        ToggleTickCommand.NotifyCanExecuteChanged();
+        OpenCommand.NotifyCanExecuteChanged();
+        ShowHistoryCommand.NotifyCanExecuteChanged();
     }
 
     /// <summary>A failure leaves <see cref="Changes"/> as it was; see <see cref="IsStale"/>.</summary>

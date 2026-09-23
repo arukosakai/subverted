@@ -42,6 +42,29 @@ public sealed class ChangeRowTests
             .IsEqualTo(expected);
     }
 
+    /// <summary>
+    /// Checked against <c>svn log</c> on <c>subverted-copy</c>: a plain add answers E195002 and an
+    /// unversioned node E155010, while a copy, a delete and an edit all have revisions to show.
+    /// </summary>
+    [Test]
+    [Arguments(NodeStatus.Added, false, false)]
+    [Arguments(NodeStatus.Added, true, true)]
+    [Arguments(NodeStatus.Unversioned, false, false)]
+    [Arguments(NodeStatus.Ignored, false, false)]
+    [Arguments(NodeStatus.Modified, false, true)]
+    [Arguments(NodeStatus.Deleted, false, true)]
+    [Arguments(NodeStatus.Missing, false, true)]
+    public async Task Only_a_node_that_was_ever_committed_has_history(
+        NodeStatus status,
+        bool isCopied,
+        bool expected
+    )
+    {
+        await Assert
+            .That(ChangeRow.From(Entry("a.png", status, isCopied: isCopied)).HasHistory)
+            .IsEqualTo(expected);
+    }
+
     [Test]
     [Arguments(true)]
     [Arguments(false)]

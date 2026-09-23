@@ -13,6 +13,11 @@ namespace Subverted.App.Presentation;
 /// Not shown. Here so a file saved again at the same status is a new row, which is the only way the
 /// diff pane learns that what it is showing went out of date.
 /// </param>
+/// <param name="HasHistory">
+/// Whether <c>svn log</c> has anything to say about it. Not for an unversioned node (E155010) nor a
+/// plain add (E195002); a copy carries its source's. A plain add that has since gone missing reads
+/// as missing and is offered anyway — the listing does not say how it was scheduled.
+/// </param>
 public sealed record ChangeRow(
     string RelPath,
     string Name,
@@ -21,7 +26,8 @@ public sealed record ChangeRow(
     bool IsCopied,
     bool HasPropertyChange,
     bool IsLocked,
-    FileFingerprint? OnDisk
+    FileFingerprint? OnDisk,
+    bool HasHistory
 )
 {
     public static ChangeRow From(WorkingCopyEntry entry)
@@ -41,7 +47,13 @@ public sealed record ChangeRow(
             entry.PropertyStatus == PropertyStatus.Modified
                 && entry.Status != NodeStatus.Unmodified,
             entry.HasLockToken,
-            entry.OnDisk
+            entry.OnDisk,
+            entry.Status switch
+            {
+                NodeStatus.Unversioned or NodeStatus.Ignored => false,
+                NodeStatus.Added => entry.IsCopied,
+                _ => true,
+            }
         );
     }
 }
