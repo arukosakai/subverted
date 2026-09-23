@@ -51,6 +51,21 @@ public sealed class ChangeSummaryTests
         await Assert.That(ChangeSummary.Of(rows).Single().Text).IsEqualTo(text);
     }
 
+    [Test]
+    public async Task Renames_are_counted_after_replacements_and_before_unversioned_files()
+    {
+        var summary = ChangeSummary.Of([
+            ChangeRow.From(Entry("u", NodeStatus.Unversioned)),
+            ChangeRow.Rename(Entry("n1", NodeStatus.Unversioned), "o1"),
+            ChangeRow.Rename(Entry("n2", NodeStatus.Unversioned), "o2"),
+            ChangeRow.From(Entry("r", NodeStatus.Replaced)),
+        ]);
+
+        await Assert
+            .That(string.Join(",", summary.Select(count => count.Text)))
+            .IsEqualTo("1 replaced,2 renamed,1 not versioned");
+    }
+
     /// <summary>An ignored or merely locked node is listed but is no change, so it is not counted.</summary>
     [Test]
     public async Task Quiet_rows_are_listed_but_not_counted()

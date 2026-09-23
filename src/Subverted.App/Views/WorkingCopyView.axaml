@@ -5,6 +5,56 @@
              xmlns:v="using:Subverted.App.Views"
              x:Class="Subverted.App.Views.WorkingCopyView"
              x:DataType="vm:WorkingCopyViewModel">
+  <!-- Ctrl+Enter commits from the list too, not only from the message box. -->
+  <UserControl.KeyBindings>
+    <KeyBinding Gesture="Ctrl+Enter" Command="{Binding Composer.CommitCommand}" />
+  </UserControl.KeyBindings>
+
+  <UserControl.Resources>
+    <StreamGeometry x:Key="Icon.Search">M10.5 4a6.5 6.5 0 1 0 0 13a6.5 6.5 0 1 0 0-13Z M15.5 15.5L20 20</StreamGeometry>
+  </UserControl.Resources>
+
+  <UserControl.Styles>
+    <Style Selector="TextBox.filter">
+      <Setter Property="CornerRadius" Value="{StaticResource CapsuleRadius}" />
+      <Setter Property="MinHeight" Value="30" />
+      <Setter Property="Padding" Value="8,5,10,5" />
+      <Setter Property="FontSize" Value="13" />
+    </Style>
+    <Style Selector="Border.segments">
+      <Setter Property="CornerRadius" Value="{StaticResource CapsuleRadius}" />
+      <Setter Property="Background" Value="{DynamicResource RaisedBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource GlassEdgeBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="Padding" Value="2" />
+    </Style>
+    <Style Selector="Button.segment">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Padding" Value="12,4" />
+      <Setter Property="FontSize" Value="12" />
+      <Setter Property="CornerRadius" Value="{StaticResource CapsuleRadius}" />
+    </Style>
+    <Style Selector="Button.segment.selected">
+      <Setter Property="Background" Value="{DynamicResource SelectedBrush}" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+    <Style Selector="Button.link">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="FontSize" Value="12" />
+      <Setter Property="Foreground" Value="{DynamicResource SystemAccentColor}" />
+    </Style>
+    <Style Selector="CheckBox.tick">
+      <Setter Property="MinWidth" Value="0" />
+      <Setter Property="MinHeight" Value="0" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="Margin" Value="0,0,8,0" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+  </UserControl.Styles>
+
   <Grid RowDefinitions="Auto,Auto,*" Margin="28,4,28,28">
 
     <!-- Header: what this is, where it is, and that the answer is current. -->
@@ -71,42 +121,122 @@
             <TextBlock Classes="muted" Text="— showing the last listing that came back." />
           </StackPanel>
         </Border>
+
+        <!-- Filter and layout, once there is something to filter. -->
+        <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto" Margin="2,2,2,4"
+              IsVisible="{Binding !!Changes.Count}">
+          <TextBox x:Name="FilterBox" Classes="filter" Text="{Binding Filter, Mode=TwoWay}"
+                   PlaceholderText="Filter by path" AutomationProperties.Name="Filter changes by path">
+            <TextBox.InnerLeftContent>
+              <Path Classes="icon" Data="{StaticResource Icon.Search}" Width="13" Height="13" Margin="10,0,0,0" />
+            </TextBox.InnerLeftContent>
+          </TextBox>
+          <Border Grid.Column="1" Classes="segments" Margin="8,0,0,0">
+            <StackPanel Orientation="Horizontal">
+              <Button x:Name="FlatButton" Classes="segment" Classes.selected="{Binding IsFlat}" Content="Flat"
+                      Command="{Binding ShowFlatCommand}" AutomationProperties.Name="Show changes as a flat list" />
+              <Button x:Name="TreeButton" Classes="segment" Classes.selected="{Binding IsTree}" Content="Tree"
+                      Command="{Binding ShowTreeCommand}" AutomationProperties.Name="Show changes as a folder tree" />
+            </StackPanel>
+          </Border>
+        </Grid>
+
+        <v:NoticeView DockPanel.Dock="Top" Margin="2,2,2,6" Notice="{Binding RevertPrompt.Notice}"
+                      DismissCommand="{Binding RevertPrompt.DismissNoticeCommand}" />
+
+        <!-- Sends what is ticked and shown; docked before the list so the list takes what is left. -->
+        <Panel DockPanel.Dock="Bottom" Margin="2,8,2,2" IsVisible="{Binding !IsBlocked}">
+          <v:CommitComposerView x:Name="Composer" DataContext="{Binding Composer}" />
+        </Panel>
+
+        <!-- What the filter keeps out of sight, so a filtered list never reads as fewer changes. -->
+        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="8" Margin="10,2,2,6"
+                    IsVisible="{Binding HiddenText, Converter={x:Static ObjectConverters.IsNotNull}}">
+          <TextBlock x:Name="HiddenLine" Classes="faint" FontSize="12" VerticalAlignment="Center"
+                     Text="{Binding HiddenText}" />
+          <Button Classes="link" Content="Show all" Command="{Binding ClearFilterCommand}" />
+        </StackPanel>
+
       <Panel>
-        <ListBox Classes="plain" ItemsSource="{Binding Changes}" IsVisible="{Binding !!Changes.Count}"
-                 SelectedItem="{Binding SelectedChange, Mode=TwoWay}">
+        <ListBox x:Name="List" Classes="plain" ItemsSource="{Binding Entries}" IsVisible="{Binding !!Entries.Count}"
+                 SelectedItem="{Binding SelectedEntry, Mode=TwoWay}" AutomationProperties.Name="Changes">
+          <ListBox.Styles>
+            <!-- Without it, a screen reader reads out the line's record, braces and all. -->
+            <Style Selector="ListBoxItem" x:DataType="vm:ChangeListEntry">
+              <Setter Property="AutomationProperties.Name" Value="{Binding Content.AutomationName}" />
+            </Style>
+          </ListBox.Styles>
+          <ListBox.ContextMenu>
+            <ContextMenu>
+              <MenuItem Header="Open" InputGesture="Enter"
+                        Command="{Binding OpenCommand}" CommandParameter="{Binding SelectedEntry}" />
+              <MenuItem Header="{DynamicResource Text.Reveal}"
+                        Command="{Binding RevealCommand}" CommandParameter="{Binding SelectedEntry}" />
+              <MenuItem Header="Copy path"
+                        Command="{Binding CopyPathCommand}" CommandParameter="{Binding SelectedEntry}" />
+              <Separator />
+              <MenuItem Header="Revert…"
+                        Command="{Binding RevertCommand}" CommandParameter="{Binding SelectedEntry}" />
+              <Separator />
+              <MenuItem Header="History of this file"
+                        Command="{Binding ShowHistoryCommand}" CommandParameter="{Binding SelectedEntry}" />
+            </ContextMenu>
+          </ListBox.ContextMenu>
           <ListBox.ItemTemplate>
-            <DataTemplate x:DataType="p:ChangeRow">
-              <Grid ColumnDefinitions="Auto,*,Auto" Margin="10,8" MinHeight="24">
-                <Border Classes="badge" VerticalAlignment="Center"
-                        Background="{Binding Badge.Tone, Converter={x:Static v:ToneBrush.Soft}}">
-                  <StackPanel Orientation="Horizontal" Spacing="6">
-                    <Ellipse Width="6" Height="6" VerticalAlignment="Center"
-                             Fill="{Binding Badge.Tone, Converter={x:Static v:ToneBrush.Solid}}" />
-                    <TextBlock Text="{Binding Badge.Label}" FontSize="11.5" FontWeight="SemiBold"
-                               Foreground="{Binding Badge.Tone, Converter={x:Static v:ToneBrush.Solid}}" />
-                  </StackPanel>
-                </Border>
+            <DataTemplate x:DataType="vm:ChangeListEntry">
+              <Grid ColumnDefinitions="Auto,Auto,Auto,*,Auto" Margin="8,7,10,7" MinHeight="24">
+                <Border Width="{Binding Content.Depth, Converter={x:Static v:TreeIndent.Width}}" />
 
-                <!-- A grid, not a stack: beside the diff pane the list is narrow, and the folder has to trim. -->
-                <Grid Grid.Column="1" ColumnDefinitions="Auto,*" Margin="14,0,8,0" VerticalAlignment="Center">
-                  <TextBlock Text="{Binding Name}" FontWeight="Medium" />
-                  <TextBlock Grid.Column="1" Classes="faint" Margin="8,0,0,0" Text="{Binding Folder}"
-                             TextTrimming="CharacterEllipsis" />
-                </Grid>
+                <CheckBox Grid.Column="1" Classes="tick" Focusable="False" IsVisible="{Binding CanTick}"
+                          IsChecked="{Binding TickMark, Mode=OneWay}" IsEnabled="{Binding IsTickable}"
+                          Command="{Binding $parent[ListBox].((vm:WorkingCopyViewModel)DataContext).ToggleTickCommand}"
+                          CommandParameter="{Binding}" AutomationProperties.Name="Tick" />
+                <Path Grid.Column="1" Classes="icon" Data="{StaticResource Icon.Folder}" Width="14" Height="14"
+                      Margin="0,0,10,0" IsVisible="{Binding !CanTick}" />
 
-                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                  <Border Classes="tag" IsVisible="{Binding IsCopied}" ToolTip.Tip="Scheduled with history — a copy or a move">
-                    <StackPanel Orientation="Horizontal" Spacing="4">
-                      <Path Classes="icon" Data="{StaticResource Icon.History}" Width="11" Height="11" />
-                      <TextBlock Classes="muted" Text="history" FontSize="11" />
-                    </StackPanel>
-                  </Border>
-                  <Border Classes="tag" IsVisible="{Binding HasPropertyChange}" ToolTip.Tip="Its properties changed too">
-                    <TextBlock Classes="muted" Text="props" FontSize="11" />
-                  </Border>
-                  <Path Classes="icon" Data="{StaticResource Icon.Lock}" Width="13" Height="13"
-                        IsVisible="{Binding IsLocked}" ToolTip.Tip="You hold the lock on this file" />
-                </StackPanel>
+                <ContentControl Grid.Column="2" Content="{Binding Row}" VerticalAlignment="Center">
+                  <ContentControl.ContentTemplate>
+                    <DataTemplate x:DataType="p:ChangeRow">
+                      <Border Classes="badge" Margin="0,0,14,0"
+                              Background="{Binding Badge.Tone, Converter={x:Static v:ToneBrush.Soft}}">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                          <Ellipse Width="6" Height="6" VerticalAlignment="Center"
+                                   Fill="{Binding Badge.Tone, Converter={x:Static v:ToneBrush.Solid}}" />
+                          <TextBlock Text="{Binding Badge.Label}" FontSize="11.5" FontWeight="SemiBold"
+                                     Foreground="{Binding Badge.Tone, Converter={x:Static v:ToneBrush.Solid}}" />
+                        </StackPanel>
+                      </Border>
+                    </DataTemplate>
+                  </ContentControl.ContentTemplate>
+                </ContentControl>
+
+                <!-- One trimmed text, not two blocks: beside the diff pane the list is narrow, and the
+                     folder trims first, then the name, instead of the name running under the tags. -->
+                <TextBlock Grid.Column="3" Margin="0,0,8,0" VerticalAlignment="Center" TextTrimming="CharacterEllipsis">
+                  <Run Text="{Binding Content.Name}" FontWeight="Medium" />
+                  <Run Text="{Binding Row.RenameCaption}" Foreground="{DynamicResource Tone.Renamed}" />
+                  <Run Text="{Binding Content.Folder}" Foreground="{DynamicResource FaintBrush}" />
+                </TextBlock>
+
+                <ContentControl Grid.Column="4" Content="{Binding Row}" VerticalAlignment="Center">
+                  <ContentControl.ContentTemplate>
+                    <DataTemplate x:DataType="p:ChangeRow">
+                      <StackPanel Orientation="Horizontal" Spacing="6">
+                        <Border Classes="tag" IsVisible="{Binding IsCopied}" ToolTip.Tip="Scheduled with history — a copy or a move">
+                          <StackPanel Orientation="Horizontal" Spacing="4">
+                            <Path Classes="icon" Data="{StaticResource Icon.History}" Width="11" Height="11" />
+                            <TextBlock Classes="muted" Text="history" FontSize="11" />
+                          </StackPanel>
+                        </Border>
+                        <Border Classes="tag" IsVisible="{Binding HasPropertyChange}" ToolTip.Tip="Its properties changed too">
+                          <TextBlock Classes="muted" Text="props" FontSize="11" />
+                        </Border>
+                        <Path Classes="icon" Data="{StaticResource Icon.Lock}" Width="13" Height="13"
+                              IsVisible="{Binding IsLocked}" ToolTip.Tip="You hold the lock on this file" />
+                      </StackPanel>
+                    </DataTemplate>
+                  </ContentControl.ContentTemplate>
+                </ContentControl>
               </Grid>
             </DataTemplate>
           </ListBox.ItemTemplate>
@@ -142,6 +272,8 @@
           <TextBlock Classes="muted" HorizontalAlignment="Center" TextAlignment="Center"
                      TextWrapping="Wrap" Text="{Binding Message}" />
         </StackPanel>
+        <!-- Last, so it covers the list while the question stands. -->
+        <v:RevertPromptView DataContext="{Binding RevertPrompt}" />
       </Panel>
       </DockPanel>
     </Border>

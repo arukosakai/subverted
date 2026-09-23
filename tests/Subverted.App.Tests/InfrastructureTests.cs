@@ -82,6 +82,44 @@ public sealed class InfrastructureTests
     }
 
     [Test]
+    public async Task A_commit_sent_to_a_daemon_that_is_not_there_reads_as_unreachable()
+    {
+        using var folder = new ScratchFolder();
+        var commits = new DaemonWorkingCopyCommit(
+            new DaemonChannel(
+                Path.Combine(folder.Path, "nobody.sock"),
+                Path.Combine(folder.Path, "no-daemon.exe")
+            )
+        );
+
+        var thrown = await Assert
+            .That(async () =>
+                await commits.CommitAsync([folder.Path], "message", CancellationToken.None)
+            )
+            .Throws<DaemonUnreachableException>();
+
+        await Assert.That(thrown!.Message).Contains("no-daemon.exe");
+    }
+
+    [Test]
+    public async Task A_revert_sent_to_a_daemon_that_is_not_there_reads_as_unreachable()
+    {
+        using var folder = new ScratchFolder();
+        var reverts = new DaemonWorkingCopyRevert(
+            new DaemonChannel(
+                Path.Combine(folder.Path, "nobody.sock"),
+                Path.Combine(folder.Path, "no-daemon.exe")
+            )
+        );
+
+        var thrown = await Assert
+            .That(async () => await reverts.RevertAsync(folder.Path, CancellationToken.None))
+            .Throws<DaemonUnreachableException>();
+
+        await Assert.That(thrown!.Message).Contains("no-daemon.exe");
+    }
+
+    [Test]
     public async Task A_files_size_is_its_length_on_disk()
     {
         using var folder = new ScratchFolder();

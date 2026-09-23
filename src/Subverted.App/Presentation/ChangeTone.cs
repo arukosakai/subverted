@@ -11,6 +11,9 @@ public enum ChangeTone
     Added,
     Deleted,
     Replaced,
+
+    /// <summary>A rename made outside SVN, paired by content (D27); committing it records a move.</summary>
+    Renamed,
     Conflict,
     Missing,
     Unversioned,

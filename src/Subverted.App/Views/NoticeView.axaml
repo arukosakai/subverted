@@ -1,0 +1,36 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:v="using:Subverted.App.Views"
+             x:Class="Subverted.App.Views.NoticeView"
+             x:DataType="v:NoticeView">
+  <UserControl.Styles>
+    <Style Selector="Button.dismiss">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Padding" Value="6,2" />
+      <Setter Property="FontSize" Value="12" />
+    </Style>
+  </UserControl.Styles>
+
+  <!-- The card binds to this control rather than inheriting a data context, so a notice can be
+       placed anywhere its owner's dismiss command is in reach. -->
+  <Border x:Name="Card" Padding="12,10" CornerRadius="{StaticResource RowRadius}"
+          IsVisible="{Binding Notice, Converter={x:Static ObjectConverters.IsNotNull}}"
+          Background="{Binding Notice.Tone, Converter={x:Static v:ToneBrush.Soft}}">
+    <Grid ColumnDefinitions="*,Auto">
+      <StackPanel Spacing="4">
+        <TextBlock x:Name="Headline" FontWeight="SemiBold" TextWrapping="Wrap"
+                   Foreground="{Binding Notice.Tone, Converter={x:Static v:ToneBrush.Solid}}"
+                   Text="{Binding Notice.Headline}" />
+        <SelectableTextBlock x:Name="Detail" FontSize="12" TextWrapping="Wrap" FontFamily="{StaticResource MonoFont}"
+                             IsVisible="{Binding Notice.Detail, Converter={x:Static ObjectConverters.IsNotNull}}"
+                             Text="{Binding Notice.Detail}" />
+        <TextBlock x:Name="Hint" Classes="muted" FontSize="12" TextWrapping="Wrap"
+                   IsVisible="{Binding Notice.Hint, Converter={x:Static ObjectConverters.IsNotNull}}"
+                   Text="{Binding Notice.Hint}" />
+      </StackPanel>
+      <Button Grid.Column="1" Classes="dismiss" Content="✕" VerticalAlignment="Top" Margin="8,0,0,0"
+              Command="{Binding DismissCommand}" AutomationProperties.Name="Dismiss" />
+    </Grid>
+  </Border>
+</UserControl>
