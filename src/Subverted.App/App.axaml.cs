@@ -53,6 +53,11 @@ public sealed partial class App : Application
         var launcher = new SystemFileLauncher(() => desktop.MainWindow);
         var revealer = FileRevealers.For(FileRevealers.ThisPlatform);
         var clipboard = new WindowClipboard(() => desktop.MainWindow);
+        var history = new HistoryViewModel(
+            new DaemonRevisionHistory(channel),
+            new RevisionDiffPaneViewModel(new DaemonRevisionDiff(channel), TimeProvider.System),
+            TimeProvider.System
+        );
 
         var viewModel = new MainWindowViewModel(
             new RecentWorkingCopiesFile(RecentWorkingCopiesFile.DefaultPath),
@@ -70,7 +75,8 @@ public sealed partial class App : Application
             TimeProvider.System,
             OperatingSystem.IsWindows()
                 ? StringComparison.OrdinalIgnoreCase
-                : StringComparison.Ordinal
+                : StringComparison.Ordinal,
+            history
         );
 
         return new MainWindow(viewModel, themes);

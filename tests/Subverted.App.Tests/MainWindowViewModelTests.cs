@@ -184,7 +184,8 @@ public sealed class MainWindowViewModelTests
             new FakeFolderPicker("/game"),
             path => WorkingCopies.View(status, path: path),
             clock,
-            StringComparison.Ordinal
+            StringComparison.Ordinal,
+            Revisions.View()
         );
 
         var opening = window.OpenFolderCommand.ExecuteAsync(null);
@@ -235,7 +236,8 @@ public sealed class MainWindowViewModelTests
             new FakeFolderPicker(picked),
             path => WorkingCopies.View(status, path: path),
             clock ?? new FakeTimeProvider(),
-            StringComparison.Ordinal
+            StringComparison.Ordinal,
+            Revisions.View()
         );
 
     private static async Task Settle()

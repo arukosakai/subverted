@@ -27,9 +27,15 @@
         <Border Grid.Row="0" Background="Transparent" WindowDecorationProperties.ElementRole="TitleBar" />
 
         <StackPanel Grid.Row="1" Spacing="6" HorizontalAlignment="Center" Margin="0,6,0,0">
-          <Button Classes="nav active" ToolTip.Tip="Changes" AutomationProperties.Name="Changes"
-                  IsEnabled="{Binding HasWorkingCopy}">
+          <Button x:Name="ChangesView" Classes="nav" Classes.active="{Binding IsShowingChanges}"
+                  ToolTip.Tip="Changes" AutomationProperties.Name="Changes"
+                  IsEnabled="{Binding HasWorkingCopy}" Command="{Binding ShowChangesCommand}">
             <Path Classes="icon" Data="{StaticResource Icon.Changes}" />
+          </Button>
+          <Button x:Name="HistoryView" Classes="nav" Classes.active="{Binding IsShowingHistory}"
+                  ToolTip.Tip="History" AutomationProperties.Name="History"
+                  IsEnabled="{Binding HasWorkingCopy}" Command="{Binding ShowHistoryCommand}">
+            <Path Classes="icon" Data="{StaticResource Icon.History}" />
           </Button>
         </StackPanel>
 
@@ -50,7 +56,7 @@
       </Grid>
     </Border>
 
-    <Grid Grid.Column="1" RowDefinitions="44,*,Auto,200,Auto" Background="{DynamicResource BgBrush}">
+    <Grid Grid.Column="1" RowDefinitions="44,*,Auto,Auto,Auto" Background="{DynamicResource BgBrush}">
 
       <!-- Title bar: which working copy, where it points, and whether the answer is live. The drag
            area sits behind the controls, and the right margin leaves the caption buttons their strip. -->
@@ -115,12 +121,23 @@
       </Grid>
 
       <Panel Grid.Row="1" IsVisible="{Binding HasWorkingCopy}">
-        <v:WorkingCopyView DataContext="{Binding Current}" />
+        <Panel IsVisible="{Binding IsShowingChanges}">
+          <v:WorkingCopyView DataContext="{Binding Current}" />
+        </Panel>
+        <Panel IsVisible="{Binding IsShowingHistory}">
+          <v:HistoryView DataContext="{Binding History}" />
+        </Panel>
       </Panel>
 
       <!-- The bottom strip, SmartSVN's: write a message on the left, read what every write said on the right. -->
-      <GridSplitter Grid.Row="2" Height="1" ResizeDirection="Rows" IsVisible="{Binding HasWorkingCopy}" />
-      <Grid Grid.Row="3" ColumnDefinitions="*,1,*" IsVisible="{Binding HasWorkingCopy}">
+      <Border Grid.Row="2" Height="1" Background="{DynamicResource LineBrush}" IsVisible="{Binding #Strip.IsVisible}" />
+      <Grid Grid.Row="3" x:Name="Strip" Height="200" ColumnDefinitions="*,1,*">
+        <Grid.IsVisible>
+          <MultiBinding Converter="{x:Static BoolConverters.And}">
+            <Binding Path="HasWorkingCopy" />
+            <Binding Path="IsShowingChanges" />
+          </MultiBinding>
+        </Grid.IsVisible>
         <v:CommitComposerView Grid.Column="0" x:Name="Composer" DataContext="{Binding Current.Composer, FallbackValue={x:Null}}" />
         <Border Grid.Column="1" Background="{DynamicResource LineBrush}" />
         <v:OutputLogView Grid.Column="2" x:Name="OutputLog" DataContext="{Binding Log}" />

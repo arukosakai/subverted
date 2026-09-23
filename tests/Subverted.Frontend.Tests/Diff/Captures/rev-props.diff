@@ -1,0 +1,14 @@
+Index: readme.txt
+===================================================================
+--- readme.txt	(revision 3)
++++ readme.txt	(revision 4)
+@@ -1 +1,2 @@
+ readme
++more
+
+Property changes on: readme.txt
+___________________________________________________________________
+Added: svn:eol-style
+## -0,0 +1 ##
++native
+\ No newline at end of property

@@ -247,7 +247,8 @@ public sealed class MainWindowRenderTests
             new FakeFolderPicker(null),
             path => WorkingCopies.View(status, path: path, commits: commits),
             new FakeTimeProvider(),
-            StringComparison.Ordinal
+            StringComparison.Ordinal,
+            Revisions.View()
         );
 
         var window = new MainWindow(viewModel);

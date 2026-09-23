@@ -28,6 +28,8 @@ public static class RequestSpelling
         typeof(CleanupRequest),
         typeof(DaemonInfoRequest),
         typeof(ShutdownRequest),
+        typeof(RevisionDiffRequest),
+        typeof(WorkingCopyRevisionRequest),
     };
 
     /// <param name="respell">Maps one absolute path to its one spelling.</param>
@@ -60,6 +62,11 @@ public static class RequestSpelling
             UnlockRequest release => release with { Paths = All(release.Paths, respell) },
             ResolveRequest resolve => resolve with { Paths = All(resolve.Paths, respell) },
             CleanupRequest cleanup => cleanup with { Path = respell(cleanup.Path) },
+            RevisionDiffRequest revisionDiff => revisionDiff with
+            {
+                WorkingCopyPath = respell(revisionDiff.WorkingCopyPath),
+            },
+            WorkingCopyRevisionRequest revision => revision with { Path = respell(revision.Path) },
             _ => request,
         };
 

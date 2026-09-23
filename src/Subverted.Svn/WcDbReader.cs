@@ -308,6 +308,44 @@ public sealed class WcDbReader : IDisposable
     internal int CountUnfinishedWork() =>
         (int)ExecuteScalar<long>(_connection, "SELECT COUNT(*) FROM work_queue;");
 
+    /// <summary>
+    /// The lowest and highest BASE revision at and below a node — what <c>svnversion</c> prints as
+    /// <c>3:5</c>. Null when nothing there has a BASE, as for a node that is only added.
+    /// </summary>
+    /// <param name="relPath">Slash-separated, relative to <see cref="WorkingCopyInfo.RootPath"/>; empty for the root.</param>
+    /// <remarks>
+    /// Checked against <c>svnversion</c> on 1.8.15 for a mixed, a switched, a sparse and an excluded
+    /// tree: only <c>normal</c> and <c>incomplete</c> BASE rows count — a <c>not-present</c> row
+    /// left by updating a file to before it existed would otherwise widen the range — and a file
+    /// external's own revision does not count either.
+    /// </remarks>
+    internal BaseRevisionRange? ReadBaseRevisionRange(string relPath)
+    {
+        // The descendant test is a range rather than a LIKE so it can use the (wc_id,
+        // local_relpath) index: every strict descendant sorts between "p/" and "p0".
+        const string sql = """
+            SELECT MIN(revision), MAX(revision) FROM nodes
+            WHERE wc_id = $wcId
+              AND op_depth = 0
+              AND presence IN ('normal', 'incomplete')
+              AND file_external IS NULL
+              AND ($relPath = ''
+                   OR local_relpath = $relPath
+                   OR (local_relpath > $relPath || '/' AND local_relpath < $relPath || '0'));
+            """;
+
+        using var command = _connection.CreateCommand();
+        command.CommandText = sql;
+        command.Parameters.AddWithValue("$wcId", _wcId);
+        command.Parameters.AddWithValue("$relPath", relPath);
+
+        using var reader = command.ExecuteReader();
+        reader.Read();
+        return reader.IsDBNull(0)
+            ? null
+            : new BaseRevisionRange(reader.GetInt64(0), reader.GetInt64(1));
+    }
+
     private static string? LocateDatabase(string startPath)
     {
         var dir = Directory.Exists(startPath)

@@ -193,7 +193,7 @@ public sealed class DaemonRequestHandlerTests
         int? readLimit = null;
         var handler = Handler(
             _ => new WorkingCopySession(new FakeWorkingCopyScan("/wc"), new FakeChangeNotifier()),
-            readRevisionLog: (root, path, limit, _) =>
+            readRevisionLog: (root, path, limit, _, _) =>
             {
                 (readRoot, readPath, readLimit) = (root, path, limit);
                 return Task.FromResult<IReadOnlyList<RevisionEntry>>([Revision(42)]);
@@ -218,7 +218,7 @@ public sealed class DaemonRequestHandlerTests
         int? readLimit = -1;
         var handler = Handler(
             _ => new WorkingCopySession(new FakeWorkingCopyScan(), new FakeChangeNotifier()),
-            readRevisionLog: (_, _, limit, _) =>
+            readRevisionLog: (_, _, limit, _, _) =>
             {
                 readLimit = limit;
                 return Task.FromResult<IReadOnlyList<RevisionEntry>>([]);
@@ -244,6 +244,186 @@ public sealed class DaemonRequestHandlerTests
         await Assert.That(((DiffResponse)response).UnifiedDiff).IsEqualTo("--- a\n+++ b\n");
     }
 
+    [Test]
+    public async Task A_log_request_passes_where_it_starts_on_to_svn()
+    {
+        HistoryStart? readStart = null;
+        var handler = Handler(
+            _ => new WorkingCopySession(new FakeWorkingCopyScan(), new FakeChangeNotifier()),
+            readRevisionLog: (_, _, _, start, _) =>
+            {
+                readStart = start;
+                return Task.FromResult<IReadOnlyList<RevisionEntry>>([]);
+            }
+        );
+
+        await handler.HandleAsync(
+            new LogRequest(Path.GetFullPath("/wc"), 100, new HistoryFromHead()),
+            None
+        );
+
+        await Assert.That(readStart).IsEqualTo(new HistoryFromHead());
+    }
+
+    [Test]
+    public async Task A_log_starting_at_revision_one_is_read()
+    {
+        HistoryStart? readStart = null;
+        var handler = Handler(
+            _ => new WorkingCopySession(new FakeWorkingCopyScan(), new FakeChangeNotifier()),
+            readRevisionLog: (_, _, _, start, _) =>
+            {
+                readStart = start;
+                return Task.FromResult<IReadOnlyList<RevisionEntry>>([Revision(1)]);
+            }
+        );
+
+        var response = await handler.HandleAsync(
+            new LogRequest(Path.GetFullPath("/wc"), 100, new HistoryFromRevision(1)),
+            None
+        );
+
+        await Assert.That(response).IsTypeOf<LogResponse>();
+        await Assert.That(readStart).IsEqualTo(new HistoryFromRevision(1));
+    }
+
+    /// <summary>SVN accepts <c>-r 0:1</c> and lists revision 1, which is not the page asked for.</summary>
+    [Test]
+    public async Task A_log_starting_below_revision_one_is_refused_without_asking_svn()
+    {
+        var handler = Handler(_ => new WorkingCopySession(
+            new FakeWorkingCopyScan(),
+            new FakeChangeNotifier()
+        ));
+
+        var response = await handler.HandleAsync(
+            new LogRequest(Path.GetFullPath("/wc"), 100, new HistoryFromRevision(0)),
+            None
+        );
+
+        var error = await Assert.That(response).IsTypeOf<ErrorResponse>();
+        await Assert.That(error!.Kind).IsEqualTo(DaemonErrorKind.RequestRefused);
+        await Assert.That(error.Message).Contains("revision 0");
+    }
+
+    /// <summary>
+    /// The repository root comes from the session, not the request: a front-end knows its working
+    /// copy, and which server that copy points at is the working copy's business.
+    /// </summary>
+    [Test]
+    public async Task A_revision_diff_is_read_against_the_repository_the_working_copy_points_at()
+    {
+        (string Root, string RepositoryRoot, string RepositoryPath, long Revision)? read = null;
+        var handler = Handler(
+            _ => new WorkingCopySession(new FakeWorkingCopyScan("/wc"), new FakeChangeNotifier()),
+            readRevisionDiff: (root, repositoryRoot, repositoryPath, revision, _) =>
+            {
+                read = (root, repositoryRoot, repositoryPath, revision);
+                return Task.FromResult("Index: a.txt\n");
+            }
+        );
+
+        var response = await handler.HandleAsync(
+            new RevisionDiffRequest(Path.GetFullPath("/wc/art"), "/trunk/a.txt", 1),
+            None
+        );
+
+        var diff = await Assert.That(response).IsTypeOf<DiffResponse>();
+        await Assert.That(diff!.UnifiedDiff).IsEqualTo("Index: a.txt\n");
+        await Assert.That(read).IsEqualTo(("/wc", "https://svn.example/repo", "/trunk/a.txt", 1L));
+    }
+
+    /// <summary>A negative <c>-c</c> is SVN's way of asking for the change reversed.</summary>
+    [Test]
+    [Arguments(0L)]
+    [Arguments(-3L)]
+    public async Task A_revision_diff_below_revision_one_is_refused_without_asking_svn(
+        long revision
+    )
+    {
+        var handler = Handler(_ => new WorkingCopySession(
+            new FakeWorkingCopyScan(),
+            new FakeChangeNotifier()
+        ));
+
+        var response = await handler.HandleAsync(
+            new RevisionDiffRequest(Path.GetFullPath("/wc"), "/a.txt", revision),
+            None
+        );
+
+        var error = await Assert.That(response).IsTypeOf<ErrorResponse>();
+        await Assert.That(error!.Kind).IsEqualTo(DaemonErrorKind.RequestRefused);
+        await Assert.That(error.Message).Contains($"Revision {revision}");
+    }
+
+    [Test]
+    public async Task A_revision_diff_of_a_path_with_no_leading_slash_is_refused_without_asking_svn()
+    {
+        var handler = Handler(_ => new WorkingCopySession(
+            new FakeWorkingCopyScan(),
+            new FakeChangeNotifier()
+        ));
+
+        var response = await handler.HandleAsync(
+            new RevisionDiffRequest(Path.GetFullPath("/wc"), "a.txt", 2),
+            None
+        );
+
+        var error = await Assert.That(response).IsTypeOf<ErrorResponse>();
+        await Assert.That(error!.Kind).IsEqualTo(DaemonErrorKind.RequestRefused);
+        await Assert.That(error.Message).Contains("'a.txt'");
+    }
+
+    [Test]
+    public async Task A_working_copy_revision_request_answers_with_the_range_below_the_path()
+    {
+        (string Root, string Path)? read = null;
+        var handler = Handler(
+            _ => new WorkingCopySession(new FakeWorkingCopyScan("/wc"), new FakeChangeNotifier()),
+            readBaseRevisionRange: (root, path, _) =>
+            {
+                read = (root, path);
+                return Task.FromResult<BaseRevisionRange?>(new BaseRevisionRange(3, 5));
+            }
+        );
+
+        var response = await handler.HandleAsync(
+            new WorkingCopyRevisionRequest(Path.GetFullPath("/wc/art")),
+            None
+        );
+
+        await Assert
+            .That(response)
+            .IsEqualTo(new WorkingCopyRevisionResponse(new BaseRevisionRange(3, 5)));
+        await Assert.That(read).IsEqualTo(("/wc", Path.GetFullPath("/wc/art")));
+    }
+
+    [Test]
+    public async Task A_history_read_that_svn_refuses_is_reported_as_an_svn_failure()
+    {
+        var handler = Handler(
+            _ => new WorkingCopySession(new FakeWorkingCopyScan(), new FakeChangeNotifier()),
+            readRevisionDiff: (_, _, _, _, _) =>
+                throw new SvnCommandException("svn: E160013: path not found"),
+            readBaseRevisionRange: (_, _, _) =>
+                throw new SvnCommandException("svn: E155021: client too old")
+        );
+
+        foreach (
+            DaemonRequest request in (DaemonRequest[])
+                [
+                    new RevisionDiffRequest(Path.GetFullPath("/wc"), "/a.txt", 2),
+                    new WorkingCopyRevisionRequest(Path.GetFullPath("/wc")),
+                ]
+        )
+        {
+            var response = await handler.HandleAsync(request, None);
+
+            var error = await Assert.That(response).IsTypeOf<ErrorResponse>();
+            await Assert.That(error!.Kind).IsEqualTo(DaemonErrorKind.SvnCommandFailed);
+        }
+    }
+
     /// <summary>
     /// `svn` failing is not the daemon failing. The front-end needs to be able to say "your
     /// server said no" rather than "Subverted is broken", and the exit codes differ.
@@ -253,7 +433,7 @@ public sealed class DaemonRequestHandlerTests
     {
         var handler = Handler(
             _ => new WorkingCopySession(new FakeWorkingCopyScan(), new FakeChangeNotifier()),
-            readRevisionLog: (_, _, _, _) =>
+            readRevisionLog: (_, _, _, _, _) =>
                 throw new SvnCommandException("svn: E170013: unable to connect"),
             readWorkingCopyDiff: (_, _, _) =>
                 throw new SvnCommandException("svn: E170013: unable to connect")
@@ -1124,6 +1304,8 @@ public sealed class DaemonRequestHandlerTests
         TimeProvider? clock = null,
         ReadRevisionLog? readRevisionLog = null,
         ReadWorkingCopyDiff? readWorkingCopyDiff = null,
+        ReadRevisionDiff? readRevisionDiff = null,
+        ReadBaseRevisionRange? readBaseRevisionRange = null,
         ScheduleAddition? scheduleAddition = null,
         RevertChanges? revertChanges = null,
         ScheduleDeletion? scheduleDeletion = null,
@@ -1145,6 +1327,8 @@ public sealed class DaemonRequestHandlerTests
             clock ?? TimeProvider.System,
             readRevisionLog ?? NoLog,
             readWorkingCopyDiff ?? NoDiff,
+            readRevisionDiff ?? NoRevisionDiff,
+            readBaseRevisionRange ?? NoBaseRevisionRange,
             scheduleAddition ?? NoAdd,
             revertChanges ?? NoRevert,
             scheduleDeletion ?? NoDelete,
@@ -1168,6 +1352,7 @@ public sealed class DaemonRequestHandlerTests
         string root,
         string path,
         int? limit,
+        HistoryStart? start,
         CancellationToken cancellationToken
     ) => throw new InvalidOperationException("This test should not have read the log.");
 
@@ -1176,6 +1361,20 @@ public sealed class DaemonRequestHandlerTests
         string path,
         CancellationToken cancellationToken
     ) => throw new InvalidOperationException("This test should not have read a diff.");
+
+    private static Task<string> NoRevisionDiff(
+        string root,
+        string repositoryRoot,
+        string repositoryPath,
+        long revision,
+        CancellationToken cancellationToken
+    ) => throw new InvalidOperationException("This test should not have read a revision's diff.");
+
+    private static Task<BaseRevisionRange?> NoBaseRevisionRange(
+        string root,
+        string path,
+        CancellationToken cancellationToken
+    ) => throw new InvalidOperationException("This test should not have read BASE revisions.");
 
     /// <summary>
     /// The seven defaults that change a working copy. A test reaching one it did not ask for would

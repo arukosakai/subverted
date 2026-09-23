@@ -1,0 +1,7 @@
+Index: 100% done file.txt
+===================================================================
+--- 100% done file.txt	(revision 8)
++++ 100% done file.txt	(revision 9)
+@@ -1 +1,2 @@
+ a
++b

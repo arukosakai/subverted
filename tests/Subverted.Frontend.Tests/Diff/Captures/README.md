@@ -38,3 +38,29 @@ To rebuild: `build.sh` (replaces `%TEMP%\subverted-diff\repo` and `wc`), then `c
 
 Paths come back `/`-separated even when the target was given with `\`, relative to the root, and
 the non-ASCII name arrives as UTF-8.
+
+## Revision diffs (`rev-*.diff`)
+
+What the History view parses: `svn diff --non-interactive --change N <root-url>/<path>@N`, run by
+`capture-revision.cs` the way `SvnRevisionDiffCommand` runs it — from the working-copy root, each
+path segment URL-escaped, `LC_ALL=C`. From `subverted-history`, built by `build-history.ps1`
+(r1–r9, plus a `wc-behind` checkout left mixed at r3 with `art` at r5).
+
+To rebuild: `build-history.ps1` (it refuses to overwrite an existing fixture), then
+`dotnet run capture-revision.cs -- %TEMP%\subverted-history\wc <repo-path> <N> <out> ...`.
+
+| Revision | Path | What `svn diff -c` printed |
+| --- | --- | --- |
+| r2 edit | `/a.txt` | an ordinary hunk; headers read `(revision 1)` / `(revision 2)` |
+| r6 delete | `/docs/readme.txt` | all removed lines, although the file is gone from every checkout |
+| r3 move, old name | `/a.txt` | all removed lines |
+| r3 move, new name | `/b.txt` | **nothing, exit 0** — compared with its copy source, it is unchanged |
+| r1 binary add | `/art/hero.png` | the binary notice, then a second section with `svn:mime-type`, as a local add |
+| r1 directory | `/art` | its files' sections, **named relative to the directory** |
+| r3 root | `/` | both sides of the move; `b.txt` as a whole-file add |
+| `@` / `%` in names | escaped in the URL | the name as it is, unescaped |
+
+Two things that differ from a local diff: a file's header is its bare name (paths are relative to
+the URL asked about, not to the working copy), and `svn diff -c N` on a *working-copy* path that no
+longer exists fails with `E155010` — which is why the request names a repository path. A working
+copy target also reads a peg revision off `@`, unlike plain `svn diff`.

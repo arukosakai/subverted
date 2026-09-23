@@ -117,6 +117,7 @@ public sealed class SvnPegRevisionIntegrationTests
             copy.Root,
             copy.Absolute(Retina),
             null,
+            null,
             None
         );
 

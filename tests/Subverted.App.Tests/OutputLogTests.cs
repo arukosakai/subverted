@@ -119,7 +119,8 @@ public sealed class OutputLogTests
             new FakeFolderPicker(null),
             path => WorkingCopies.View(status, path: path, commits: commits),
             _clock,
-            StringComparison.Ordinal
+            StringComparison.Ordinal,
+            Revisions.View(new FakeRevisionHistory())
         );
         await window.ShowAsync("/studio/game", CancellationToken.None);
         window.Current!.Composer.Message = "Hero";
@@ -141,7 +142,8 @@ public sealed class OutputLogTests
             new FakeFolderPicker(null),
             path => WorkingCopies.View(status, path: path),
             _clock,
-            StringComparison.Ordinal
+            StringComparison.Ordinal,
+            Revisions.View(new FakeRevisionHistory())
         );
         await window.ShowAsync("/studio/game", CancellationToken.None);
         window.Current!.RevertCommand.Execute(window.Current.Entries[0]);
