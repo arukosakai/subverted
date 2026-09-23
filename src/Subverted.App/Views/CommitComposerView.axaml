@@ -4,24 +4,33 @@
              xmlns:v="using:Subverted.App.Views"
              x:Class="Subverted.App.Views.CommitComposerView"
              x:DataType="vm:CommitComposerViewModel">
-  <!-- Self-contained, so it can move to wherever the layout keeps the commit box. -->
   <UserControl.KeyBindings>
     <KeyBinding Gesture="Ctrl+Enter" Command="{Binding CommitCommand}" />
   </UserControl.KeyBindings>
 
-  <StackPanel Spacing="8">
-    <TextBox x:Name="MessageBox" Text="{Binding Message, Mode=TwoWay}" PlaceholderText="Commit message…"
-             AcceptsReturn="True" TextWrapping="Wrap" MinHeight="64" MaxHeight="160"
-             IsEnabled="{Binding !IsCommitting}" AutomationProperties.Name="Commit message" />
-    <Grid ColumnDefinitions="*,Auto">
-      <TextBlock Classes="faint" FontSize="12" VerticalAlignment="Center" Text="Ctrl+Enter" />
+  <DockPanel>
+    <Border DockPanel.Dock="Top" Classes="pane-header">
+      <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+        <Path Classes="icon" Data="{StaticResource Icon.Commit}" Width="14" Height="14" />
+        <TextBlock Classes="section" Text="COMMIT" VerticalAlignment="Center" />
+      </StackPanel>
+    </Border>
+
+    <Grid DockPanel.Dock="Bottom" ColumnDefinitions="*,Auto" Margin="12,0,12,10">
+      <TextBlock Classes="faint" FontSize="11.5" VerticalAlignment="Center" Text="Ctrl+Enter" />
       <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10">
-        <ProgressBar IsIndeterminate="True" Width="60" VerticalAlignment="Center"
-                     IsVisible="{Binding IsCommitting}" />
+        <ProgressBar Classes="spinner" Width="60" VerticalAlignment="Center" IsVisible="{Binding IsCommitting}" />
         <Button x:Name="CommitButton" Classes="accent" Content="{Binding ButtonText}"
                 Command="{Binding CommitCommand}" AutomationProperties.Name="{Binding ButtonText}" />
       </StackPanel>
     </Grid>
-    <v:NoticeView x:Name="CommitNotice" Notice="{Binding Notice}" DismissCommand="{Binding DismissNoticeCommand}" />
-  </StackPanel>
+
+    <v:NoticeView DockPanel.Dock="Bottom" x:Name="CommitNotice" Margin="12,0,12,8"
+                  Notice="{Binding Notice}" DismissCommand="{Binding DismissNoticeCommand}" />
+
+    <TextBox x:Name="MessageBox" Margin="12,10,12,8" Text="{Binding Message, Mode=TwoWay}"
+             PlaceholderText="Commit message…" AcceptsReturn="True" TextWrapping="Wrap"
+             VerticalContentAlignment="Top" IsEnabled="{Binding !IsCommitting}"
+             AutomationProperties.Name="Commit message" />
+  </DockPanel>
 </UserControl>

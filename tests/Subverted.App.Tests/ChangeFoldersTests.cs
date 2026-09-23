@@ -9,26 +9,26 @@ public sealed class ChangeFoldersTests
     [Test]
     public async Task A_clean_copy_has_no_folders_at_all()
     {
-        await Assert.That(ChangeFolders.Of([])).IsEmpty();
+        await Assert.That(ChangeFolders.Of([], "game")).IsEmpty();
     }
 
     [Test]
     public async Task Changes_at_the_root_give_only_the_root_counting_them_all()
     {
-        var folders = ChangeFolders.Of([Row("a.txt"), Row("b.txt")]);
+        var folders = ChangeFolders.Of([Row("a.txt"), Row("b.txt")], "game");
 
-        await Assert.That(folders).IsEquivalentTo([new FolderLine("", "", 0, 2)]);
+        await Assert.That(folders).IsEquivalentTo([new FolderLine("", "game", 0, 2)]);
     }
 
     [Test]
     public async Task Every_folder_above_a_change_is_listed_with_its_depth_and_last_segment()
     {
-        var folders = ChangeFolders.Of([Row("art/chars/hero.png")]);
+        var folders = ChangeFolders.Of([Row("art/chars/hero.png")], "game");
 
         await Assert
             .That(folders)
             .IsEquivalentTo([
-                new FolderLine("", "", 0, 1),
+                new FolderLine("", "game", 0, 1),
                 new FolderLine("art", "art", 1, 1),
                 new FolderLine("art/chars", "chars", 2, 1),
             ]);
@@ -38,11 +38,10 @@ public sealed class ChangeFoldersTests
     [Test]
     public async Task A_folder_counts_the_changes_at_every_depth_below_it()
     {
-        var folders = ChangeFolders.Of([
-            Row("art/a.png"),
-            Row("art/chars/hero.png"),
-            Row("src/main.cs"),
-        ]);
+        var folders = ChangeFolders.Of(
+            [Row("art/a.png"), Row("art/chars/hero.png"), Row("src/main.cs")],
+            "game"
+        );
 
         await Assert
             .That(folders.Select(folder => (folder.RelPath, folder.Count)))
@@ -52,12 +51,10 @@ public sealed class ChangeFoldersTests
     [Test]
     public async Task A_folder_comes_straight_after_its_parent_and_siblings_sort_by_name_ignoring_case()
     {
-        var folders = ChangeFolders.Of([
-            Row("src/x.cs"),
-            Row("Art/b/y.png"),
-            Row("art2/z.png"),
-            Row("Art/a/w.png"),
-        ]);
+        var folders = ChangeFolders.Of(
+            [Row("src/x.cs"), Row("Art/b/y.png"), Row("art2/z.png"), Row("Art/a/w.png")],
+            "game"
+        );
 
         await Assert
             .That(string.Join(",", folders.Select(folder => folder.RelPath)))
@@ -68,7 +65,7 @@ public sealed class ChangeFoldersTests
     [Test]
     public async Task Folders_that_differ_only_in_case_are_kept_apart_in_a_fixed_order()
     {
-        var folders = ChangeFolders.Of([Row("art/a.png"), Row("Art/b.png")]);
+        var folders = ChangeFolders.Of([Row("art/a.png"), Row("Art/b.png")], "game");
 
         await Assert
             .That(string.Join(",", folders.Select(folder => folder.RelPath)))
@@ -79,7 +76,7 @@ public sealed class ChangeFoldersTests
     [Test]
     public async Task A_changed_folder_with_nothing_listed_under_it_is_not_a_tree_line()
     {
-        var folders = ChangeFolders.Of([Row("assets", NodeStatus.Unversioned)]);
+        var folders = ChangeFolders.Of([Row("assets", NodeStatus.Unversioned)], "game");
 
         await Assert.That(folders.Select(folder => folder.RelPath)).IsEquivalentTo([""]);
     }
@@ -92,7 +89,7 @@ public sealed class ChangeFoldersTests
             "old/hero.png"
         );
 
-        var folders = ChangeFolders.Of([rename]);
+        var folders = ChangeFolders.Of([rename], "game");
 
         await Assert
             .That(folders.Select(folder => (folder.RelPath, folder.Count)))
@@ -135,6 +132,15 @@ public sealed class ChangeFoldersTests
     public async Task Only_the_root_is_the_root(string relPath, bool isRoot)
     {
         await Assert.That(new FolderLine(relPath, relPath, 0, 1).IsRoot).IsEqualTo(isRoot);
+    }
+
+    [Test]
+    [Arguments(1, "art, 1 change")]
+    [Arguments(2, "art, 2 changes")]
+    [Arguments(1500, "art, 1,500 changes")]
+    public async Task A_screen_reader_hears_the_folder_and_its_count(int count, string said)
+    {
+        await Assert.That(new FolderLine("art", "art", 1, count).AutomationName).IsEqualTo(said);
     }
 
     private static ChangeRow Row(string relPath, NodeStatus status = NodeStatus.Modified) =>

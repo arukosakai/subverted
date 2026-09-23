@@ -14,10 +14,13 @@ public sealed partial class MainWindow : Window
         InitializeComponent();
     }
 
-    public MainWindow(MainWindowViewModel viewModel)
+    /// <param name="themes">The rail's theme picker; without one, the rail offers no choice.</param>
+    public MainWindow(MainWindowViewModel viewModel, ThemePickerViewModel? themes = null)
         : this()
     {
         DataContext = viewModel;
+        ThemeMenu.DataContext = themes;
+        ThemeButton.IsVisible = themes is not null;
         Opened += async (_, _) => await viewModel.StartAsync(CancellationToken.None);
         Activated += async (_, _) => await viewModel.ActivatedAsync(CancellationToken.None);
         Deactivated += async (_, _) => await viewModel.DeactivatedAsync();

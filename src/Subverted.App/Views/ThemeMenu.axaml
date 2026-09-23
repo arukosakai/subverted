@@ -1,0 +1,29 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Subverted.App.ViewModels"
+             xmlns:p="using:Subverted.App.Presentation"
+             x:Class="Subverted.App.Views.ThemeMenu"
+             x:DataType="vm:ThemePickerViewModel">
+  <StackPanel MinWidth="220" Spacing="2">
+    <TextBlock Classes="section" Text="THEME" Margin="8,4,8,6" />
+    <ListBox x:Name="Presets" Classes="table" ItemsSource="{Binding Presets}"
+             SelectedItem="{Binding Selected, Mode=TwoWay}" AutomationProperties.Name="Theme presets">
+      <ListBox.ItemTemplate>
+        <DataTemplate x:DataType="p:ThemePreset">
+          <StackPanel Orientation="Horizontal" Spacing="10" Margin="8,6">
+            <!-- A swatch of the preset itself, so it can be picked before it is tried. -->
+            <Border Width="30" Height="18" CornerRadius="4" ClipToBounds="True"
+                    BorderBrush="{DynamicResource LineBrush}" BorderThickness="1"
+                    Background="{Binding Background}">
+              <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Border Width="9" Background="{Binding Surface}" />
+                <Border Width="9" Background="{Binding Accent}" />
+              </StackPanel>
+            </Border>
+            <TextBlock Text="{Binding DisplayName}" VerticalAlignment="Center" />
+          </StackPanel>
+        </DataTemplate>
+      </ListBox.ItemTemplate>
+    </ListBox>
+  </StackPanel>
+</UserControl>

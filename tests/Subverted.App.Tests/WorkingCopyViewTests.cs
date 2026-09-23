@@ -131,6 +131,24 @@ public sealed class WorkingCopyViewTests
     }
 
     [Test]
+    public async Task Each_folder_line_is_named_for_a_screen_reader_by_its_folder_and_count()
+    {
+        var names = await OnViewAsync(
+            (_, list, _) =>
+                string.Join(
+                    "|",
+                    list.FindAncestorOfType<WorkingCopyView>()!
+                        .FindControl<ListBox>("Folders")!
+                        .GetVisualDescendants()
+                        .OfType<ListBoxItem>()
+                        .Select(item => AutomationProperties.GetName(item))
+                )
+        );
+
+        await Assert.That(names).IsEqualTo("game, 3 changes|sub, 1 change");
+    }
+
+    [Test]
     public async Task A_filter_that_hides_lines_says_how_many()
     {
         var (shown, text, visible) = await OnViewAsync(

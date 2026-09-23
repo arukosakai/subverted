@@ -208,7 +208,7 @@ public sealed partial class WorkingCopyViewModel(
         ChangeListSynchronizer.Apply(Changes, rows);
         _ticks.Follow(rows);
         OnPropertyChanged(nameof(Ticked));
-        ShowFolders(rows);
+        ShowFolders(rows, FolderName.Of(listing.Info.RootPath));
         LayOut();
         RepositoryRoot = listing.Info.RepositoryRoot;
         Name = FolderName.Of(listing.Info.RootPath);
@@ -232,7 +232,7 @@ public sealed partial class WorkingCopyViewModel(
     /// Brings the pane up to date and keeps the chosen folder chosen; a folder that no longer holds
     /// anything falls back to the root rather than narrowing the table to nothing.
     /// </summary>
-    private void ShowFolders(IReadOnlyList<ChangeRow> rows)
+    private void ShowFolders(IReadOnlyList<ChangeRow> rows, string rootName)
     {
         var chosen = SelectedFolder?.Content.RelPath ?? "";
         _isRelayingFolders = true;
@@ -240,7 +240,7 @@ public sealed partial class WorkingCopyViewModel(
         {
             ListSlotSynchronizer.Apply(
                 Folders,
-                ChangeFolders.Of(rows),
+                ChangeFolders.Of(rows, rootName),
                 line => line.RelPath,
                 line => new FolderEntry(line)
             );

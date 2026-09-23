@@ -54,7 +54,7 @@ public sealed class CommitViewTests
             (window, control, view) =>
             {
                 view.Composer.Message = "From the list";
-                var list = control.FindControl<ListBox>("List")!;
+                var list = Named<ListBox>(control, "List");
                 list.SelectedIndex = 0;
                 list.ContainerFromIndex(0)!.Focus();
                 Dispatcher.UIThread.RunJobs();
@@ -160,7 +160,7 @@ public sealed class CommitViewTests
                 )
         );
 
-        await Assert.That(text).Contains("protagonist.png ← hero.png art");
+        await Assert.That(text).Contains("protagonist.png ← hero.png");
     }
 
     [Test]
@@ -195,7 +195,7 @@ public sealed class CommitViewTests
     private static Task<T> OnViewAsync<T>(
         FakeWorkingCopyCommit commits,
         StatusResponse listing,
-        Func<Window, WorkingCopyView, WorkingCopyViewModel, T> act
+        Func<Window, Control, WorkingCopyViewModel, T> act
     ) =>
         HeadlessApp.Session.Dispatch(
             async () =>
@@ -205,7 +205,12 @@ public sealed class CommitViewTests
                     commits: commits
                 );
                 await view.RefreshAsync(CancellationToken.None);
-                var control = new WorkingCopyView { DataContext = view };
+                // The table and the commit box side by side, as the window's bottom strip holds them.
+                var control = new DockPanel();
+                var composer = new CommitComposerView { DataContext = view.Composer, Height = 200 };
+                DockPanel.SetDock(composer, Dock.Bottom);
+                control.Children.Add(composer);
+                control.Children.Add(new WorkingCopyView { DataContext = view });
                 var window = new Window
                 {
                     Width = 1100,

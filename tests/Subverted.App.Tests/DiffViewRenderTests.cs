@@ -300,7 +300,10 @@ public sealed class DiffViewRenderTests
 
         await Assert
             .That(texts)
-            .IsEquivalentTo(["Select a change to see its diff"], CollectionOrdering.Matching);
+            .IsEquivalentTo(
+                ["DIFF", "Select a change to see its diff"],
+                CollectionOrdering.Matching
+            );
     }
 
     private static Task<T> RenderAsync<T>(

@@ -68,17 +68,25 @@
   <!-- Whichever the platform has: Windows ships Cascadia Mono and Consolas, macOS ships Menlo. -->
   <FontFamily x:Key="MonoFont">Cascadia Mono, Consolas, Menlo, Courier New</FontFamily>
 
-  <!-- Drawn at 24x24 and stroked, so they scale and take the text colour like a glyph would. -->
-  <StreamGeometry x:Key="Icon.Folder">M3 7.5A2.5 2.5 0 0 1 5.5 5H9l2 2h7.5A2.5 2.5 0 0 1 21 9.5v7A2.5 2.5 0 0 1 18.5 19h-13A2.5 2.5 0 0 1 3 16.5Z</StreamGeometry>
-  <StreamGeometry x:Key="Icon.Plus">M12 5v14M5 12h14</StreamGeometry>
-  <StreamGeometry x:Key="Icon.Check">M5 12.5l4.5 4.5L19 7.5</StreamGeometry>
-  <StreamGeometry x:Key="Icon.Alert">M12 4L21 19.5H3Z M12 10v4.5M12 17.2v.3</StreamGeometry>
+  <!-- Lucide's line icons, which oto draws with: 24x24, stroked, so they take the text colour like a glyph. -->
+  <StreamGeometry x:Key="Icon.Folder">M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-0.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z</StreamGeometry>
+  <StreamGeometry x:Key="Icon.FolderPlus">M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-0.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z M12 10v6 M9 13h6</StreamGeometry>
+  <StreamGeometry x:Key="Icon.Plus">M5 12h14 M12 5v14</StreamGeometry>
+  <StreamGeometry x:Key="Icon.Check">M20 6L9 17l-5-5</StreamGeometry>
+  <StreamGeometry x:Key="Icon.Alert">M21.73 18l-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z M12 9v4 M12 17h0.01</StreamGeometry>
   <StreamGeometry x:Key="Icon.Unplugged">M9 7V3M15 7V3M7 7h10v4a5 5 0 0 1-10 0Z M12 16v5</StreamGeometry>
-  <StreamGeometry x:Key="Icon.Server">M4 5h16v5H4Z M4 14h16v5H4Z M8 7.5v.1M8 16.5v.1</StreamGeometry>
-  <StreamGeometry x:Key="Icon.Lock">M6 11h12v9H6Z M8.5 11V8a3.5 3.5 0 0 1 7 0v3</StreamGeometry>
-  <StreamGeometry x:Key="Icon.History">M4 12a8 8 0 1 0 2.4-5.7L4 8.5 M4 4v4.5h4.5 M12 8v4l3 2</StreamGeometry>
-  <StreamGeometry x:Key="Icon.Diff">M8 4v8M4 8h8 M12 18h8 M17 4L7 20</StreamGeometry>
-  <StreamGeometry x:Key="Icon.File">M6 3h8l4 4v14H6Z M14 3v4h4</StreamGeometry>
-  <StreamGeometry x:Key="Icon.Open">M14 4h6v6 M20 4l-9 9 M18 14v5H5V6h5</StreamGeometry>
-  <StreamGeometry x:Key="Icon.Branch">M7 4v11 M7 15a2.5 2.5 0 1 0 0 5a2.5 2.5 0 1 0 0-5Z M17 4a2.5 2.5 0 1 0 0 5a2.5 2.5 0 1 0 0-5Z M17 9c0 4-10 2-10 6</StreamGeometry>
+  <StreamGeometry x:Key="Icon.Server">M4 5h16v5H4Z M4 14h16v5H4Z M8 7.5v0.1M8 16.5v0.1</StreamGeometry>
+  <StreamGeometry x:Key="Icon.Lock">M5 11h14a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2Z M7 11V7a5 5 0 0 1 10 0v4</StreamGeometry>
+  <StreamGeometry x:Key="Icon.History">M3 12a9 9 0 1 0 9-9a9.75 9.75 0 0 0-6.74 2.74L3 8 M3 3v5h5 M12 7v5l4 2</StreamGeometry>
+  <StreamGeometry x:Key="Icon.Diff">M12 3v14 M5 10h14 M5 21h14</StreamGeometry>
+  <StreamGeometry x:Key="Icon.File">M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z M14 2v4a2 2 0 0 0 2 2h4</StreamGeometry>
+  <StreamGeometry x:Key="Icon.Open">M15 3h6v6 M10 14L21 3 M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6</StreamGeometry>
+  <StreamGeometry x:Key="Icon.Branch">M6 3v12 M18 6a3 3 0 1 0 0 6a3 3 0 1 0 0-6Z M6 15a3 3 0 1 0 0 6a3 3 0 1 0 0-6Z M18 12a9 9 0 0 1-9 9</StreamGeometry>
+  <StreamGeometry x:Key="Icon.Changes">M3 17l2 2l4-4 M3 7l2 2l4-4 M13 6h8 M13 12h8 M13 18h8</StreamGeometry>
+  <StreamGeometry x:Key="Icon.Palette">M12 22a1 1 0 0 1 0-20a10 9 0 0 1 10 9a5 5 0 0 1-5 5h-2.25a1.75 1.75 0 0 0-1.4 2.8l0.3 0.4a1.75 1.75 0 0 1-1.4 2.8Z M7.5 10.5h0.01 M10.5 6.5h0.01 M15.5 7.5h0.01</StreamGeometry>
+  <StreamGeometry x:Key="Icon.ChevronDown">M6 9l6 6l6-6</StreamGeometry>
+  <StreamGeometry x:Key="Icon.Search">M11 3a8 8 0 1 0 0 16a8 8 0 1 0 0-16Z M21 21l-4.3-4.3</StreamGeometry>
+  <StreamGeometry x:Key="Icon.Undo">M9 14L4 9l5-5 M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5a5.5 5.5 0 0 1-5.5 5.5H11</StreamGeometry>
+  <StreamGeometry x:Key="Icon.Terminal">M4 17l6-6l-6-6 M12 19h8</StreamGeometry>
+  <StreamGeometry x:Key="Icon.Commit">M12 9a3 3 0 1 0 0 6a3 3 0 1 0 0-6Z M3 12h6 M15 12h6</StreamGeometry>
 </ResourceDictionary>

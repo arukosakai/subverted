@@ -1,0 +1,47 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Subverted.App.ViewModels"
+             xmlns:v="using:Subverted.App.Views"
+             x:Class="Subverted.App.Views.OutputLogView"
+             x:DataType="vm:OutputLogViewModel">
+  <DockPanel>
+    <Border DockPanel.Dock="Top" Classes="pane-header">
+      <Grid ColumnDefinitions="*,Auto">
+        <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+          <Path Classes="icon" Data="{StaticResource Icon.Terminal}" Width="14" Height="14" />
+          <TextBlock Classes="section" Text="OUTPUT" VerticalAlignment="Center" />
+        </StackPanel>
+        <Button Grid.Column="1" Classes="link" Content="Clear" VerticalAlignment="Center"
+                Command="{Binding ClearCommand}" IsVisible="{Binding !IsEmpty}" />
+      </Grid>
+    </Border>
+
+    <Panel>
+      <TextBlock Classes="faint" FontSize="12" Margin="12,10" IsVisible="{Binding IsEmpty}"
+                 Text="Commits and reverts show here, with what SVN said." />
+
+      <ScrollViewer x:Name="Scroller">
+        <ItemsControl x:Name="Lines" ItemsSource="{Binding Lines}" Margin="12,8">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="vm:OutputLine">
+              <StackPanel Margin="0,0,0,8" Spacing="2">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <TextBlock Classes="mono faint" Text="{Binding At, StringFormat='{}{0:HH:mm:ss}'}" />
+                  <TextBlock FontWeight="SemiBold" FontSize="12" Text="{Binding Operation}" />
+                  <TextBlock Classes="muted" FontSize="12" Text="{Binding Subject}" TextTrimming="CharacterEllipsis" />
+                </StackPanel>
+                <TextBlock FontSize="12" FontWeight="Medium" TextWrapping="Wrap"
+                           Foreground="{Binding Notice.Tone, Converter={x:Static v:ToneBrush.Solid}}"
+                           Text="{Binding Notice.Headline}" />
+                <SelectableTextBlock FontFamily="{StaticResource MonoFont}" FontSize="11.5" TextWrapping="Wrap"
+                                     Foreground="{DynamicResource MutedBrush}"
+                                     IsVisible="{Binding Notice.Detail, Converter={x:Static ObjectConverters.IsNotNull}}"
+                                     Text="{Binding Notice.Detail}" />
+              </StackPanel>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </ScrollViewer>
+    </Panel>
+  </DockPanel>
+</UserControl>

@@ -219,7 +219,14 @@ public sealed class MainWindowRenderTests
                 }
 
                 Save(window, file);
-                var rows = window.GetVisualDescendants().OfType<ListBoxItem>().Count();
+                // The change table's own rows, not the directory tree's beside it.
+                var rows = window
+                    .GetVisualDescendants()
+                    .OfType<ListBox>()
+                    .Single(list => list.Name == "List")
+                    .GetVisualDescendants()
+                    .OfType<ListBoxItem>()
+                    .Count();
                 window.Close();
                 return rows;
             },

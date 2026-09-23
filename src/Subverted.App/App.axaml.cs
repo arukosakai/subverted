@@ -25,18 +25,21 @@ public sealed partial class App : Application
         // Headless tests run the app without a desktop lifetime and build their own windows.
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            _ = new ThemePickerViewModel(
+            var themes = new ThemePickerViewModel(
                 new ThemeChoiceFile(ThemeChoiceFile.DefaultPath),
                 new ResourceSlotThemeApplier(this),
                 PlatformSettings?.GetColorValues().ThemeVariant != PlatformThemeVariant.Light
             );
-            desktop.MainWindow = CreateMainWindow(desktop);
+            desktop.MainWindow = CreateMainWindow(desktop, themes);
         }
 
         base.OnFrameworkInitializationCompleted();
     }
 
-    private static MainWindow CreateMainWindow(IClassicDesktopStyleApplicationLifetime desktop)
+    private static MainWindow CreateMainWindow(
+        IClassicDesktopStyleApplicationLifetime desktop,
+        ThemePickerViewModel themes
+    )
     {
         var channel = new DaemonChannel(
             DaemonSocketPath.FromEnvironment(),
@@ -70,6 +73,6 @@ public sealed partial class App : Application
                 : StringComparison.Ordinal
         );
 
-        return new MainWindow(viewModel);
+        return new MainWindow(viewModel, themes);
     }
 }

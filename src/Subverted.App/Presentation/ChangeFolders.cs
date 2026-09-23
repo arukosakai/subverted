@@ -6,11 +6,12 @@ namespace Subverted.App.Presentation;
 /// </summary>
 public static class ChangeFolders
 {
+    /// <param name="rootName">What the root's line is called: the working copy's own folder name.</param>
     /// <returns>
     /// The root first, then each folder straight after its parent, siblings by name ignoring case;
     /// empty when there are no changes, so a clean copy shows no tree at all.
     /// </returns>
-    public static IReadOnlyList<FolderLine> Of(IReadOnlyList<ChangeRow> rows)
+    public static IReadOnlyList<FolderLine> Of(IReadOnlyList<ChangeRow> rows, string rootName)
     {
         if (rows.Count == 0)
         {
@@ -32,7 +33,7 @@ public static class ChangeFolders
                 .Order(TreeOrder.Instance)
                 .Select(folder => new FolderLine(
                     folder,
-                    NameOf(folder),
+                    folder.Length == 0 ? rootName : NameOf(folder),
                     DepthOf(folder),
                     rows.Count(row => Contains(folder, row))
                 )),
