@@ -8,6 +8,32 @@ namespace Subverted.App.Tests;
 public sealed class DiffRowsTests
 {
     [Test]
+    public async Task A_missing_final_newline_is_marked_on_file_content_but_not_on_a_property_value()
+    {
+        var value = new PropertyChange(
+            "svn:eol-style",
+            PropertyChangeKind.Added,
+            [new Hunk(0, 0, 1, 1, [Added(1, "native", endsWithoutNewline: true)])]
+        );
+        var document = Document(
+            new FileDiff(
+                "src/Player.cs",
+                new TextChange([new Hunk(1, 0, 1, 1, [Added(1, "}", endsWithoutNewline: true)])]),
+                [value]
+            )
+        );
+
+        var marked = DiffRows
+            .Of(document)
+            .OfType<DiffTextRow>()
+            .Select(row => (row.Line.Text, row.Line.EndsWithoutNewline));
+
+        await Assert
+            .That(marked)
+            .IsEquivalentTo([("}", true), ("native", false)], CollectionOrdering.Matching);
+    }
+
+    [Test]
     public async Task An_empty_document_has_no_rows()
     {
         await Assert.That(DiffRows.Of(DiffDocument.Empty)).IsEmpty();

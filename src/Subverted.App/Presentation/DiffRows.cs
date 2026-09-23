@@ -68,7 +68,12 @@ public static class DiffRows
                     rows.Add(new DiffHunkRow(Range(hunk, "##")));
                 }
 
-                AddLines(rows, hunk);
+                // SVN marks nearly every property value as lacking a newline; a value is not a
+                // file, so the marker would sit on almost every line and tell nobody anything.
+                foreach (var line in hunk.Lines)
+                {
+                    rows.Add(new DiffTextRow(line with { EndsWithoutNewline = false }));
+                }
             }
         }
     }
