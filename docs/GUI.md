@@ -97,6 +97,23 @@ whole list per keystroke, unmeasured on a large listing.
 - Tick state is keyed by path beside the rows, so the once-a-second resync never clears it.
 - Revert and delete confirm with the exact list of what is lost (D19, D27).
 
+*Status: commit and revert built; delete not.* Rename rows come from `UnrecordedMoves`, one row
+at the new path that sends both halves. A path takes its default tick once, when first listed
+(`TickedPaths`), so an untick survives the resync. **Only ticks the filter shows are sent**
+(operator's call); hidden ones are kept. D20 goes through `DecidedSubtrees`; a line a folder
+decides shows an indeterminate, disabled box. The rule that a sent missing folder carries its
+missing subtree (measured, forum #40) lives in `TickedSelection` for now and belongs in
+`DecidedSubtrees`. The composer (`CommitComposerView`) and the notice are self-contained for the
+bottom strip, and each attempt is raised as data (`CommitAttempt`, `RevertAttempt`). Revert is on a
+line's menu with an overlay listing every path it reaches. **Measured on 1.8.15 while building it:
+reverting a copy (`A +`) deletes it from disk, edits and unversioned contents included, and
+reverting an obstruction deletes whatever is in its place.** The lines say so; a plain add stays.
+Driven through the real view models, adapters and daemon on a throwaway repo: the default set
+committed at r2 with the move's `copyfrom` in the log, a hook refusal left `A` and the retry
+committed, an obstruction was refused with nothing written, and two reverts ran. Seen in the real
+app: default ticks, the rename row, the button count. Not seen there: clicking, Ctrl+Enter, the
+notice or the revert overlay (headless tests and renders only), and nothing on macOS.
+
 ### 4. History
 
 - `LogResponse` already carries changed paths and copy sources; the list and paths pane need
