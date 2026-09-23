@@ -9,6 +9,11 @@ namespace Subverted.App.Presentation;
 /// <param name="RelPath">The key — slash-separated and relative to the root, as the daemon sends it.</param>
 /// <param name="Name">The last segment, which is what a person looks for first.</param>
 /// <param name="Folder">Everything before it, or empty at the root.</param>
+/// <param name="HasHistory">
+/// Whether <c>svn log</c> has anything to say about it. Not for an unversioned node (E155010) nor a
+/// plain add (E195002); a copy carries its source's. A plain add that has since gone missing reads
+/// as missing and is offered anyway — the listing does not say how it was scheduled.
+/// </param>
 public sealed record ChangeRow(
     string RelPath,
     string Name,
@@ -16,7 +21,8 @@ public sealed record ChangeRow(
     ChangeBadge Badge,
     bool IsCopied,
     bool HasPropertyChange,
-    bool IsLocked
+    bool IsLocked,
+    bool HasHistory
 )
 {
     public static ChangeRow From(WorkingCopyEntry entry)
@@ -35,7 +41,13 @@ public sealed record ChangeRow(
             // node whose content changed as well, where the badge cannot say both.
             entry.PropertyStatus == PropertyStatus.Modified
                 && entry.Status != NodeStatus.Unmodified,
-            entry.HasLockToken
+            entry.HasLockToken,
+            entry.Status switch
+            {
+                NodeStatus.Unversioned or NodeStatus.Ignored => false,
+                NodeStatus.Added => entry.IsCopied,
+                _ => true,
+            }
         );
     }
 }

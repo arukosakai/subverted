@@ -217,5 +217,5 @@ public sealed class WorkingCopyViewModelTests
     }
 
     private static WorkingCopyViewModel View(string path, IWorkingCopyStatus status) =>
-        new(path, status, DiffPanes.Pane());
+        WorkingCopies.View(status, path: path);
 }
