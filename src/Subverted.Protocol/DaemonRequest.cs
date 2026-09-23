@@ -20,6 +20,7 @@ namespace Subverted.Protocol;
 [JsonDerivedType(typeof(DeleteRequest), "delete")]
 [JsonDerivedType(typeof(MoveRequest), "move")]
 [JsonDerivedType(typeof(CommitRequest), "commit")]
+[JsonDerivedType(typeof(CommitSelectionRequest), "commit-selection")]
 [JsonDerivedType(typeof(UpdateRequest), "update")]
 [JsonDerivedType(typeof(LockRequest), "lock")]
 [JsonDerivedType(typeof(UnlockRequest), "unlock")]

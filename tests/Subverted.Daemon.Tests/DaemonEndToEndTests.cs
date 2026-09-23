@@ -762,7 +762,7 @@ public sealed class DaemonEndToEndTests
         return order == "long-then-short" ? (longForm, shortForm) : (shortForm, longForm);
     }
 
-    private static async Task<StatusResponse> StatusAsync(DaemonClient client, string path)
+    internal static async Task<StatusResponse> StatusAsync(DaemonClient client, string path)
     {
         var response = await client.SendAsync(
             new StatusRequest(path, IncludeUnmodified: false, IncludeIgnored: false),
@@ -793,7 +793,7 @@ public sealed class DaemonEndToEndTests
         return false;
     }
 
-    private static SvnWorkingCopy Committed(params (string RelPath, string Content)[] files)
+    internal static SvnWorkingCopy Committed(params (string RelPath, string Content)[] files)
     {
         var copy = SvnWorkingCopy.Create();
         try
@@ -848,7 +848,7 @@ public sealed class DaemonEndToEndTests
         }
     }
 
-    private static async Task WithDaemon(SvnWorkingCopy copy, Func<DaemonClient, Task> use)
+    internal static async Task WithDaemon(SvnWorkingCopy copy, Func<DaemonClient, Task> use)
     {
         var socketPath = Path.Combine(Path.GetTempPath(), $"sv-{Guid.NewGuid():N}"[..12] + ".sock");
 
@@ -884,7 +884,16 @@ public sealed class DaemonEndToEndTests
                 new SvnLockCommand(svn).UnlockAsync,
                 new SvnResolveCommand(svn).ResolveAsync,
                 new SvnCleanupCommand(svn, PendingCleanup.Read).CleanUpAsync,
-                LongPathSpelling.Of
+                LongPathSpelling.Of,
+                new SelectionCommitter(
+                    new NodeMove(
+                        new SvnMoveCommand(svn),
+                        new UnrecordedMoveRepair(new SvnMoveCommand(svn))
+                    ).MoveAsync,
+                    new SvnAddCommand(svn).AddAsync,
+                    new SvnRecordDeletionCommand(svn).RecordAsync,
+                    new SvnCommitCommand(svn).CommitAsync
+                )
             ),
             NullLogger<DaemonSocketServer>.Instance
         );

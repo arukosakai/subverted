@@ -95,6 +95,10 @@ builder.Services.AddSingleton<CleanUpWorkingCopy>(provider =>
         PendingCleanup.Read
     ).CleanUpAsync
 );
+builder.Services.AddSingleton<RecordDeletion>(provider =>
+    new SvnRecordDeletionCommand(provider.GetRequiredService<SvnCommand>()).RecordAsync
+);
+builder.Services.AddSingleton<SelectionCommitter>();
 builder.Services.AddSingleton<RespellPath>(LongPathSpelling.Of);
 builder.Services.AddSingleton<DaemonRequestHandler>();
 
