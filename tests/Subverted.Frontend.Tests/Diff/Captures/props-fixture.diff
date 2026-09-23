@@ -1,0 +1,91 @@
+Index: added.txt
+===================================================================
+--- added.txt	(revision 0)
++++ added.txt	(working copy)
+@@ -0,0 +1 @@
++new
+
+Property changes on: added.txt
+___________________________________________________________________
+Added: svn:mime-type
+## -0,0 +1 ##
++text/plain
+\ No newline at end of property
+Index: both.txt
+===================================================================
+--- both.txt	(revision 1)
++++ both.txt	(working copy)
+@@ -1 +1 @@
+-content of both
++changed
+
+Property changes on: both.txt
+___________________________________________________________________
+Added: svn:mime-type
+## -0,0 +1 ##
++text/plain
+\ No newline at end of property
+Index: clean.txt
+===================================================================
+--- clean.txt	(revision 2)
++++ clean.txt	(working copy)
+
+Property changes on: clean.txt
+___________________________________________________________________
+Modified: svn:mime-type
+## -1 +1 ##
+-application/octet-stream
+\ No newline at end of property
++text/x-local
+\ No newline at end of property
+Index: copied-propmod.txt
+===================================================================
+--- copied-propmod.txt	(revision 1)
++++ copied-propmod.txt	(working copy)
+
+Property changes on: copied-propmod.txt
+___________________________________________________________________
+Added: svn:mime-type
+## -0,0 +1 ##
++text/plain
+\ No newline at end of property
+Index: propdel.txt
+===================================================================
+--- propdel.txt	(revision 1)
++++ propdel.txt	(working copy)
+
+Property changes on: propdel.txt
+___________________________________________________________________
+Deleted: svn:needs-lock
+## -1 +0,0 ##
+-*
+\ No newline at end of property
+Index: propmod.txt
+===================================================================
+--- propmod.txt	(revision 1)
++++ propmod.txt	(working copy)
+
+Property changes on: propmod.txt
+___________________________________________________________________
+Added: svn:mime-type
+## -0,0 +1 ##
++text/plain
+\ No newline at end of property
+Index: sub/child.txt
+===================================================================
+--- sub/child.txt	(revision 1)
++++ sub/child.txt	(working copy)
+@@ -1 +1,2 @@
+ child
++edited too
+Index: sub
+===================================================================
+--- sub	(revision 1)
++++ sub	(working copy)
+
+Property changes on: sub
+___________________________________________________________________
+Modified: svn:ignore
+## -1 +1 ##
+-build
++dist

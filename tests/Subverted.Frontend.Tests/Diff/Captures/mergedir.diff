@@ -1,0 +1,9 @@
+Index: mergedir
+===================================================================
+--- mergedir	(revision 1)
++++ mergedir	(working copy)
+
+Property changes on: mergedir
+___________________________________________________________________
+Added: svn:mergeinfo
+   Merged /branches/feature:r2

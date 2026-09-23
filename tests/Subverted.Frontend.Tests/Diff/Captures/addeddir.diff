@@ -1,0 +1,6 @@
+Index: addeddir/inner.txt
+===================================================================
+--- addeddir/inner.txt	(revision 0)
++++ addeddir/inner.txt	(working copy)
+@@ -0,0 +1 @@
++inside added dir

@@ -1,0 +1,11 @@
+Index: mergemod
+===================================================================
+--- mergemod	(revision 1)
++++ mergemod	(working copy)
+
+Property changes on: mergemod
+___________________________________________________________________
+Modified: svn:mergeinfo
+   Reverse-merged /branches/gone:r3
+   Merged /branches/a:r3-4
+   Merged /branches/b:r5

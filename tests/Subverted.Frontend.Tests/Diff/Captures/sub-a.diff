@@ -1,0 +1,7 @@
+Index: sub/a.txt
+===================================================================
+--- sub/a.txt	(revision 1)
++++ sub/a.txt	(working copy)
+@@ -1 +1 @@
+-a
++a edited

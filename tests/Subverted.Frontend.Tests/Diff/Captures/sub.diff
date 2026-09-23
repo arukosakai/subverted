@@ -1,0 +1,19 @@
+Index: sub/a.txt
+===================================================================
+--- sub/a.txt	(revision 1)
++++ sub/a.txt	(working copy)
+@@ -1 +1 @@
+-a
++a edited
+Index: sub/b.txt
+===================================================================
+--- sub/b.txt	(revision 1)
++++ sub/b.txt	(working copy)
+@@ -1 +0,0 @@
+-b
+Index: sub/d.txt
+===================================================================
+--- sub/d.txt	(revision 0)
++++ sub/d.txt	(working copy)
+@@ -0,0 +1 @@
++d
