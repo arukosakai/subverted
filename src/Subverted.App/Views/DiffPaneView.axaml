@@ -1,0 +1,100 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Subverted.App.ViewModels"
+             xmlns:v="using:Subverted.App.Views"
+             x:Class="Subverted.App.Views.DiffPaneView"
+             x:DataType="vm:DiffPaneViewModel">
+  <Border Classes="panel" Padding="8">
+    <DockPanel>
+      <!-- The file being shown, with the same badge its row carries in the list. -->
+      <Grid DockPanel.Dock="Top" ColumnDefinitions="Auto,*" Margin="10,8,10,10"
+            IsVisible="{Binding Row, Converter={x:Static ObjectConverters.IsNotNull}}">
+        <Border Classes="badge" VerticalAlignment="Center"
+                Background="{Binding Row.Badge.Tone, Converter={x:Static v:ToneBrush.Soft}}">
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <Ellipse Width="6" Height="6" VerticalAlignment="Center"
+                     Fill="{Binding Row.Badge.Tone, Converter={x:Static v:ToneBrush.Solid}}" />
+            <TextBlock Text="{Binding Row.Badge.Label}" FontSize="11.5" FontWeight="SemiBold"
+                       Foreground="{Binding Row.Badge.Tone, Converter={x:Static v:ToneBrush.Solid}}" />
+          </StackPanel>
+        </Border>
+        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" Margin="14,0,0,0"
+                    VerticalAlignment="Center">
+          <TextBlock Text="{Binding Row.Name}" FontWeight="SemiBold" />
+          <TextBlock Classes="faint" Text="{Binding Row.Folder}" TextTrimming="CharacterEllipsis" />
+        </StackPanel>
+      </Grid>
+
+      <!-- An earlier diff kept on screen after a refetch failed says so, rather than passing as current. -->
+      <Border DockPanel.Dock="Top" Margin="2,0,2,6" Padding="12,8"
+              CornerRadius="{StaticResource RowRadius}" Background="{DynamicResource Tone.Missing.Soft}">
+        <Border.IsVisible>
+          <MultiBinding Converter="{x:Static BoolConverters.And}">
+            <Binding Path="State" Converter="{x:Static v:DiffPaneStateIs.Ready}" />
+            <Binding Path="Message" Converter="{x:Static ObjectConverters.IsNotNull}" />
+          </MultiBinding>
+        </Border.IsVisible>
+        <StackPanel Orientation="Horizontal" Spacing="8">
+          <Path Classes="icon" Data="{StaticResource Icon.Unplugged}" Width="14" Height="14"
+                Stroke="{DynamicResource Tone.Missing}" />
+          <TextBlock FontWeight="SemiBold" Foreground="{DynamicResource Tone.Missing}" Text="Possibly out of date" />
+          <TextBlock Classes="muted" Text="{Binding Message}" TextTrimming="CharacterEllipsis" />
+        </StackPanel>
+      </Border>
+
+      <Panel>
+        <v:DiffLinesView IsVisible="{Binding State, Converter={x:Static v:DiffPaneStateIs.Ready}}"
+                         Document="{Binding Document}" SizeInBytes="{Binding SizeInBytes}"
+                         OpenInAppCommand="{Binding OpenInAppCommand}" />
+
+        <StackPanel Spacing="10" HorizontalAlignment="Center" VerticalAlignment="Center"
+                    IsVisible="{Binding State, Converter={x:Static v:DiffPaneStateIs.NothingSelected}}">
+          <Path Classes="icon" Data="{StaticResource Icon.Diff}" Width="28" Height="28"
+                Stroke="{DynamicResource FaintBrush}" HorizontalAlignment="Center" />
+          <TextBlock Classes="faint" HorizontalAlignment="Center" Text="Select a change to see its diff" />
+        </StackPanel>
+
+        <StackPanel Spacing="10" HorizontalAlignment="Center" VerticalAlignment="Center"
+                    IsVisible="{Binding State, Converter={x:Static v:DiffPaneStateIs.Loading}}">
+          <ProgressBar IsIndeterminate="True" Width="140" />
+          <TextBlock Classes="muted" HorizontalAlignment="Center" Text="Reading the diff…" />
+        </StackPanel>
+
+        <StackPanel Spacing="10" HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="400"
+                    IsVisible="{Binding State, Converter={x:Static v:DiffPaneStateIs.NothingToShow}}">
+          <Border Width="52" Height="52" CornerRadius="26" HorizontalAlignment="Center"
+                  Background="{DynamicResource Tone.Quiet.Soft}">
+            <Path Classes="icon" Data="{StaticResource Icon.Diff}" Width="22" Height="22" />
+          </Border>
+          <TextBlock Classes="empty-title" Text="Nothing to compare" />
+          <TextBlock Classes="muted" HorizontalAlignment="Center" TextAlignment="Center"
+                     TextWrapping="Wrap" Text="{Binding Message}" />
+        </StackPanel>
+
+        <StackPanel Spacing="10" HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="400"
+                    IsVisible="{Binding State, Converter={x:Static v:DiffPaneStateIs.Unreachable}}">
+          <Border Width="52" Height="52" CornerRadius="26" HorizontalAlignment="Center"
+                  Background="{DynamicResource Tone.Missing.Soft}">
+            <Path Classes="icon" Data="{StaticResource Icon.Unplugged}" Width="24" Height="24"
+                  Stroke="{DynamicResource Tone.Missing}" StrokeThickness="2" />
+          </Border>
+          <TextBlock Classes="empty-title" Text="The daemon is not answering" />
+          <TextBlock Classes="muted" HorizontalAlignment="Center" TextAlignment="Center"
+                     TextWrapping="Wrap" Text="{Binding Message}" />
+        </StackPanel>
+
+        <StackPanel Spacing="10" HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="400"
+                    IsVisible="{Binding State, Converter={x:Static v:DiffPaneStateIs.Failed}}">
+          <Border Width="52" Height="52" CornerRadius="26" HorizontalAlignment="Center"
+                  Background="{DynamicResource Tone.Missing.Soft}">
+            <Path Classes="icon" Data="{StaticResource Icon.Alert}" Width="24" Height="24"
+                  Stroke="{DynamicResource Tone.Missing}" StrokeThickness="2" />
+          </Border>
+          <TextBlock Classes="empty-title" Text="The diff could not be read" />
+          <TextBlock Classes="muted" HorizontalAlignment="Center" TextAlignment="Center"
+                     TextWrapping="Wrap" Text="{Binding Message}" />
+        </StackPanel>
+      </Panel>
+    </DockPanel>
+  </Border>
+</UserControl>

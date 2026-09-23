@@ -37,6 +37,13 @@
       <SolidColorBrush x:Key="Tone.Missing.Soft" Color="#26FB923C" />
       <SolidColorBrush x:Key="Tone.Unversioned.Soft" Color="#1F94A3B8" />
       <SolidColorBrush x:Key="Tone.Quiet.Soft" Color="#1A6E737D" />
+
+      <!-- Diff lines: a wash across the line, a little stronger under the numbers. -->
+      <SolidColorBrush x:Key="Diff.Added.Line" Color="#1C34D399" />
+      <SolidColorBrush x:Key="Diff.Added.Gutter" Color="#2E34D399" />
+      <SolidColorBrush x:Key="Diff.Removed.Line" Color="#1CF87171" />
+      <SolidColorBrush x:Key="Diff.Removed.Gutter" Color="#2EF87171" />
+      <SolidColorBrush x:Key="Diff.Hunk" Color="#0CFFFFFF" />
     </ResourceDictionary>
 
     <ResourceDictionary x:Key="Light">
@@ -72,6 +79,12 @@
       <SolidColorBrush x:Key="Tone.Missing.Soft" Color="#1FEA580C" />
       <SolidColorBrush x:Key="Tone.Unversioned.Soft" Color="#1A64748B" />
       <SolidColorBrush x:Key="Tone.Quiet.Soft" Color="#149CA3AF" />
+
+      <SolidColorBrush x:Key="Diff.Added.Line" Color="#1A0F9F6E" />
+      <SolidColorBrush x:Key="Diff.Added.Gutter" Color="#2B0F9F6E" />
+      <SolidColorBrush x:Key="Diff.Removed.Line" Color="#1ADC2626" />
+      <SolidColorBrush x:Key="Diff.Removed.Gutter" Color="#2BDC2626" />
+      <SolidColorBrush x:Key="Diff.Hunk" Color="#0A000000" />
     </ResourceDictionary>
   </ResourceDictionary.ThemeDictionaries>
 
@@ -80,6 +93,9 @@
   <CornerRadius x:Key="CardRadius">14</CornerRadius>
   <CornerRadius x:Key="PanelRadius">18</CornerRadius>
   <CornerRadius x:Key="CapsuleRadius">999</CornerRadius>
+
+  <!-- Whichever the platform has: Windows ships Cascadia Mono and Consolas, macOS ships Menlo. -->
+  <FontFamily x:Key="MonoFont">Cascadia Mono, Consolas, Menlo, Courier New</FontFamily>
 
   <!-- Drawn at 24x24 and stroked, so they scale and take the text colour like a glyph would. -->
   <StreamGeometry x:Key="Icon.Folder">M3 7.5A2.5 2.5 0 0 1 5.5 5H9l2 2h7.5A2.5 2.5 0 0 1 21 9.5v7A2.5 2.5 0 0 1 18.5 19h-13A2.5 2.5 0 0 1 3 16.5Z</StreamGeometry>
@@ -90,5 +106,8 @@
   <StreamGeometry x:Key="Icon.Server">M4 5h16v5H4Z M4 14h16v5H4Z M8 7.5v.1M8 16.5v.1</StreamGeometry>
   <StreamGeometry x:Key="Icon.Lock">M6 11h12v9H6Z M8.5 11V8a3.5 3.5 0 0 1 7 0v3</StreamGeometry>
   <StreamGeometry x:Key="Icon.History">M4 12a8 8 0 1 0 2.4-5.7L4 8.5 M4 4v4.5h4.5 M12 8v4l3 2</StreamGeometry>
+  <StreamGeometry x:Key="Icon.Diff">M8 4v8M4 8h8 M12 18h8 M17 4L7 20</StreamGeometry>
+  <StreamGeometry x:Key="Icon.File">M6 3h8l4 4v14H6Z M14 3v4h4</StreamGeometry>
+  <StreamGeometry x:Key="Icon.Open">M14 4h6v6 M20 4l-9 9 M18 14v5H5V6h5</StreamGeometry>
   <StreamGeometry x:Key="Icon.Branch">M7 4v11 M7 15a2.5 2.5 0 1 0 0 5a2.5 2.5 0 1 0 0-5Z M17 4a2.5 2.5 0 1 0 0 5a2.5 2.5 0 1 0 0-5Z M17 9c0 4-10 2-10 6</StreamGeometry>
 </ResourceDictionary>

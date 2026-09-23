@@ -1,0 +1,178 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:p="using:Subverted.App.Presentation"
+             xmlns:v="using:Subverted.App.Views"
+             x:Class="Subverted.App.Views.DiffLinesView"
+             x:Name="Root">
+  <UserControl.Styles>
+    <!-- Code lines own their selection look; Fluent's padding and hover would break the grid of lines. -->
+    <Style Selector="ListBox.diff">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="FontFamily" Value="{StaticResource MonoFont}" />
+      <Setter Property="FontSize" Value="12.5" />
+    </Style>
+    <Style Selector="ListBox.diff ListBoxItem">
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="MinHeight" Value="0" />
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    </Style>
+    <Style Selector="ListBox.diff ListBoxItem /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="Transparent" />
+    </Style>
+    <Style Selector="ListBox.diff ListBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
+    </Style>
+    <Style Selector="ListBox.diff ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource SelectedBrush}" />
+    </Style>
+
+    <Style Selector="Grid.line">
+      <Setter Property="Height" Value="20" />
+    </Style>
+    <Style Selector="Grid.line.added">
+      <Setter Property="Background" Value="{DynamicResource Diff.Added.Line}" />
+    </Style>
+    <Style Selector="Grid.line.removed">
+      <Setter Property="Background" Value="{DynamicResource Diff.Removed.Line}" />
+    </Style>
+    <Style Selector="Grid.line.added Border.gutter">
+      <Setter Property="Background" Value="{DynamicResource Diff.Added.Gutter}" />
+    </Style>
+    <Style Selector="Grid.line.removed Border.gutter">
+      <Setter Property="Background" Value="{DynamicResource Diff.Removed.Gutter}" />
+    </Style>
+    <Style Selector="Grid.line TextBlock">
+      <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+    <Style Selector="TextBlock.number">
+      <Setter Property="Foreground" Value="{DynamicResource FaintBrush}" />
+      <Setter Property="HorizontalAlignment" Value="Right" />
+      <Setter Property="Margin" Value="0,0,10,0" />
+      <Setter Property="FontSize" Value="11.5" />
+    </Style>
+    <Style Selector="Grid.line.added TextBlock.number">
+      <Setter Property="Foreground" Value="{DynamicResource Tone.Added}" />
+    </Style>
+    <Style Selector="Grid.line.removed TextBlock.number">
+      <Setter Property="Foreground" Value="{DynamicResource Tone.Deleted}" />
+    </Style>
+    <Style Selector="TextBlock.sign">
+      <Setter Property="HorizontalAlignment" Value="Center" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+    <Style Selector="Grid.line.added TextBlock.sign">
+      <Setter Property="Foreground" Value="{DynamicResource Tone.Added}" />
+    </Style>
+    <Style Selector="Grid.line.removed TextBlock.sign">
+      <Setter Property="Foreground" Value="{DynamicResource Tone.Deleted}" />
+    </Style>
+  </UserControl.Styles>
+
+  <ListBox x:Name="Lines" Classes="diff" SelectionMode="Multiple"
+           ScrollViewer.HorizontalScrollBarVisibility="Auto"
+           ItemsSource="{Binding #Root.Document, Converter={x:Static v:FlatDiff.Rows}}">
+    <ListBox.ItemsPanel>
+      <ItemsPanelTemplate>
+        <VirtualizingStackPanel />
+      </ItemsPanelTemplate>
+    </ListBox.ItemsPanel>
+
+    <ListBox.DataTemplates>
+      <DataTemplate x:DataType="p:DiffTextRow">
+        <Grid Classes="line" ColumnDefinitions="52,52,22,*"
+              Classes.added="{Binding Line.Kind, Converter={x:Static v:LineKindIs.Added}}"
+              Classes.removed="{Binding Line.Kind, Converter={x:Static v:LineKindIs.Removed}}">
+          <Border Grid.Column="0" Grid.ColumnSpan="2" Classes="gutter" />
+          <TextBlock Grid.Column="0" Classes="number" Text="{Binding Line.OldNumber}" />
+          <TextBlock Grid.Column="1" Classes="number" Text="{Binding Line.NewNumber}" />
+          <TextBlock Grid.Column="2" Classes="sign" Text="{Binding Sign}" />
+          <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="10" Margin="4,0,16,0">
+            <TextBlock Text="{Binding Line.Text}" />
+            <Border IsVisible="{Binding Line.EndsWithoutNewline}" VerticalAlignment="Center"
+                    CornerRadius="{StaticResource CapsuleRadius}" Padding="7,0"
+                    Background="{DynamicResource HoverBrush}"
+                    ToolTip.Tip="SVN printed “No newline at end of file” after this line">
+              <StackPanel Orientation="Horizontal" Spacing="4">
+                <Path Classes="icon" Data="{StaticResource Icon.Alert}" Width="10" Height="10" StrokeThickness="1.5" />
+                <TextBlock Classes="muted" FontFamily="{x:Static FontFamily.Default}" FontSize="10.5"
+                           Text="No newline at end" />
+              </StackPanel>
+            </Border>
+          </StackPanel>
+        </Grid>
+      </DataTemplate>
+
+      <DataTemplate x:DataType="p:DiffHunkRow">
+        <Border Height="26" Margin="0,4,0,2" Background="{DynamicResource Diff.Hunk}">
+          <TextBlock Margin="130,0,16,0" VerticalAlignment="Center" FontSize="11.5"
+                     Foreground="{DynamicResource FaintBrush}" Text="{Binding Range}" />
+        </Border>
+      </DataTemplate>
+
+      <DataTemplate x:DataType="p:DiffFileHeaderRow">
+        <Border Margin="0,10,0,4" Padding="14,0" Height="34" BorderThickness="0,0,0,1"
+                BorderBrush="{DynamicResource DividerBrush}">
+          <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+            <Path Classes="icon" Data="{StaticResource Icon.File}" Width="13" Height="13" />
+            <TextBlock FontFamily="{x:Static FontFamily.Default}" FontSize="13" FontWeight="SemiBold"
+                       Text="{Binding Path}" />
+          </StackPanel>
+        </Border>
+      </DataTemplate>
+
+      <DataTemplate x:DataType="p:DiffNoLinesRow">
+        <TextBlock Classes="faint" Margin="130,10,16,10" FontFamily="{x:Static FontFamily.Default}"
+                   Text="No lines to show." />
+      </DataTemplate>
+
+      <DataTemplate x:DataType="p:DiffPropertySectionRow">
+        <TextBlock Classes="section" Margin="14,16,16,6" FontFamily="{x:Static FontFamily.Default}"
+                   Text="PROPERTY CHANGES" />
+      </DataTemplate>
+
+      <DataTemplate x:DataType="p:DiffPropertyRow">
+        <StackPanel Orientation="Horizontal" Spacing="10" Margin="14,6,16,4">
+          <Border Classes="tag" Background="{Binding Tone, Converter={x:Static v:ToneBrush.Soft}}">
+            <TextBlock FontFamily="{x:Static FontFamily.Default}" FontSize="11" FontWeight="SemiBold"
+                       Foreground="{Binding Tone, Converter={x:Static v:ToneBrush.Solid}}" Text="{Binding Label}" />
+          </Border>
+          <TextBlock VerticalAlignment="Center" FontWeight="SemiBold" Text="{Binding Name}" />
+        </StackPanel>
+      </DataTemplate>
+
+      <DataTemplate x:DataType="p:DiffBinaryRow">
+        <Border Classes="panel" Margin="14,12" Padding="18,16" HorizontalAlignment="Left" MinWidth="320"
+                MaxWidth="520" CornerRadius="{StaticResource CardRadius}" BoxShadow="none">
+          <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto">
+            <Border Grid.RowSpan="3" Width="40" Height="40" CornerRadius="12" Margin="0,0,14,0"
+                    VerticalAlignment="Top" Background="{DynamicResource RaisedBrush}">
+              <Path Classes="icon" Data="{StaticResource Icon.File}" Width="18" Height="18" />
+            </Border>
+            <TextBlock Grid.Column="1" FontFamily="{x:Static FontFamily.Default}" FontSize="14"
+                       FontWeight="SemiBold" Text="Binary file" />
+            <TextBlock Grid.Column="1" Grid.Row="1" Margin="0,3,0,0" Classes="muted" Text="{Binding MimeTypeText}" />
+            <TextBlock Grid.Column="1" Grid.Row="2" Margin="0,3,0,0" Classes="faint"
+                       FontFamily="{x:Static FontFamily.Default}"
+                       Text="{Binding $parent[v:DiffLinesView].SizeInBytes, Converter={x:Static v:FileSizeText.Human}}">
+              <TextBlock.IsVisible>
+                <MultiBinding Converter="{x:Static BoolConverters.And}">
+                  <Binding Path="IsOnlyFile" />
+                  <Binding Path="$parent[v:DiffLinesView].SizeInBytes" Converter="{x:Static ObjectConverters.IsNotNull}" />
+                </MultiBinding>
+              </TextBlock.IsVisible>
+            </TextBlock>
+            <Button Grid.Column="1" Grid.Row="3" Classes="accent" Margin="0,14,0,0"
+                    FontFamily="{x:Static FontFamily.Default}" IsVisible="{Binding IsOnlyFile}"
+                    Command="{Binding $parent[v:DiffLinesView].OpenInAppCommand}">
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <Path Classes="icon" Data="{StaticResource Icon.Open}" Width="13" Height="13" />
+                <TextBlock Text="Open in app" />
+              </StackPanel>
+            </Button>
+          </Grid>
+        </Border>
+      </DataTemplate>
+    </ListBox.DataTemplates>
+  </ListBox>
+</UserControl>
