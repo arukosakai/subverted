@@ -47,6 +47,15 @@ builder.Services.AddSingleton<ReadRevisionLog>(provider =>
 builder.Services.AddSingleton<ReadWorkingCopyDiff>(provider =>
     new SvnDiffCommand(provider.GetRequiredService<SvnCommand>()).ReadAsync
 );
+builder.Services.AddSingleton<ReadRevisionDiff>(provider =>
+    new SvnRevisionDiffCommand(provider.GetRequiredService<SvnCommand>()).ReadAsync
+);
+
+// Local, but a read of wc.db like status: svnversion is the fallback for a schema this build
+// does not understand, and it ships beside svn.
+builder.Services.AddSingleton<ReadBaseRevisionRange>(
+    new BaseRevisionRangeReader(new SvnVersionCommand(new SvnCommand("svnversion"))).ReadAsync
+);
 
 // The eight that change a working copy. They go through the client for the same reason log and diff
 // do — it is the only implementation of SVN's semantics anyone has agreed on — and the daemon drops

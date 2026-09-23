@@ -244,6 +244,42 @@ public sealed class DaemonEndToEndTests
         );
     }
 
+    /// <summary>
+    /// The whole History path through a real daemon: HEAD past a copy left behind, a deleted
+    /// file's revision diff by its repository path, and the BASE the copy is really at.
+    /// </summary>
+    [Test]
+    public async Task A_copy_left_behind_sees_newer_history_and_its_own_base()
+    {
+        using var copy = Committed(("readme.txt", "hello\n"));
+        copy.Svn("delete", "--quiet", "readme.txt");
+        copy.Svn("commit", "--quiet", "-m", "gone");
+        copy.Svn("update", "--quiet", "-r", "1");
+
+        await WithDaemon(
+            copy,
+            async client =>
+            {
+                var log = (LogResponse)
+                    await client.SendAsync(
+                        new LogRequest(copy.Root, 10, new HistoryFromHead()),
+                        None
+                    );
+                var diff = (DiffResponse)
+                    await client.SendAsync(
+                        new RevisionDiffRequest(copy.Root, "/readme.txt", 2),
+                        None
+                    );
+                var revision = (WorkingCopyRevisionResponse)
+                    await client.SendAsync(new WorkingCopyRevisionRequest(copy.Root), None);
+
+                await Assert.That(log.Revisions.Select(r => r.Revision)).IsEquivalentTo([2L, 1L]);
+                await Assert.That(diff.UnifiedDiff).Contains("-hello");
+                await Assert.That(revision.Range).IsEqualTo(new BaseRevisionRange(1, 1));
+            }
+        );
+    }
+
     [Test]
     public async Task A_diff_request_comes_back_with_svns_own_text_for_a_real_edit()
     {
@@ -871,6 +907,10 @@ public sealed class DaemonEndToEndTests
                 TimeProvider.System,
                 new SvnLogCommand(svn).ReadAsync,
                 new SvnDiffCommand(svn).ReadAsync,
+                new SvnRevisionDiffCommand(svn).ReadAsync,
+                new BaseRevisionRangeReader(
+                    new SvnVersionCommand(new SvnCommand("svnversion"))
+                ).ReadAsync,
                 new SvnAddCommand(svn).AddAsync,
                 new SvnRevertCommand(svn).RevertAsync,
                 new SvnDeleteCommand(svn).DeleteAsync,

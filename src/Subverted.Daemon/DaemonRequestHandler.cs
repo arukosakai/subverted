@@ -19,6 +19,8 @@ public sealed class DaemonRequestHandler(
     TimeProvider clock,
     ReadRevisionLog readRevisionLog,
     ReadWorkingCopyDiff readWorkingCopyDiff,
+    ReadRevisionDiff readRevisionDiff,
+    ReadBaseRevisionRange readBaseRevisionRange,
     ScheduleAddition scheduleAddition,
     RevertChanges revertChanges,
     ScheduleDeletion scheduleDeletion,
@@ -62,6 +64,14 @@ public sealed class DaemonRequestHandler(
             StatusRequest status => await StatusAsync(status, cancellationToken),
             LogRequest log => await LogAsync(log, cancellationToken),
             DiffRequest diff => await DiffAsync(diff, cancellationToken),
+            RevisionDiffRequest revisionDiff => await RevisionDiffAsync(
+                revisionDiff,
+                cancellationToken
+            ),
+            WorkingCopyRevisionRequest revision => await WorkingCopyRevisionAsync(
+                revision,
+                cancellationToken
+            ),
             AddRequest add => await AddAsync(add, cancellationToken),
             RevertRequest revert => await RevertAsync(revert, cancellationToken),
             DeleteRequest delete => await DeleteAsync(delete, cancellationToken),
@@ -134,22 +144,37 @@ public sealed class DaemonRequestHandler(
         }
     }
 
-    private Task<DaemonResponse> LogAsync(
+    /// <remarks>
+    /// A start below revision 1 is refused rather than passed on: <c>-r 0:1</c> is a range SVN
+    /// accepts, and it lists revision 1 as though it were the page asked for.
+    /// </remarks>
+    private async Task<DaemonResponse> LogAsync(
         LogRequest request,
         CancellationToken cancellationToken
-    ) =>
-        ShellingOutAsync(
+    )
+    {
+        if (request.Start is HistoryFromRevision { Revision: < 1 } from)
+        {
+            return new ErrorResponse(
+                DaemonErrorKind.RequestRefused,
+                $"History cannot start at revision {from.Revision}; revisions start at 1."
+            );
+        }
+
+        return await ShellingOutAsync(
             request.Path,
             async session => new LogResponse(
                 await readRevisionLog(
                     session.Info.RootPath,
                     request.Path,
                     request.Limit,
+                    request.Start,
                     cancellationToken
                 )
             ),
             cancellationToken
         );
+    }
 
     private Task<DaemonResponse> DiffAsync(
         DiffRequest request,
@@ -159,6 +184,59 @@ public sealed class DaemonRequestHandler(
             request.Path,
             async session => new DiffResponse(
                 await readWorkingCopyDiff(session.Info.RootPath, request.Path, cancellationToken)
+            ),
+            cancellationToken
+        );
+
+    /// <remarks>
+    /// Checked before SVN sees it because both mistakes mean something else to SVN: a negative
+    /// <c>-c</c> is the same change reversed, and a path without its leading <c>/</c> would be
+    /// joined to the root URL as though it had one.
+    /// </remarks>
+    private async Task<DaemonResponse> RevisionDiffAsync(
+        RevisionDiffRequest request,
+        CancellationToken cancellationToken
+    )
+    {
+        if (request.Revision < 1)
+        {
+            return new ErrorResponse(
+                DaemonErrorKind.RequestRefused,
+                $"Revision {request.Revision} has no changes to show; revisions start at 1."
+            );
+        }
+
+        if (!request.RepositoryPath.StartsWith('/'))
+        {
+            return new ErrorResponse(
+                DaemonErrorKind.RequestRefused,
+                $"'{request.RepositoryPath}' is not a repository path; they start with '/'."
+            );
+        }
+
+        return await ShellingOutAsync(
+            request.WorkingCopyPath,
+            async session => new DiffResponse(
+                await readRevisionDiff(
+                    session.Info.RootPath,
+                    session.Info.RepositoryRoot,
+                    request.RepositoryPath,
+                    request.Revision,
+                    cancellationToken
+                )
+            ),
+            cancellationToken
+        );
+    }
+
+    private Task<DaemonResponse> WorkingCopyRevisionAsync(
+        WorkingCopyRevisionRequest request,
+        CancellationToken cancellationToken
+    ) =>
+        ShellingOutAsync(
+            request.Path,
+            async session => new WorkingCopyRevisionResponse(
+                await readBaseRevisionRange(session.Info.RootPath, request.Path, cancellationToken)
             ),
             cancellationToken
         );

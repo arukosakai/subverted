@@ -112,6 +112,41 @@ public sealed class RequestSpellingTests
     }
 
     [Test]
+    public async Task A_log_keeps_where_it_starts()
+    {
+        var respelled = RequestSpelling.Respell(
+            new LogRequest("/wc", 20, new HistoryFromRevision(41)),
+            Mark
+        );
+
+        await Assert
+            .That(respelled)
+            .IsEqualTo(new LogRequest("long:/wc", 20, new HistoryFromRevision(41)));
+    }
+
+    /// <summary>The repository path is not on disk, so there is nothing to respell it against.</summary>
+    [Test]
+    public async Task A_revision_diff_respells_its_working_copy_path_and_not_its_repository_path()
+    {
+        var respelled = RequestSpelling.Respell(
+            new RevisionDiffRequest("/wc", "/trunk/a.txt", 7),
+            Mark
+        );
+
+        await Assert
+            .That(respelled)
+            .IsEqualTo(new RevisionDiffRequest("long:/wc", "/trunk/a.txt", 7));
+    }
+
+    [Test]
+    public async Task A_working_copy_revision_request_respells_its_path()
+    {
+        var respelled = RequestSpelling.Respell(new WorkingCopyRevisionRequest("/wc/art"), Mark);
+
+        await Assert.That(respelled).IsEqualTo(new WorkingCopyRevisionRequest("long:/wc/art"));
+    }
+
+    [Test]
     public async Task Single_path_requests_respell_their_path()
     {
         await Assert

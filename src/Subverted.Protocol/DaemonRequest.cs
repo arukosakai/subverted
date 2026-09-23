@@ -27,6 +27,8 @@ namespace Subverted.Protocol;
 [JsonDerivedType(typeof(CleanupRequest), "cleanup")]
 [JsonDerivedType(typeof(DaemonInfoRequest), "daemon-info")]
 [JsonDerivedType(typeof(ShutdownRequest), "shutdown")]
+[JsonDerivedType(typeof(RevisionDiffRequest), "revision-diff")]
+[JsonDerivedType(typeof(WorkingCopyRevisionRequest), "working-copy-revision")]
 public abstract record DaemonRequest
 {
     private protected DaemonRequest() { }

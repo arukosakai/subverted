@@ -27,6 +27,7 @@ namespace Subverted.Protocol;
 [JsonDerivedType(typeof(DaemonInfoResponse), "daemon-info")]
 [JsonDerivedType(typeof(AcknowledgedResponse), "ack")]
 [JsonDerivedType(typeof(ErrorResponse), "error")]
+[JsonDerivedType(typeof(WorkingCopyRevisionResponse), "working-copy-revision")]
 public abstract record DaemonResponse
 {
     private protected DaemonResponse() { }

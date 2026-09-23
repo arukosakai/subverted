@@ -14,7 +14,13 @@ public sealed class SvnCommandIntegrationTests
     {
         using var copy = ThreeCommits();
 
-        var revisions = await new SvnLogCommand(Svn).ReadAsync(copy.Root, copy.Root, null, None);
+        var revisions = await new SvnLogCommand(Svn).ReadAsync(
+            copy.Root,
+            copy.Root,
+            null,
+            null,
+            None
+        );
 
         await Assert
             .That(revisions.Select(revision => revision.Message))
@@ -30,7 +36,7 @@ public sealed class SvnCommandIntegrationTests
     {
         using var copy = ThreeCommits();
 
-        var revisions = await new SvnLogCommand(Svn).ReadAsync(copy.Root, copy.Root, 2, None);
+        var revisions = await new SvnLogCommand(Svn).ReadAsync(copy.Root, copy.Root, 2, null, None);
 
         await Assert.That(revisions.Select(revision => revision.Revision)).IsEquivalentTo([3L, 2L]);
     }
@@ -40,7 +46,13 @@ public sealed class SvnCommandIntegrationTests
     {
         using var copy = ThreeCommits();
 
-        var revisions = await new SvnLogCommand(Svn).ReadAsync(copy.Root, copy.Root, null, None);
+        var revisions = await new SvnLogCommand(Svn).ReadAsync(
+            copy.Root,
+            copy.Root,
+            null,
+            null,
+            None
+        );
 
         await Assert.That(revisions.Where(revision => revision.Date is null)).IsEmpty();
     }
@@ -54,7 +66,9 @@ public sealed class SvnCommandIntegrationTests
     {
         using var copy = ThreeCommits();
 
-        var newest = (await new SvnLogCommand(Svn).ReadAsync(copy.Root, copy.Root, 1, None))[0];
+        var newest = (await new SvnLogCommand(Svn).ReadAsync(copy.Root, copy.Root, 1, null, None))[
+            0
+        ];
 
         var added = newest.ChangedPaths.Single(changed => changed.Path.EndsWith("/b.txt"));
         await Assert.That(added.Change).IsEqualTo(Core.PathChange.Added);
@@ -122,7 +136,7 @@ public sealed class SvnCommandIntegrationTests
 
         await Assert
             .That(async () =>
-                await new SvnLogCommand(Svn).ReadAsync(copy.Root, missing, null, None)
+                await new SvnLogCommand(Svn).ReadAsync(copy.Root, missing, null, null, None)
             )
             .Throws<SvnCommandException>();
     }
