@@ -292,7 +292,7 @@ public sealed class DiffViewRenderTests
     {
         var texts = await RenderAsync(
             variant,
-            () => new DiffPaneView { DataContext = new DiffPaneViewModel() },
+            () => new DiffPaneView { DataContext = DiffPanes.Pane() },
             $"diff-pane-nothing-selected-{variant.ToLowerInvariant()}.png",
             VisibleTextsOf,
             unframed: true
