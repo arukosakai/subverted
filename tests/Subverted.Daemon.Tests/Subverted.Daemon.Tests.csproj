@@ -11,6 +11,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Subverted.Daemon\Subverted.Daemon.csproj" />
+    <!-- Only to start the built daemon the way the front-ends do, in LaunchedDaemonTests. -->
+    <ProjectReference Include="..\..\src\Subverted.Frontend\Subverted.Frontend.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -18,5 +20,9 @@
          there is one definition of what a test working copy is. -->
     <Compile Include="..\Subverted.Svn.Tests\SvnWorkingCopy.cs" Link="SvnWorkingCopy.cs" />
     <Compile Include="..\Subverted.Svn.Tests\WorkingCopyWedge.cs" Link="WorkingCopyWedge.cs" />
+    <Compile
+      Include="..\Subverted.Svn.Tests\SvnConsoleForTheRun.cs"
+      Link="SvnConsoleForTheRun.cs"
+    />
   </ItemGroup>
 </Project>

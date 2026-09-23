@@ -92,6 +92,30 @@ public sealed class SvnCommandIntegrationTests
         await Assert.That(diff).Contains("(revision 3)");
     }
 
+    /// <summary>
+    /// svn writes the paths in a diff's headers in its console's code page, not in UTF-8: Polish
+    /// letters came back as replacement characters, and a Japanese name as question marks nothing
+    /// could turn back into the name. The file is added through its folder because a Japanese name
+    /// given as an argument is refused (E200009) even from a UTF-8 console — that is D33's open end.
+    /// </summary>
+    [Test]
+    [Arguments("names/zażółć.txt")]
+    [Arguments("names/ドラゴン.txt")]
+    public async Task A_name_outside_ascii_diffs_as_itself(string name)
+    {
+        using var copy = SvnWorkingCopy.Create();
+        copy.Write(name, "one\n");
+        copy.Svn("add", "--quiet", "names");
+        copy.Svn("commit", "--quiet", "-m", "a name outside ascii");
+        copy.Write(name, "two\n");
+
+        var diff = await new SvnDiffCommand(Svn).ReadAsync(copy.Root, copy.Root, None);
+
+        await Assert.That(diff).Contains($"Index: {name}");
+        await Assert.That(diff).Contains($"--- {name}\t(revision 1)");
+        await Assert.That(diff).Contains($"+++ {name}\t(working copy)");
+    }
+
     [Test]
     public async Task A_working_copy_with_nothing_changed_diffs_to_nothing()
     {
