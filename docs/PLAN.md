@@ -395,7 +395,15 @@ Avalonia front-end over the same daemon. Update, commit, diff, log. Nothing clev
   light. Built on `Subverted.Frontend`, which the CLI now shares. Seen running on Windows 11, and
   its own title-bar decorations drawn so the surface runs to the top edge with only the caption
   buttons over it.
-- Commit, diff, log and update — the next slices, one at a time. Their order and the screens they
+- **Diff of local changes (GUI.md slice 1). Done.** Selecting a row shows its diff beside the
+  list: debounced, the stale request cancelled, the selection kept across the once-a-second resync.
+  `UnifiedDiffParser` is tested on 24 byte-exact `svn diff` 1.8.15 captures. Seen running on
+  Windows 11 against `subverted-diff`, selected through UI Automation rather than by hand, and the
+  50k-line virtualisation was measured headless only. Known gaps: a second edit to an
+  already-modified file does not refetch until status entries carry a size+mtime fingerprint
+  (decided, next); the root row diffs the whole working copy, since `DiffRequest` has no depth;
+  list rows expose their record's `ToString()` as the automation name.
+- Commit, log and update — the next slices, one at a time. Their order and the screens they
   build are in `docs/GUI.md`.
 - **macOS's Liquid Glass is not built.** The styling speaks the same language, but the real material
   is `NSGlassEffectView` through native interop, which has to be built and run on the macOS runner.
@@ -499,7 +507,7 @@ These need a human decision and are deliberately not resolved in code:
 ## Status
 
 M0 complete; M1 partly done and M2 begun, see their sections for exactly which parts. Solution builds clean with
-zero warnings, **1626 tests green** across seven test projects, status output diffed against
+zero warnings, **1853 tests green** across seven test projects, status output diffed against
 `svn status --no-ignore` on eight fixture working copies — column 4 included, as of D28 — with only
 the two divergences above.
 
