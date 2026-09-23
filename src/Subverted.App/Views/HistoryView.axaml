@@ -1,0 +1,235 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Subverted.App.ViewModels"
+             xmlns:p="using:Subverted.App.Presentation"
+             xmlns:v="using:Subverted.App.Views"
+             x:Class="Subverted.App.Views.HistoryView"
+             x:DataType="vm:HistoryViewModel">
+  <Grid RowDefinitions="Auto,*" Margin="28,4,28,28">
+
+    <!-- Header: whose history this is. -->
+    <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,18">
+      <StackPanel Spacing="4">
+        <TextBlock Classes="title" Text="History" />
+        <StackPanel Orientation="Horizontal" Spacing="6">
+          <Path Classes="icon" Data="{StaticResource Icon.History}" Width="13" Height="13" />
+          <TextBlock Classes="muted" FontSize="12" Text="{Binding Path}" TextTrimming="CharacterEllipsis" />
+        </StackPanel>
+      </StackPanel>
+      <Button Grid.Column="1" VerticalAlignment="Top" Command="{Binding ReloadCommand}"
+              ToolTip.Tip="Read the history again from the server">
+        <StackPanel Orientation="Horizontal" Spacing="8">
+          <Path Classes="icon" Data="{StaticResource Icon.History}" Width="13" Height="13" />
+          <TextBlock Text="Refresh" />
+        </StackPanel>
+      </Button>
+    </Grid>
+
+    <Grid Grid.Row="1">
+      <Grid.RowDefinitions>
+        <RowDefinition Height="*" MinHeight="200" />
+        <RowDefinition Height="12" />
+        <RowDefinition Height="*" MinHeight="200" />
+      </Grid.RowDefinitions>
+
+      <!-- Revisions, newest first, under the pinned row that leads back to local work. -->
+      <Border Grid.Row="0" Classes="panel" Padding="8">
+        <DockPanel>
+          <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto" Margin="2,2,2,6">
+            <TextBox PlaceholderText="Search what is loaded — message, author, path or r123"
+                     Text="{Binding SearchText}" />
+            <TextBlock Grid.Column="1" Classes="faint" Margin="12,0,6,0" VerticalAlignment="Center"
+                       Text="{Binding LoadedText}" />
+          </Grid>
+
+          <Button x:Name="LocalChanges" DockPanel.Dock="Top" Classes="sidebar-item" Margin="0,0,0,2"
+                  HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                  Command="{Binding ReturnToChangesCommand}">
+            <StackPanel Orientation="Horizontal" Spacing="10">
+              <Path Classes="icon" Data="{StaticResource Icon.Diff}" />
+              <TextBlock Text="Local changes" FontWeight="SemiBold" />
+              <TextBlock Classes="faint" Text="back to Changes" />
+            </StackPanel>
+          </Button>
+
+          <!-- A later page failing keeps what was read, and says so at the bottom. -->
+          <StackPanel DockPanel.Dock="Bottom" Margin="10,6,10,2" Spacing="4">
+            <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding IsLoadingMore}">
+              <ProgressBar IsIndeterminate="True" Width="60" VerticalAlignment="Center" />
+              <TextBlock Classes="muted" Text="Reading older revisions…" />
+            </StackPanel>
+            <TextBlock Classes="muted" TextTrimming="CharacterEllipsis" Foreground="{DynamicResource Tone.Missing}">
+              <TextBlock.IsVisible>
+                <MultiBinding Converter="{x:Static BoolConverters.And}">
+                  <Binding Path="State" Converter="{x:Static v:HistoryStateIs.Ready}" />
+                  <Binding Path="Message" Converter="{x:Static ObjectConverters.IsNotNull}" />
+                </MultiBinding>
+              </TextBlock.IsVisible>
+              <Run Text="Could not read further:" /> <Run Text="{Binding Message}" />
+            </TextBlock>
+            <!-- Scrolling asks for more on its own; a search that hides every row leaves nothing to scroll. -->
+            <Button x:Name="LoadOlder" HorizontalAlignment="Left" Command="{Binding LoadMoreCommand}"
+                    Content="Load older revisions">
+              <Button.IsVisible>
+                <MultiBinding Converter="{x:Static BoolConverters.And}">
+                  <Binding Path="HasMore" />
+                  <Binding Path="!IsLoadingMore" />
+                </MultiBinding>
+              </Button.IsVisible>
+            </Button>
+          </StackPanel>
+
+          <Panel>
+            <ListBox x:Name="Revisions" Classes="plain" ItemsSource="{Binding Items}"
+                     SelectedItem="{Binding SelectedItem, Mode=TwoWay}" IsVisible="{Binding !!Items.Count}">
+              <ListBox.ItemTemplate>
+                <DataTemplate x:DataType="p:RevisionListItem">
+                  <StackPanel>
+                    <!-- Where this working copy's BASE sits: everything below it is in the copy. -->
+                    <Grid ColumnDefinitions="Auto,*" Margin="10,6,10,2"
+                          IsVisible="{Binding BaseMarkerAbove, Converter={x:Static ObjectConverters.IsNotNull}}">
+                      <Border Classes="tag" Background="{DynamicResource Tone.Added.Soft}">
+                        <TextBlock FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource Tone.Added}"
+                                   Text="{Binding BaseMarkerAbove}" />
+                      </Border>
+                      <Border Grid.Column="1" Height="1" Margin="10,0,0,0" VerticalAlignment="Center"
+                              Background="{DynamicResource Tone.Added}" Opacity="0.5" />
+                    </Grid>
+                    <Grid ColumnDefinitions="64,*,Auto,Auto" Margin="10,7" MinHeight="22"
+                          Opacity="{Binding IsNotInCopy, Converter={x:Static v:HistoryRowOpacity.ForNotInCopy}}">
+                      <TextBlock Classes="muted" VerticalAlignment="Center" FontFamily="{StaticResource MonoFont}"
+                                 Text="{Binding Row.Revision, StringFormat='r{0}'}" />
+                      <TextBlock Grid.Column="1" VerticalAlignment="Center" FontWeight="Medium"
+                                 Text="{Binding Row.Summary}" TextTrimming="CharacterEllipsis" />
+                      <Border Grid.Column="2" Classes="tag" Margin="8,0" IsVisible="{Binding IsNotInCopy}"
+                              ToolTip.Tip="Committed after this working copy was last updated">
+                        <TextBlock Classes="muted" FontSize="11" Text="not in your copy" />
+                      </Border>
+                      <Border Grid.Column="2" Classes="tag" Margin="8,0" IsVisible="{Binding IsPartlyInCopy}"
+                              ToolTip.Tip="This working copy was updated in parts, and only some of them have this revision">
+                        <TextBlock Classes="muted" FontSize="11" Text="in part of your copy" />
+                      </Border>
+                      <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                        <TextBlock Classes="faint" Text="{Binding Row.Author}" />
+                        <TextBlock Classes="faint" Text="{Binding Row.When}" />
+                      </StackPanel>
+                    </Grid>
+                  </StackPanel>
+                </DataTemplate>
+              </ListBox.ItemTemplate>
+            </ListBox>
+
+            <StackPanel Spacing="10" HorizontalAlignment="Center" VerticalAlignment="Center"
+                        IsVisible="{Binding State, Converter={x:Static v:HistoryStateIs.Loading}}">
+              <ProgressBar IsIndeterminate="True" Width="140" />
+              <TextBlock Classes="muted" HorizontalAlignment="Center" Text="Asking the server for history…" />
+            </StackPanel>
+
+            <TextBlock Classes="muted" HorizontalAlignment="Center" VerticalAlignment="Center"
+                       IsVisible="{Binding IsEmpty}" Text="This path has no history yet." />
+
+            <!-- Search narrows only what is loaded, so an empty result says that rather than "none". -->
+            <TextBlock Classes="muted" HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center">
+              <TextBlock.IsVisible>
+                <MultiBinding Converter="{x:Static BoolConverters.And}">
+                  <Binding Path="!Items.Count" />
+                  <Binding Path="!IsEmpty" />
+                  <Binding Path="State" Converter="{x:Static v:HistoryStateIs.Ready}" />
+                </MultiBinding>
+              </TextBlock.IsVisible>
+              No loaded revision matches. Load older revisions to search further back.
+            </TextBlock>
+
+            <StackPanel Spacing="10" HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="440"
+                        IsVisible="{Binding State, Converter={x:Static v:HistoryStateIs.Unreachable}}">
+              <Path Classes="icon" Data="{StaticResource Icon.Unplugged}" Width="24" Height="24"
+                    Stroke="{DynamicResource Tone.Missing}" HorizontalAlignment="Center" />
+              <TextBlock Classes="empty-title" Text="The daemon is not answering" />
+              <TextBlock Classes="muted" HorizontalAlignment="Center" TextAlignment="Center"
+                         TextWrapping="Wrap" Text="{Binding Message}" />
+            </StackPanel>
+
+            <StackPanel Spacing="10" HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="440"
+                        IsVisible="{Binding State, Converter={x:Static v:HistoryStateIs.Failed}}">
+              <Path Classes="icon" Data="{StaticResource Icon.Alert}" Width="24" Height="24"
+                    Stroke="{DynamicResource Tone.Missing}" HorizontalAlignment="Center" />
+              <TextBlock Classes="empty-title" Text="History could not be read" />
+              <TextBlock Classes="muted" HorizontalAlignment="Center" TextAlignment="Center"
+                         TextWrapping="Wrap" Text="{Binding Message}" />
+            </StackPanel>
+          </Panel>
+        </DockPanel>
+      </Border>
+
+      <GridSplitter Grid.Row="1" Background="Transparent" ResizeDirection="Rows" />
+
+      <!-- The selected revision: its message and paths on the left, the picked path's diff on the right. -->
+      <Grid Grid.Row="2">
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="2*" MinWidth="260" />
+          <ColumnDefinition Width="12" />
+          <ColumnDefinition Width="3*" MinWidth="320" />
+        </Grid.ColumnDefinitions>
+
+        <Border Grid.Column="0" Classes="panel" Padding="8">
+          <Panel>
+            <DockPanel IsVisible="{Binding SelectedRevision, Converter={x:Static ObjectConverters.IsNotNull}}">
+              <StackPanel DockPanel.Dock="Top" Margin="10,8,10,10" Spacing="6">
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                  <TextBlock FontWeight="SemiBold" FontFamily="{StaticResource MonoFont}"
+                             Text="{Binding SelectedRevision.Revision, StringFormat='r{0}'}" />
+                  <TextBlock Classes="muted" Text="{Binding SelectedRevision.Author}" />
+                  <TextBlock Classes="faint" Text="{Binding SelectedRevision.When}" />
+                </StackPanel>
+                <ScrollViewer MaxHeight="96">
+                  <SelectableTextBlock TextWrapping="Wrap" Text="{Binding SelectedRevision.Message}" />
+                </ScrollViewer>
+              </StackPanel>
+
+              <ListBox x:Name="ChangedPaths" Classes="plain" ItemsSource="{Binding SelectedRevision.ChangedPaths}"
+                       SelectedItem="{Binding SelectedPath, Mode=TwoWay}">
+                <ListBox.ItemTemplate>
+                  <DataTemplate x:DataType="p:ChangedPathRow">
+                    <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto" Margin="10,6" ToolTip.Tip="{Binding Path}">
+                      <Border Classes="badge" VerticalAlignment="Center"
+                              Background="{Binding Badge.Tone, Converter={x:Static v:ToneBrush.Soft}}">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                          <Ellipse Width="6" Height="6" VerticalAlignment="Center"
+                                   Fill="{Binding Badge.Tone, Converter={x:Static v:ToneBrush.Solid}}" />
+                          <TextBlock Text="{Binding Badge.Label}" FontSize="11.5" FontWeight="SemiBold"
+                                     Foreground="{Binding Badge.Tone, Converter={x:Static v:ToneBrush.Solid}}" />
+                        </StackPanel>
+                      </Border>
+                      <Grid Grid.Column="1" ColumnDefinitions="Auto,*" Margin="14,0,8,0" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding Name}" FontWeight="Medium" />
+                        <TextBlock Grid.Column="1" Classes="faint" Margin="8,0,0,0" Text="{Binding Folder}"
+                                   TextTrimming="CharacterEllipsis" />
+                      </Grid>
+                      <StackPanel Grid.Row="1" Grid.Column="1" Orientation="Horizontal" Spacing="6" Margin="14,3,8,0"
+                                  IsVisible="{Binding CopiedFrom, Converter={x:Static ObjectConverters.IsNotNull}}">
+                        <Path Classes="icon" Data="{StaticResource Icon.History}" Width="11" Height="11" />
+                        <TextBlock Classes="muted" FontSize="11.5" Text="{Binding CopiedFrom, StringFormat='from {0}'}"
+                                   TextTrimming="CharacterEllipsis" />
+                      </StackPanel>
+                    </Grid>
+                  </DataTemplate>
+                </ListBox.ItemTemplate>
+              </ListBox>
+            </DockPanel>
+
+            <StackPanel Spacing="10" HorizontalAlignment="Center" VerticalAlignment="Center"
+                        IsVisible="{Binding SelectedRevision, Converter={x:Static ObjectConverters.IsNull}}">
+              <Path Classes="icon" Data="{StaticResource Icon.History}" Width="28" Height="28"
+                    Stroke="{DynamicResource FaintBrush}" HorizontalAlignment="Center" />
+              <TextBlock Classes="faint" HorizontalAlignment="Center" Text="Select a revision to see what it changed" />
+            </StackPanel>
+          </Panel>
+        </Border>
+
+        <GridSplitter Grid.Column="1" Background="Transparent" ResizeDirection="Columns" />
+
+        <v:RevisionDiffPaneView Grid.Column="2" DataContext="{Binding Diff}" />
+      </Grid>
+    </Grid>
+  </Grid>
+</UserControl>

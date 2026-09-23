@@ -38,6 +38,11 @@ public sealed partial class App : Application
         var diffs = new DaemonWorkingCopyDiff(channel);
         var sizes = new FileSizeReader();
         var launcher = new SystemFileLauncher(() => desktop.MainWindow);
+        var history = new HistoryViewModel(
+            new DaemonRevisionHistory(channel),
+            new RevisionDiffPaneViewModel(new DaemonRevisionDiff(channel), TimeProvider.System),
+            TimeProvider.System
+        );
 
         var viewModel = new MainWindowViewModel(
             new RecentWorkingCopiesFile(RecentWorkingCopiesFile.DefaultPath),
@@ -50,7 +55,8 @@ public sealed partial class App : Application
             TimeProvider.System,
             OperatingSystem.IsWindows()
                 ? StringComparison.OrdinalIgnoreCase
-                : StringComparison.Ordinal
+                : StringComparison.Ordinal,
+            history
         );
 
         return new MainWindow(viewModel);

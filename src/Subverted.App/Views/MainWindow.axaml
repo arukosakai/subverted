@@ -20,7 +20,7 @@
     <!-- Sidebar. The top 48px sit under the title bar: a drag area on Windows, and where the
          traffic lights live on macOS, which is why its inset is set per platform in code. -->
     <Border Grid.Column="0" Classes="sidebar">
-      <Grid RowDefinitions="48,Auto,Auto,*,Auto">
+      <Grid RowDefinitions="48,Auto,Auto,*,Auto,Auto">
         <Border Grid.Row="0" Background="Transparent"
                 WindowDecorationProperties.ElementRole="TitleBar" />
 
@@ -57,7 +57,29 @@
           </ItemsControl.ItemTemplate>
         </ItemsControl>
 
-        <Button Grid.Row="4" Classes="accent" Margin="16" HorizontalAlignment="Stretch"
+        <!-- VIEW: the two things the frame can show for the open working copy. -->
+        <StackPanel Grid.Row="4" Margin="10,0,10,4" IsVisible="{Binding HasWorkingCopy}">
+          <TextBlock Classes="section" Text="VIEW" Margin="12,8,10,8" />
+          <Button x:Name="ChangesView" Classes="sidebar-item" Classes.current="{Binding IsShowingChanges}"
+                  HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                  Command="{Binding ShowChangesCommand}">
+            <Grid ColumnDefinitions="Auto,*,Auto">
+              <Path Classes="icon" Data="{StaticResource Icon.Diff}" />
+              <TextBlock Grid.Column="1" Margin="10,0,0,0" Text="Changes" />
+              <TextBlock Grid.Column="2" Classes="faint" Text="{Binding Current.Changes.Count}" />
+            </Grid>
+          </Button>
+          <Button x:Name="HistoryView" Classes="sidebar-item" Classes.current="{Binding IsShowingHistory}"
+                  HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                  Command="{Binding ShowHistoryCommand}">
+            <StackPanel Orientation="Horizontal" Spacing="10">
+              <Path Classes="icon" Data="{StaticResource Icon.History}" />
+              <TextBlock Text="History" />
+            </StackPanel>
+          </Button>
+        </StackPanel>
+
+        <Button Grid.Row="5" Classes="accent" Margin="16" HorizontalAlignment="Stretch"
                 HorizontalContentAlignment="Center" Command="{Binding OpenFolderCommand}">
           <StackPanel Orientation="Horizontal" Spacing="8">
             <Path Classes="icon" Data="{StaticResource Icon.Plus}" Width="14" Height="14" />
@@ -71,7 +93,12 @@
       <Border Grid.Row="0" Background="Transparent" WindowDecorationProperties.ElementRole="TitleBar" />
 
       <Panel Grid.Row="1" IsVisible="{Binding HasWorkingCopy}">
-        <v:WorkingCopyView DataContext="{Binding Current}" />
+        <Panel IsVisible="{Binding IsShowingChanges}">
+          <v:WorkingCopyView DataContext="{Binding Current}" />
+        </Panel>
+        <Panel IsVisible="{Binding IsShowingHistory}">
+          <v:HistoryView DataContext="{Binding History}" />
+        </Panel>
       </Panel>
 
       <!-- First run: the one thing to do, said once, in the middle. -->

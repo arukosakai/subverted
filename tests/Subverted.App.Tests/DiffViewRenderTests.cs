@@ -118,7 +118,13 @@ public sealed class DiffViewRenderTests
     {
         var texts = await RenderAsync(
             "Dark",
-            () => new DiffLinesView { Document = Diffs.Binary, SizeInBytes = null },
+            () =>
+                new DiffLinesView
+                {
+                    Document = Diffs.Binary,
+                    SizeInBytes = null,
+                    OpenInAppCommand = new Counting(() => { }),
+                },
             "diff-binary-no-size.png",
             VisibleTextsOf
         );
@@ -127,6 +133,21 @@ public sealed class DiffViewRenderTests
         await Assert
             .That(texts.Any(text => text.EndsWith("MB", StringComparison.Ordinal)))
             .IsFalse();
+    }
+
+    /// <summary>A committed revision's binary has no file on disk, so the History pane gives no command.</summary>
+    [Test]
+    public async Task A_binary_card_given_nothing_to_open_offers_no_open_in_app()
+    {
+        var texts = await RenderAsync(
+            "Dark",
+            () => new DiffLinesView { Document = Diffs.Binary, SizeInBytes = null },
+            "diff-binary-history.png",
+            VisibleTextsOf
+        );
+
+        await Assert.That(texts).Contains("Binary file");
+        await Assert.That(texts).DoesNotContain("Open in app");
     }
 
     /// <summary>The pane's size and command are the directory's, so a file inside it gets neither.</summary>

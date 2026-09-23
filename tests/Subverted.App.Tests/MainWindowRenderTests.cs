@@ -129,7 +129,8 @@ public sealed class MainWindowRenderTests
             new FakeFolderPicker(null),
             path => new WorkingCopyViewModel(path, status, DiffPanes.Pane()),
             new FakeTimeProvider(),
-            StringComparison.Ordinal
+            StringComparison.Ordinal,
+            Revisions.View()
         );
 
         var window = new MainWindow(viewModel);
