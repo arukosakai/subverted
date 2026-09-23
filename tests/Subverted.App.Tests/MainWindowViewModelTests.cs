@@ -182,7 +182,7 @@ public sealed class MainWindowViewModelTests
         await using var window = new MainWindowViewModel(
             new FakeRecentStore(),
             new FakeFolderPicker("/game"),
-            path => new WorkingCopyViewModel(path, status),
+            path => new WorkingCopyViewModel(path, status, DiffPanes.Pane()),
             clock,
             StringComparison.Ordinal
         );
@@ -233,7 +233,7 @@ public sealed class MainWindowViewModelTests
         new(
             store,
             new FakeFolderPicker(picked),
-            path => new WorkingCopyViewModel(path, status),
+            path => new WorkingCopyViewModel(path, status, DiffPanes.Pane()),
             clock ?? new FakeTimeProvider(),
             StringComparison.Ordinal
         );

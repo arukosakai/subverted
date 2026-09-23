@@ -6,18 +6,34 @@ using Subverted.Protocol;
 namespace Subverted.App.ViewModels;
 
 /// <summary>One working copy as the window shows it: what changed, and whether that answer is real.</summary>
-public sealed partial class WorkingCopyViewModel(string path, IWorkingCopyStatus status)
-    : ObservableObject
+/// <param name="diff">Shows whichever row is selected; this view model tells it when that changes.</param>
+public sealed partial class WorkingCopyViewModel(
+    string path,
+    IWorkingCopyStatus status,
+    DiffPaneViewModel diff
+) : ObservableObject
 {
+    /// <summary>
+    /// The record the diff was last asked for. A resync replaces a changed row with a new record,
+    /// which the list control drops from its selection; this one's path is what finds it again.
+    /// </summary>
+    private ChangeRow? _followed;
+
+    private bool _isResyncing;
+
     /// <summary>The path the person opened, which may be anywhere inside the working copy.</summary>
     public string Path { get; } = path;
 
     public ObservableCollection<ChangeRow> Changes { get; } = [];
 
+    /// <summary>
+    /// The row the person picked. The once-a-second resync re-points it at the row's newest record
+    /// rather than losing it, and that is not treated as a new pick.
+    /// </summary>
     [ObservableProperty]
     public partial ChangeRow? SelectedChange { get; set; }
 
-    public DiffPaneViewModel Diff { get; } = new();
+    public DiffPaneViewModel Diff { get; } = diff;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(Headline))]
@@ -114,14 +130,72 @@ public sealed partial class WorkingCopyViewModel(string path, IWorkingCopyStatus
             .OrderBy(row => row.RelPath, StringComparer.Ordinal)
             .ToList();
 
-        ChangeListSynchronizer.Apply(Changes, rows);
         RootPath = listing.Info.RootPath;
+        Resync(rows);
         RepositoryRoot = listing.Info.RepositoryRoot;
         Name = FolderName.Of(listing.Info.RootPath);
         Summary = ChangeSummary.Of(rows);
         Message = null;
         State = WorkingCopyState.Ready;
         RaiseDerived();
+    }
+
+    partial void OnSelectedChangeChanged(ChangeRow? value)
+    {
+        if (_isResyncing)
+        {
+            return;
+        }
+
+        _followed = value;
+        if (value is null)
+        {
+            Diff.Clear();
+            return;
+        }
+
+        _ = Diff.SelectAsync(value, DiffTarget.PathOf(Location, value.RelPath));
+    }
+
+    /// <summary>
+    /// Merges the fresh rows in, then puts the selection back on its path's newest record and asks
+    /// for its diff again if that record says it changed. A row that left the listing — committed
+    /// or reverted elsewhere — takes the selection with it.
+    /// </summary>
+    private void Resync(IReadOnlyList<ChangeRow> rows)
+    {
+        var shownFor = _followed;
+        ChangeRow? listed;
+
+        // The list control writes its dropped selection back through the binding mid-merge.
+        _isResyncing = true;
+        try
+        {
+            ChangeListSynchronizer.Apply(Changes, rows);
+            listed = Changes.FirstOrDefault(row => row.RelPath == shownFor?.RelPath);
+            SelectedChange = listed;
+        }
+        finally
+        {
+            _isResyncing = false;
+        }
+
+        _followed = listed;
+        if (shownFor is null)
+        {
+            return;
+        }
+
+        if (listed is null)
+        {
+            Diff.Clear();
+            return;
+        }
+
+        if (DiffFreshness.NeedsRefetch(shownFor, listed))
+        {
+            _ = Diff.RefetchAsync(listed, DiffTarget.PathOf(Location, listed.RelPath));
+        }
     }
 
     /// <summary>A failure leaves <see cref="Changes"/> as it was; see <see cref="IsStale"/>.</summary>
