@@ -1,0 +1,15 @@
+Index: hero.png
+===================================================================
+Cannot display: file marked as a binary type.
+svn:mime-type = application/octet-stream
+Index: hero.png
+===================================================================
+--- hero.png	(revision 0)
++++ hero.png	(revision 1)
+
+Property changes on: hero.png
+___________________________________________________________________
+Added: svn:mime-type
+## -0,0 +1 ##
++application/octet-stream
+\ No newline at end of property
