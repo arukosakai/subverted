@@ -28,6 +28,12 @@ runs:
       shell: bash
       run: command -v svn || brew install subversion
 
+    # SlikSVN 1.8 links MSVCR100.dll, which its installer brings along and unpacking does not.
+    - name: Install the VC++ 2010 runtime (Windows, svn 1.8)
+      if: runner.os == 'Windows' && startsWith(inputs.svn-version, '1.8.')
+      shell: pwsh
+      run: choco install vcredist2010 -y --no-progress
+
     # Unpacked rather than installed, so the version is exactly the one asked for.
     - name: Install svn (Windows)
       if: runner.os == 'Windows'
