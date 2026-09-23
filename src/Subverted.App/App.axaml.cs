@@ -19,7 +19,7 @@ public sealed partial class App : Application
 
     public override void OnFrameworkInitializationCompleted()
     {
-        Resources[RevealMenuText.ResourceKey] = RevealMenuText.For(SystemFileRevealer.ThisPlatform);
+        Resources[RevealMenuText.ResourceKey] = RevealMenuText.For(FileRevealers.ThisPlatform);
 
         // Headless tests run the app without a desktop lifetime and build their own windows.
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
@@ -40,7 +40,7 @@ public sealed partial class App : Application
         var diffs = new DaemonWorkingCopyDiff(channel);
         var sizes = new FileSizeReader();
         var launcher = new SystemFileLauncher(() => desktop.MainWindow);
-        var revealer = new SystemFileRevealer(SystemFileRevealer.ThisPlatform);
+        var revealer = FileRevealers.For(FileRevealers.ThisPlatform);
         var clipboard = new WindowClipboard(() => desktop.MainWindow);
 
         var viewModel = new MainWindowViewModel(

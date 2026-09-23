@@ -3,27 +3,18 @@ using Subverted.App.Infrastructure;
 namespace Subverted.App.Tests;
 
 /// <summary>
-/// What reveal-in-file-manager starts, per platform, and what it falls back to when the change is
-/// gone from disk. Starting the process itself is left to the real app, where a window opening is
-/// what there is to see.
+/// Which revealer each platform gets, what the command-line ones start, and what every one falls
+/// back to when the change is gone from disk. Opening a file manager window is left to the real
+/// app, where a window opening is what there is to see.
 /// </summary>
 public sealed class RevealTests
 {
     private static readonly string Hero = Path.Combine(Path.GetTempPath(), "art dir", "hero.png");
 
     [Test]
-    public async Task Explorer_is_told_to_select_the_path_as_a_separate_argument()
-    {
-        var command = RevealCommand.For(Hero, FileManager.Explorer, isDirectory: false);
-
-        await Assert.That(command.FileName).IsEqualTo("explorer.exe");
-        await Assert.That(string.Join("|", command.Arguments)).IsEqualTo($"/select,|{Hero}");
-    }
-
-    [Test]
     public async Task Finder_is_told_to_reveal_the_path()
     {
-        var command = RevealCommand.For(Hero, FileManager.Finder, isDirectory: false);
+        var command = RevealCommand.Finder(Hero);
 
         await Assert.That(command.FileName).IsEqualTo("open");
         await Assert.That(string.Join("|", command.Arguments)).IsEqualTo($"-R|{Hero}");
@@ -35,12 +26,21 @@ public sealed class RevealTests
     [Arguments(true)]
     public async Task Elsewhere_the_folder_is_opened_a_file_s_or_the_folder_itself(bool isDirectory)
     {
-        var command = RevealCommand.For(Hero, FileManager.FreeDesktop, isDirectory);
+        var command = RevealCommand.FreeDesktop(Hero, isDirectory);
 
         await Assert.That(command.FileName).IsEqualTo("xdg-open");
         await Assert
-            .That(command.Arguments)
-            .IsEquivalentTo(new[] { isDirectory ? Hero : Path.GetDirectoryName(Hero)! });
+            .That(string.Join("|", command.Arguments))
+            .IsEqualTo(isDirectory ? Hero : Path.GetDirectoryName(Hero)!);
+    }
+
+    [Test]
+    [Arguments(FileManager.Explorer, typeof(ShellFileRevealer))]
+    [Arguments(FileManager.Finder, typeof(ProcessFileRevealer))]
+    [Arguments(FileManager.FreeDesktop, typeof(ProcessFileRevealer))]
+    public async Task Each_platform_reveals_its_own_way(FileManager fileManager, Type revealer)
+    {
+        await Assert.That(FileRevealers.For(fileManager).GetType()).IsEqualTo(revealer);
     }
 
     [Test]
@@ -60,7 +60,7 @@ public sealed class RevealTests
             : OperatingSystem.IsMacOS() ? FileManager.Finder
             : FileManager.FreeDesktop;
 
-        await Assert.That(SystemFileRevealer.ThisPlatform).IsEqualTo(expected);
+        await Assert.That(FileRevealers.ThisPlatform).IsEqualTo(expected);
     }
 
     [Test]
@@ -70,8 +70,8 @@ public sealed class RevealTests
         var file = Path.Combine(folder.Path, "hero.png");
         File.WriteAllText(file, "");
 
-        await Assert.That(SystemFileRevealer.NearestPresent(file)).IsEqualTo(file);
-        await Assert.That(SystemFileRevealer.NearestPresent(folder.Path)).IsEqualTo(folder.Path);
+        await Assert.That(NearestPresentPath.Of(file)).IsEqualTo(file);
+        await Assert.That(NearestPresentPath.Of(folder.Path)).IsEqualTo(folder.Path);
     }
 
     /// <summary>A missing file inside a missing folder: the nearest folder still there is shown.</summary>
@@ -81,7 +81,7 @@ public sealed class RevealTests
         using var folder = new Scratch();
         var gone = Path.Combine(folder.Path, "gonedir", "sub", "gone.png");
 
-        await Assert.That(SystemFileRevealer.NearestPresent(gone)).IsEqualTo(folder.Path);
+        await Assert.That(NearestPresentPath.Of(gone)).IsEqualTo(folder.Path);
     }
 
     /// <summary>
@@ -89,13 +89,30 @@ public sealed class RevealTests
     /// name that is not there runs out of folders to try the same way on every platform.
     /// </summary>
     [Test]
-    public async Task A_path_with_no_folder_left_to_try_has_nothing_to_show_and_starts_nothing()
+    public async Task A_path_with_no_folder_left_to_try_has_nothing_to_show()
     {
-        var nowhere = $"subverted-nowhere-{Guid.NewGuid():N}";
-
-        await Assert.That(SystemFileRevealer.NearestPresent(nowhere)).IsNull();
-        await new SystemFileRevealer(FileManager.FreeDesktop).RevealAsync(nowhere);
+        await Assert.That(NearestPresentPath.Of(Nowhere())).IsNull();
     }
+
+    [Test]
+    public async Task With_nothing_to_show_neither_revealer_starts_anything()
+    {
+        var asked = 0;
+        var process = new ProcessFileRevealer(
+            (path, _) =>
+            {
+                asked++;
+                return RevealCommand.Finder(path);
+            }
+        );
+
+        await process.RevealAsync(Nowhere());
+        await new ShellFileRevealer().RevealAsync(Nowhere());
+
+        await Assert.That(asked).IsEqualTo(0);
+    }
+
+    private static string Nowhere() => $"subverted-nowhere-{Guid.NewGuid():N}";
 
     private sealed class Scratch : IDisposable
     {

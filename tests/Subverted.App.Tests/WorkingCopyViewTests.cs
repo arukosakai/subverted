@@ -176,7 +176,7 @@ public sealed class WorkingCopyViewTests
         await Assert
             .That(headers)
             .IsEqualTo(
-                $"Open|{RevealMenuText.For(SystemFileRevealer.ThisPlatform)}|Copy path|History of this file"
+                $"Open|{RevealMenuText.For(FileRevealers.ThisPlatform)}|Copy path|History of this file"
             );
         await Assert.That(historyEnabled).IsFalse();
     }

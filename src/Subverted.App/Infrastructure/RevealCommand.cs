@@ -1,21 +1,14 @@
 namespace Subverted.App.Infrastructure;
 
-/// <summary>The process that shows a path selected in the platform's file manager.</summary>
+/// <summary>The process that shows a path in a file manager reached from the command line.</summary>
 /// <param name="Arguments">Passed one by one, so a path with spaces needs no quoting of ours.</param>
 public sealed record RevealCommand(string FileName, IReadOnlyList<string> Arguments)
 {
     /// <param name="path">Absolute, and present on disk.</param>
-    /// <param name="fileManager">Which one this platform has; taken as an argument so every side is a test.</param>
-    /// <param name="isDirectory">Only a file manager that cannot select opens the folder itself.</param>
-    /// <remarks>
-    /// Explorer parses its own command line: <c>/select,</c> and the path must be separate
-    /// arguments, since a path glued to the comma is not re-quoted when it holds a space.
-    /// </remarks>
-    public static RevealCommand For(string path, FileManager fileManager, bool isDirectory) =>
-        fileManager switch
-        {
-            FileManager.Explorer => new("explorer.exe", ["/select,", path]),
-            FileManager.Finder => new("open", ["-R", path]),
-            _ => new("xdg-open", [isDirectory ? path : Path.GetDirectoryName(path)!]),
-        };
+    public static RevealCommand Finder(string path) => new("open", ["-R", path]);
+
+    /// <summary><c>xdg-open</c> cannot select, so a file's folder is the nearest thing to showing it.</summary>
+    /// <param name="path">Absolute, and present on disk.</param>
+    public static RevealCommand FreeDesktop(string path, bool isDirectory) =>
+        new("xdg-open", [isDirectory ? path : Path.GetDirectoryName(path)!]);
 }
