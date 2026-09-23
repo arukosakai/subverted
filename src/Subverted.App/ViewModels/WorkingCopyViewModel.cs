@@ -36,6 +36,7 @@ public sealed partial class WorkingCopyViewModel(
     private ChangeRow? _followed;
 
     private bool _isRelayingOut;
+    private bool _isRelayingFolders;
     private Action<string>? _historyRequested;
 
     /// <summary>The path the person opened, which may be anywhere inside the working copy.</summary>
@@ -49,6 +50,16 @@ public sealed partial class WorkingCopyViewModel(
 
     /// <summary>What the list shows: <see cref="Changes"/> through the filter, flat or as a tree.</summary>
     public ObservableCollection<ChangeListEntry> Entries { get; } = [];
+
+    /// <summary>The directory pane: every folder holding a change, the root first.</summary>
+    public ObservableCollection<FolderEntry> Folders { get; } = [];
+
+    /// <summary>
+    /// The folder the table is narrowed to; the root, or nothing chosen, shows every change. It
+    /// narrows exactly as the filter does, so what it hides is neither counted nor sent.
+    /// </summary>
+    [ObservableProperty]
+    public partial FolderEntry? SelectedFolder { get; set; }
 
     /// <summary>
     /// The line the person picked. It survives the once-a-second resync, a change of layout and a
@@ -197,6 +208,7 @@ public sealed partial class WorkingCopyViewModel(
         ChangeListSynchronizer.Apply(Changes, rows);
         _ticks.Follow(rows);
         OnPropertyChanged(nameof(Ticked));
+        ShowFolders(rows);
         LayOut();
         RepositoryRoot = listing.Info.RepositoryRoot;
         Name = FolderName.Of(listing.Info.RootPath);
@@ -207,6 +219,40 @@ public sealed partial class WorkingCopyViewModel(
     }
 
     partial void OnFilterChanged(string value) => LayOut();
+
+    partial void OnSelectedFolderChanged(FolderEntry? value)
+    {
+        if (!_isRelayingFolders)
+        {
+            LayOut();
+        }
+    }
+
+    /// <summary>
+    /// Brings the pane up to date and keeps the chosen folder chosen; a folder that no longer holds
+    /// anything falls back to the root rather than narrowing the table to nothing.
+    /// </summary>
+    private void ShowFolders(IReadOnlyList<ChangeRow> rows)
+    {
+        var chosen = SelectedFolder?.Content.RelPath ?? "";
+        _isRelayingFolders = true;
+        try
+        {
+            ListSlotSynchronizer.Apply(
+                Folders,
+                ChangeFolders.Of(rows),
+                line => line.RelPath,
+                line => new FolderEntry(line)
+            );
+            SelectedFolder =
+                Folders.FirstOrDefault(folder => folder.Content.RelPath == chosen)
+                ?? Folders.FirstOrDefault();
+        }
+        finally
+        {
+            _isRelayingFolders = false;
+        }
+    }
 
     partial void OnIsTreeChanged(bool value) => LayOut();
 
@@ -235,7 +281,11 @@ public sealed partial class WorkingCopyViewModel(
     {
         var selectedKey = SelectedEntry?.Key;
         var shownFor = _followed;
-        var kept = ChangeFilter.Apply(Changes, Filter);
+        var folder = SelectedFolder?.Content.RelPath ?? "";
+        var kept = ChangeFilter.Apply(
+            Changes.Where(row => ChangeFolders.Contains(folder, row)),
+            Filter
+        );
         var items = IsTree ? ChangeTree.Of(kept) : FlatChangeList.Of(kept);
 
         // The list control writes a selection it dropped back through the binding, mid-merge.
@@ -354,7 +404,11 @@ public sealed partial class WorkingCopyViewModel(
     private void ShowTree() => IsTree = true;
 
     [RelayCommand]
-    private void ClearFilter() => Filter = "";
+    private void ClearFilter()
+    {
+        Filter = "";
+        SelectedFolder = Folders.FirstOrDefault();
+    }
 
     private string PathOf(string relPath) => DiffTarget.PathOf(Location, relPath);
 

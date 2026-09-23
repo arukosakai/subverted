@@ -27,6 +27,9 @@ public sealed partial class MainWindowViewModel(
 
     public ObservableCollection<RecentWorkingCopy> Recent { get; } = [];
 
+    /// <summary>Every write made from this window, whichever working copy it was in.</summary>
+    public OutputLogViewModel Log { get; } = new(clock);
+
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasWorkingCopy))]
     public partial WorkingCopyViewModel? Current { get; private set; }
@@ -72,6 +75,8 @@ public sealed partial class MainWindowViewModel(
         Replace(recent, current: path);
 
         var shown = open(path);
+        shown.Composer.Attempted += Log.Record;
+        shown.RevertPrompt.Attempted += Log.Record;
         Current = shown;
         await shown.RefreshAsync(cancellationToken);
         _polling = new StatusPolling(clock, RefreshInterval, shown.RefreshAsync);
