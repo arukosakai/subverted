@@ -52,7 +52,15 @@
       </ItemsControl.ItemTemplate>
     </ItemsControl>
 
-    <Border Grid.Row="2" Classes="panel" Padding="8">
+    <!-- Changes: the list on the left, the selected row's diff on the right. -->
+    <Grid Grid.Row="2">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="2*" MinWidth="280" />
+        <ColumnDefinition Width="12" />
+        <ColumnDefinition Width="3*" MinWidth="320" />
+      </Grid.ColumnDefinitions>
+
+    <Border Grid.Column="0" Classes="panel" Padding="8">
       <DockPanel>
         <Border DockPanel.Dock="Top" IsVisible="{Binding IsStale}" Margin="2,2,2,6" Padding="12,8"
                 CornerRadius="{StaticResource RowRadius}" Background="{DynamicResource Tone.Missing.Soft}">
@@ -64,7 +72,8 @@
           </StackPanel>
         </Border>
       <Panel>
-        <ListBox Classes="plain" ItemsSource="{Binding Changes}" IsVisible="{Binding !!Changes.Count}">
+        <ListBox Classes="plain" ItemsSource="{Binding Changes}" IsVisible="{Binding !!Changes.Count}"
+                 SelectedItem="{Binding SelectedChange, Mode=TwoWay}">
           <ListBox.ItemTemplate>
             <DataTemplate x:DataType="p:ChangeRow">
               <Grid ColumnDefinitions="Auto,*,Auto" Margin="10,8" MinHeight="24">
@@ -78,11 +87,12 @@
                   </StackPanel>
                 </Border>
 
-                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" Margin="14,0,8,0"
-                            VerticalAlignment="Center">
+                <!-- A grid, not a stack: beside the diff pane the list is narrow, and the folder has to trim. -->
+                <Grid Grid.Column="1" ColumnDefinitions="Auto,*" Margin="14,0,8,0" VerticalAlignment="Center">
                   <TextBlock Text="{Binding Name}" FontWeight="Medium" />
-                  <TextBlock Classes="faint" Text="{Binding Folder}" TextTrimming="CharacterEllipsis" />
-                </StackPanel>
+                  <TextBlock Grid.Column="1" Classes="faint" Margin="8,0,0,0" Text="{Binding Folder}"
+                             TextTrimming="CharacterEllipsis" />
+                </Grid>
 
                 <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                   <Border Classes="tag" IsVisible="{Binding IsCopied}" ToolTip.Tip="Scheduled with history — a copy or a move">
@@ -135,5 +145,10 @@
       </Panel>
       </DockPanel>
     </Border>
+
+      <GridSplitter Grid.Column="1" Background="Transparent" ResizeDirection="Columns" />
+
+      <v:DiffPaneView Grid.Column="2" DataContext="{Binding Diff}" />
+    </Grid>
   </Grid>
 </UserControl>
