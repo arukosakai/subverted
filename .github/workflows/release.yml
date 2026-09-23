@@ -1,0 +1,76 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+jobs:
+  ci:
+    uses: ./.github/workflows/ci.yml
+
+  bundle:
+    name: Bundle (${{ matrix.rid }})
+    needs: ci
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - { os: windows-latest, rid: win-x64 }
+          - { os: ubuntu-latest, rid: linux-x64 }
+          - { os: macos-latest, rid: osx-arm64 }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - id: version
+        shell: bash
+        run: echo "value=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+      - id: bundle
+        uses: ./.github/actions/bundle
+        with:
+          rid: ${{ matrix.rid }}
+          version: ${{ steps.version.outputs.value }}
+      - id: installer
+        if: runner.os == 'Windows'
+        uses: ./.github/actions/windows-installer
+        with:
+          directory: ${{ steps.bundle.outputs.directory }}
+          version: ${{ steps.version.outputs.value }}
+      - if: runner.os == 'Windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: subverted-${{ matrix.rid }}-setup
+          path: ${{ steps.installer.outputs.installer }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: subverted-${{ matrix.rid }}
+          path: ${{ steps.bundle.outputs.archive }}
+
+  publish:
+    name: GitHub release
+    needs: bundle
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - name: Create the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          prerelease=()
+          [[ "$TAG" == *-* ]] && prerelease=(--prerelease)
+          gh release create "$TAG" dist/* --repo "$GITHUB_REPOSITORY" \
+            --title "Subverted $TAG" --generate-notes --verify-tag "${prerelease[@]}"

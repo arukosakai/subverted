@@ -1,3 +1,6 @@
 # Captured `svn diff` output: CRLF headers, LF and lone-CR content, byte-exact on purpose.
 tests/Subverted.Frontend.Tests/Diff/Captures/*.diff -text
 tests/Subverted.Frontend.Tests/Diff/Captures/*.sh text eol=lf
+
+# Shell scripts run under bash on every OS, including a Windows checkout with autocrlf on.
+*.sh text eol=lf

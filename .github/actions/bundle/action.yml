@@ -1,0 +1,59 @@
+name: Bundle Subverted
+description: >
+  Publishes `sv`, the GUI and the daemon self-contained into one directory — both front-ends start
+  the daemon from beside themselves — and archives it: zip on Windows, tar.gz elsewhere so the
+  executable bits survive. Unix bundles carry install.sh, which puts `sv` on PATH.
+
+inputs:
+  rid:
+    description: Runtime identifier to publish for, e.g. win-x64, linux-x64, osx-arm64.
+    required: true
+  version:
+    description: Version stamped into the assemblies and the archive name.
+    required: true
+
+outputs:
+  directory:
+    description: The published bundle directory, before archiving.
+    value: ${{ steps.publish.outputs.directory }}
+  archive:
+    description: Path to the archive that was produced.
+    value: ${{ steps.archive.outputs.path }}
+
+runs:
+  using: composite
+  steps:
+    - name: Publish
+      id: publish
+      shell: bash
+      env:
+        RID: ${{ inputs.rid }}
+        VERSION: ${{ inputs.version }}
+      run: |
+        name="subverted-$VERSION-$RID"
+        out="artifacts/bundle/$name"
+        for project in Daemon Cli App; do
+          dotnet publish "src/Subverted.$project" -c Release -r "$RID" --self-contained \
+            -p:Version="$VERSION" -o "$out"
+        done
+        if [[ "$RUNNER_OS" != "Windows" ]]; then
+          install -m 755 installer/unix/install.sh "$out/install.sh"
+        fi
+        echo "name=$name" >> "$GITHUB_OUTPUT"
+        echo "directory=$out" >> "$GITHUB_OUTPUT"
+
+    - name: Archive
+      id: archive
+      shell: bash
+      env:
+        NAME: ${{ steps.publish.outputs.name }}
+      run: |
+        cd artifacts/bundle
+        if [[ "$RUNNER_OS" == "Windows" ]]; then
+          7z a -tzip "$NAME.zip" "$NAME" > /dev/null
+          archive="$NAME.zip"
+        else
+          tar -czf "$NAME.tar.gz" "$NAME"
+          archive="$NAME.tar.gz"
+        fi
+        echo "path=artifacts/bundle/$archive" >> "$GITHUB_OUTPUT"

@@ -1,0 +1,36 @@
+name: Set up the toolchain
+description: >
+  The .NET SDK global.json pins, the repo's local tools, and the `svn` command line — the test
+  suite drives real working copies, and everything but `sv st` shells out to it.
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-dotnet@v4
+      with:
+        global-json-file: global.json
+
+    - name: Install svn (Linux)
+      if: runner.os == 'Linux'
+      shell: bash
+      run: command -v svn || { sudo apt-get update && sudo apt-get install -y subversion; }
+
+    - name: Install svn (macOS)
+      if: runner.os == 'macOS'
+      shell: bash
+      run: command -v svn || brew install subversion
+
+    - name: Install svn (Windows)
+      if: runner.os == 'Windows'
+      shell: pwsh
+      run: |
+        choco install sliksvn -y --no-progress
+        Add-Content $env:GITHUB_PATH 'C:\Program Files\SlikSvn\bin'
+
+    - name: Show svn version
+      shell: bash
+      run: svn --version --quiet
+
+    - name: Restore local tools
+      shell: bash
+      run: dotnet tool restore

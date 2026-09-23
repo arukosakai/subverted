@@ -1,0 +1,34 @@
+name: Windows installer
+description: >
+  Wraps a published win-x64 bundle in a per-user Inno Setup installer that puts `sv` on PATH.
+
+inputs:
+  directory:
+    description: The published bundle directory.
+    required: true
+  version:
+    description: Version shown by the installer and used in its file name.
+    required: true
+
+outputs:
+  installer:
+    description: Path to the setup executable.
+    value: ${{ steps.compile.outputs.path }}
+
+runs:
+  using: composite
+  steps:
+    - name: Compile the installer
+      id: compile
+      shell: pwsh
+      env:
+        BUNDLE_DIR: ${{ inputs.directory }}
+        VERSION: ${{ inputs.version }}
+      run: |
+        $iscc = 'C:\Program Files (x86)\Inno Setup 6\ISCC.exe'
+        if (-not (Test-Path $iscc)) { choco install innosetup -y --no-progress }
+        $source = (Resolve-Path $env:BUNDLE_DIR).Path
+        $output = Join-Path $pwd 'artifacts/installer'
+        & $iscc /Q "/DAppVersion=$env:VERSION" "/DSourceDir=$source" "/DOutputDir=$output" installer/windows/Subverted.iss
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+        "path=artifacts/installer/subverted-$env:VERSION-win-x64-setup.exe" >> $env:GITHUB_OUTPUT

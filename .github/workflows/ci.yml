@@ -1,0 +1,86 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+  workflow_call:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+jobs:
+  format:
+    name: CSharpier
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - run: dotnet tool restore
+      - run: dotnet csharpier check .
+
+  test:
+    name: Test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    # Windows is the only platform the suite has been run on. The others stay advisory until
+    # they have been seen green, rather than turning every run red on day one.
+    continue-on-error: ${{ matrix.os != 'windows-latest' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-toolchain
+      - run: dotnet build Subverted.slnx
+      - run: bash tools/run-tests.sh
+
+  bundle:
+    name: Bundle (${{ matrix.rid }})
+    needs: [format, test]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: windows-latest, rid: win-x64 }
+          - { os: ubuntu-latest, rid: linux-x64 }
+          - { os: macos-latest, rid: osx-arm64 }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - id: bundle
+        uses: ./.github/actions/bundle
+        with:
+          rid: ${{ matrix.rid }}
+          version: 0.0.0-ci.${{ github.run_number }}
+      - id: installer
+        if: runner.os == 'Windows'
+        uses: ./.github/actions/windows-installer
+        with:
+          directory: ${{ steps.bundle.outputs.directory }}
+          version: 0.0.0-ci.${{ github.run_number }}
+      - if: runner.os == 'Windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: subverted-${{ matrix.rid }}-setup
+          path: ${{ steps.installer.outputs.installer }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: subverted-${{ matrix.rid }}
+          path: ${{ steps.bundle.outputs.archive }}
+          retention-days: 14
