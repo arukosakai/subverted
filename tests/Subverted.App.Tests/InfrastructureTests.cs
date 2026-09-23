@@ -50,10 +50,7 @@ public sealed class InfrastructureTests
     {
         using var folder = new ScratchFolder();
         var status = new DaemonWorkingCopyStatus(
-            new DaemonChannel(
-                Path.Combine(folder.Path, "nobody.sock"),
-                Path.Combine(folder.Path, "no-daemon.exe")
-            )
+            new DaemonChannel(UnusedSocket.NewPath(), Path.Combine(folder.Path, "no-daemon.exe"))
         );
 
         var thrown = await Assert
@@ -68,10 +65,7 @@ public sealed class InfrastructureTests
     {
         using var folder = new ScratchFolder();
         var diffs = new DaemonWorkingCopyDiff(
-            new DaemonChannel(
-                Path.Combine(folder.Path, "nobody.sock"),
-                Path.Combine(folder.Path, "no-daemon.exe")
-            )
+            new DaemonChannel(UnusedSocket.NewPath(), Path.Combine(folder.Path, "no-daemon.exe"))
         );
 
         var thrown = await Assert
@@ -86,10 +80,7 @@ public sealed class InfrastructureTests
     {
         using var folder = new ScratchFolder();
         var commits = new DaemonWorkingCopyCommit(
-            new DaemonChannel(
-                Path.Combine(folder.Path, "nobody.sock"),
-                Path.Combine(folder.Path, "no-daemon.exe")
-            )
+            new DaemonChannel(UnusedSocket.NewPath(), Path.Combine(folder.Path, "no-daemon.exe"))
         );
 
         var thrown = await Assert
@@ -106,10 +97,7 @@ public sealed class InfrastructureTests
     {
         using var folder = new ScratchFolder();
         var reverts = new DaemonWorkingCopyRevert(
-            new DaemonChannel(
-                Path.Combine(folder.Path, "nobody.sock"),
-                Path.Combine(folder.Path, "no-daemon.exe")
-            )
+            new DaemonChannel(UnusedSocket.NewPath(), Path.Combine(folder.Path, "no-daemon.exe"))
         );
 
         var thrown = await Assert
