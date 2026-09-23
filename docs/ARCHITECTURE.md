@@ -1470,6 +1470,64 @@ written. A pre-commit hook refusal printed the step, the marks and "nothing was 
 exited 3, and the retry committed. The interactive `sv pick` walk itself was not driven, since
 there is no terminal here. It is covered by `IPrompt` tests only.*
 
+### D33 — svn writes paths in its console's code page, so the daemon gives it a UTF-8 console
+
+`SvnCommand` decodes svn's output as UTF-8, and on Windows svn does not write UTF-8. The path text
+it prints — diff `Index:`/`---`/`+++`/`Property changes on:` lines, status text, errors — is in the
+*console's output code page*. `LC_ALL=C` changes the language, not this. File content lines in a
+diff are the file's raw bytes and are never transcoded. Measured on 1.8.15, Windows 11, Polish
+locale (OEM 852, ANSI 1250), for `zażółć.txt`:
+
+| svn started with…                                   | `Index:` bytes for the name        | read as UTF-8 |
+|-----------------------------------------------------|------------------------------------|---------------|
+| a console at 852 (a terminal, or `CreateNoWindow`)   | `za be a2 88 86 .txt`              | `za����.txt`  |
+| no console at all (`DETACHED_PROCESS`)               | `za bf f3 b3 e6 .txt` (1250)       | `za����.txt`  |
+| a console at 65001                                   | `za c5 bc c3 b3 c5 82 c4 87 .txt`  | `zażółć.txt`  |
+
+A name outside the code page — `ドラゴン.txt` — comes out as `????` in the first two rows, and that
+is not recoverable by decoding differently. Only the third row is right for every name.
+
+**The daemon owns a console and sets it to 65001 before anything starts svn** (`SvnConsole.UseUtf8`,
+first line of `Program.cs`). Every `svn` is started with `CreateNoWindow` false, so it inherits that
+console rather than getting one of its own. What the daemon finds depends on how it was started:
+
+- **By `DaemonChannel` — `sv` and the app, i.e. always in production.** `CreateNoWindow` gives the
+  daemon a fresh windowless console of its own (measured: one process attached, code page 852,
+  no window), independent of the caller's. Switching it touches nobody else, so `sv` never changes
+  the user's terminal — and the CLI never runs svn itself; only the daemon does.
+- **With no console** (`DETACHED_PROCESS`). `AllocConsoleWithOptions` in its no-window mode, then
+  the switch. Without this each svn would get a new console — at 852, and with a window. The call
+  exists from Windows 11 24H2; on older Windows the process stays without one, as before.
+- **In a terminal, run by hand.** The code page belongs to the console, not the process, so the
+  switch is the terminal's too; the scope `UseUtf8` returns puts the old pages back on disposal.
+  A daemon killed outright leaves the terminal at 65001.
+
+`Utf8ConsoleRule` is the decision — Windows or not, console or none, already UTF-8 both ways or not
+— as a pure function of those answers, so every side is tested on either OS. `SvnConsole` is the
+Win32 half, exercised by the integration tests; the other-OS side of `IsWindows()` and the
+pre-24H2 fallback are what no test on this machine reaches.
+
+**Tests get the same guarantee from an assembly hook, not from `SvnCommand`.** `Svn.Tests` and
+`Daemon.Tests` run svn in-process, so `SvnConsoleForTheRun` calls `UseUtf8` before the first test
+and disposes it after the last: a developer's terminal is switched for the run and put back. The
+constructor of `SvnCommand` was the other place it could live, and was rejected: a type that
+quietly rewrites a console shared with the user's terminal on construction is a side effect nobody
+reading the call site would expect, and the process that owns the console is the one to decide.
+`LaunchedDaemonTests` starts the built daemon through `DaemonChannel`, which gives it its own
+console at 852, so it fails if `Program.cs` stops making the switch.
+
+**Open end: arguments.** Paths svn *reads* are not fixed by this. A Japanese name passed as an
+argument is refused (`E200009`, "some targets don't exist") from a console at 65001 as well, so
+this client build does not take its arguments through the console code page. Polish names, which
+exist in both 852 and 1250, work either way. A request that names such a file by its own path —
+diff, add, commit of that one file — is still broken on this build; `--targets` or naming the
+parent are the two routes worth measuring before deciding.
+
+*Status: implemented. All seven test binaries green (2078). The working-copy diff of `zażółć.txt`
+and `ドラゴン.txt` — in-process, and through the built daemon started by `DaemonChannel` — failed
+before and passes after. Run with no console at all (`DETACHED_PROCESS`), the Svn suite's name tests
+pass through the windowless-console branch. The pre-24H2 fallback has not been run.*
+
 ### D3 — The working copy is authoritative
 
 Local history (M3) lives in a separate content-addressed store that is purely derived. It is never

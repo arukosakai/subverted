@@ -5,6 +5,10 @@ using Subverted.Daemon;
 using Subverted.Protocol;
 using Subverted.Svn;
 
+// Before anything can start svn: every child inherits this console, and its code page is the
+// encoding svn writes paths in (D33).
+using var svnConsole = SvnConsole.UseUtf8();
+
 var socketPath = DaemonSocketPath.FromEnvironment();
 var builder = Host.CreateApplicationBuilder(args);
 
