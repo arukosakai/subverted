@@ -37,10 +37,16 @@ runs:
       run: |
         $msi = Join-Path $env:RUNNER_TEMP "slik-$env:SVN_VERSION.msi"
         $target = Join-Path $env:RUNNER_TEMP "slik-$env:SVN_VERSION"
+        $log = Join-Path $env:RUNNER_TEMP "slik-$env:SVN_VERSION.log"
         Invoke-WebRequest "https://sliksvn.com/pub/Slik-Subversion-$env:SVN_VERSION-x64.msi" -OutFile $msi
-        Start-Process msiexec -ArgumentList '/a', "`"$msi`"", '/qn', "TARGETDIR=`"$target`"" -Wait
-        $bin = (Get-ChildItem $target -Recurse -Filter svn.exe | Select-Object -First 1).DirectoryName
-        Add-Content $env:GITHUB_PATH $bin
+        Write-Host "Downloaded $((Get-Item $msi).Length) bytes"
+        $unpack = Start-Process msiexec -PassThru -Wait -ArgumentList '/a', "`"$msi`"", '/qn', "TARGETDIR=`"$target`"", '/l*v', "`"$log`""
+        $svn = Get-ChildItem $target -Recurse -Filter svn.exe -ErrorAction SilentlyContinue | Select-Object -First 1
+        if (-not $svn) {
+          Get-Content $log -Tail 40 -ErrorAction SilentlyContinue
+          throw "msiexec exited $($unpack.ExitCode) and left no svn.exe under $target"
+        }
+        Add-Content $env:GITHUB_PATH $svn.DirectoryName
 
     - name: Show svn version
       shell: bash
