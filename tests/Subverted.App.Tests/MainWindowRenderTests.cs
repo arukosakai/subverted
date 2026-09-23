@@ -127,7 +127,7 @@ public sealed class MainWindowRenderTests
         var viewModel = new MainWindowViewModel(
             store,
             new FakeFolderPicker(null),
-            path => new WorkingCopyViewModel(path, status),
+            path => new WorkingCopyViewModel(path, status, DiffPanes.Pane()),
             new FakeTimeProvider(),
             StringComparison.Ordinal
         );

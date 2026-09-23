@@ -30,17 +30,23 @@ public sealed partial class App : Application
 
     private static MainWindow CreateMainWindow(IClassicDesktopStyleApplicationLifetime desktop)
     {
-        var status = new DaemonWorkingCopyStatus(
-            new DaemonChannel(
-                DaemonSocketPath.FromEnvironment(),
-                DaemonChannel.ExecutableNextTo(AppContext.BaseDirectory)
-            )
+        var channel = new DaemonChannel(
+            DaemonSocketPath.FromEnvironment(),
+            DaemonChannel.ExecutableNextTo(AppContext.BaseDirectory)
         );
+        var status = new DaemonWorkingCopyStatus(channel);
+        var diffs = new DaemonWorkingCopyDiff(channel);
+        var sizes = new FileSizeReader();
+        var launcher = new SystemFileLauncher(() => desktop.MainWindow);
 
         var viewModel = new MainWindowViewModel(
             new RecentWorkingCopiesFile(RecentWorkingCopiesFile.DefaultPath),
             new StorageFolderPicker(() => desktop.MainWindow),
-            path => new WorkingCopyViewModel(path, status),
+            path => new WorkingCopyViewModel(
+                path,
+                status,
+                new DiffPaneViewModel(diffs, sizes, launcher, TimeProvider.System)
+            ),
             TimeProvider.System,
             OperatingSystem.IsWindows()
                 ? StringComparison.OrdinalIgnoreCase

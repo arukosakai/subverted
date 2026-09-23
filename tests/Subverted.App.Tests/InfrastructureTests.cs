@@ -63,6 +63,45 @@ public sealed class InfrastructureTests
         await Assert.That(thrown!.Message).Contains("no-daemon.exe");
     }
 
+    [Test]
+    public async Task A_diff_asked_of_a_daemon_that_is_not_there_reads_as_unreachable()
+    {
+        using var folder = new ScratchFolder();
+        var diffs = new DaemonWorkingCopyDiff(
+            new DaemonChannel(
+                Path.Combine(folder.Path, "nobody.sock"),
+                Path.Combine(folder.Path, "no-daemon.exe")
+            )
+        );
+
+        var thrown = await Assert
+            .That(async () => await diffs.ReadAsync(folder.Path, CancellationToken.None))
+            .Throws<DaemonUnreachableException>();
+
+        await Assert.That(thrown!.Message).Contains("no-daemon.exe");
+    }
+
+    [Test]
+    public async Task A_files_size_is_its_length_on_disk()
+    {
+        using var folder = new ScratchFolder();
+        var path = Path.Combine(folder.Path, "hero.png");
+        File.WriteAllBytes(path, new byte[1234]);
+
+        await Assert.That(new FileSizeReader().ReadSize(path)).IsEqualTo(1234);
+    }
+
+    [Test]
+    public async Task A_missing_file_or_a_folder_has_no_size()
+    {
+        using var folder = new ScratchFolder();
+
+        await Assert
+            .That(new FileSizeReader().ReadSize(Path.Combine(folder.Path, "gone.png")))
+            .IsNull();
+        await Assert.That(new FileSizeReader().ReadSize(folder.Path)).IsNull();
+    }
+
     private sealed class ScratchFolder : IDisposable
     {
         public string Path { get; } =
