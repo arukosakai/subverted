@@ -43,7 +43,7 @@ SmartSVN**, in that look. This replaced the first shell's glass cards on 2026-09
 │    │                                       │ 14:02:11 Commit 3 paths · …  │
 │    │                     [Commit 3 files]  │ Committed r1825              │
 │    ├───────────────────────────────────────┴──────────────────────────────┤
-│    │ C:\studio\game                     ● 3 modified  ● 1 missing  ● 1 added │
+│    │ ● 3 modified  ● 1 missing  ● 1 added                                 │
 └────┴──────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -61,8 +61,10 @@ SmartSVN**, in that look. This replaced the first shell's glass cards on 2026-09
   still loading, or blocked — shows only its message**: no tree, no diff, no commit box. The
   strip's halves each show only with something in them, so committing the last change leaves the
   log the whole strip, and write notices sit above the tree so an update of a clean copy still
-  says what it did. A SmartSVN-style popup review window is an
-  acceptable alternative the operator named; it is not built.
+  says what it did. A SmartSVN-style popup review window is an acceptable alternative the
+  operator named; it is not built.
+- **Status line:** the listing's counts by kind and nothing else — the switcher already names the
+  working copy, so the path went (operator's call). Hidden while nothing is listed.
 - **History** uses the same frame — the revisions table on top with the pinned "Local changes"
   line, and the picked revision's paths beside its diff beneath. The bottom strip is Changes' only.
 

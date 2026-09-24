@@ -249,7 +249,7 @@ public sealed class MainWindowRenderTests
         );
     }
 
-    /// <summary>With nothing listed, the tree, the diff and the commit box have nothing to say.</summary>
+    /// <summary>With nothing listed, the tree, the diff, the commit box and the counts have nothing to say.</summary>
     [Test]
     public async Task A_clean_working_copy_shows_only_that_it_is_clean()
     {
@@ -259,8 +259,8 @@ public sealed class MainWindowRenderTests
         );
         var changed = await PanesShownAsync(Studio(), "changed-panes.png");
 
-        await Assert.That(clean).IsEqualTo((false, false, false));
-        await Assert.That(changed).IsEqualTo((true, true, true));
+        await Assert.That(clean).IsEqualTo((false, false, false, false));
+        await Assert.That(changed).IsEqualTo((true, true, true, true));
     }
 
     /// <summary>Committing everything empties the listing, and what the commit said must not go with it.</summary>
@@ -340,7 +340,7 @@ public sealed class MainWindowRenderTests
         await Assert.That(shown).IsTrue();
     }
 
-    private static Task<(bool Tree, bool Diff, bool Composer)> PanesShownAsync(
+    private static Task<(bool Tree, bool Diff, bool Composer, bool Counts)> PanesShownAsync(
         FakeWorkingCopyStatus status,
         string file
     ) =>
@@ -356,7 +356,8 @@ public sealed class MainWindowRenderTests
                         .OfType<DiffPaneView>()
                         .Single()
                         .IsEffectivelyVisible,
-                    Named<CommitComposerView>(window, "Composer").IsEffectivelyVisible
+                    Named<CommitComposerView>(window, "Composer").IsEffectivelyVisible,
+                    Named<Border>(window, "StatusLine").IsEffectivelyVisible
                 );
                 window.Close();
                 return result;

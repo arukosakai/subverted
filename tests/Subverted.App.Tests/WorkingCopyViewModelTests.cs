@@ -43,7 +43,7 @@ public sealed class WorkingCopyViewModelTests
         await Assert.That(view.IsClean).IsFalse();
     }
 
-    /// <summary>The header always says where this is, even before — or without — an answer.</summary>
+    /// <summary>Writes are aimed at the root once it is known, and at the opened path until then.</summary>
     [Test]
     public async Task The_location_is_the_opened_path_until_the_root_is_known()
     {
