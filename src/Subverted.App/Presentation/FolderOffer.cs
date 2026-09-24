@@ -17,7 +17,7 @@ public static class FolderOffer
     /// <param name="rows">Every row of the listing, unmodified ones included when they were listed.</param>
     public static bool CanDelete(string folder, IReadOnlyList<ChangeRow> rows) =>
         DeletionOffer.RefusalFor(NodeOf(folder, rows), rows.Select(row => row.Entry), Ordinal)
-        is null;
+            is null;
 
     /// <summary>
     /// Only where the revert would do something, and only on a folder the listing reaches all of:
