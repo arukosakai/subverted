@@ -14,7 +14,8 @@ internal static class WorkingCopies
         ITextClipboard? clipboard = null,
         IWorkingCopyCommit? commits = null,
         IWorkingCopyRevert? reverts = null,
-        IWorkingCopyUpdate? updates = null
+        IWorkingCopyUpdate? updates = null,
+        IWorkingCopyResolve? resolves = null
     ) =>
         new(
             path,
@@ -25,6 +26,7 @@ internal static class WorkingCopies
             clipboard ?? new FakeTextClipboard(),
             commits ?? new FakeWorkingCopyCommit(),
             reverts ?? new FakeWorkingCopyRevert(),
+            resolves ?? new FakeWorkingCopyResolve(),
             updates ?? new FakeWorkingCopyUpdate()
         );
 

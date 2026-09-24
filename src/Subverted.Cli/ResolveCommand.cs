@@ -1,4 +1,5 @@
 using Subverted.Core;
+using Subverted.Frontend;
 
 namespace Subverted.Cli;
 
@@ -16,15 +17,6 @@ public sealed record ResolveCommand(
     bool AlreadyConfirmed
 ) : CliCommand
 {
-    /// <summary>
-    /// Whether this resolution throws away what is in the working copy, which is what decides
-    /// between asking first and simply running.
-    /// </summary>
-    /// <remarks>
-    /// <see cref="ConflictResolution.Mine"/> rewrites the file too — it drops the merge markers —
-    /// but everything it discards is the incoming revision, which is still in the repository. These
-    /// two discard the local side, and for an edit nobody has committed there is no second copy.
-    /// </remarks>
-    public bool OverwritesLocalWork =>
-        Resolution is ConflictResolution.Theirs or ConflictResolution.Base;
+    /// <summary>Whether to ask first; see <see cref="ResolutionRisk.OverwritesLocalWork"/>.</summary>
+    public bool OverwritesLocalWork => ResolutionRisk.OverwritesLocalWork(Resolution);
 }

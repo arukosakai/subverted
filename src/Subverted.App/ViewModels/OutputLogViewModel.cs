@@ -26,6 +26,8 @@ public sealed partial class OutputLogViewModel(TimeProvider clock) : ObservableO
 
     public void Record(UpdateAttempt attempt) => Add("Update", attempt.Target, attempt.Notice);
 
+    public void Record(ResolveAttempt attempt) => Add("Resolve", attempt.Target, attempt.Notice);
+
     [RelayCommand]
     private void Clear()
     {

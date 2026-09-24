@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Subverted.App.Presentation;
+using Subverted.Core;
 using Subverted.Protocol;
 
 namespace Subverted.App.ViewModels;
@@ -13,6 +14,7 @@ namespace Subverted.App.ViewModels;
 /// <param name="clipboard">Takes a line's path, for the context menu.</param>
 /// <param name="commits">Sends the ticked lines, for the commit box.</param>
 /// <param name="reverts">Reverts a confirmed line, for the context menu.</param>
+/// <param name="resolves">Settles a line's conflicts, for the context menu.</param>
 /// <param name="updates">Brings the opened folder up to date, for the Update button.</param>
 public sealed partial class WorkingCopyViewModel(
     string path,
@@ -23,6 +25,7 @@ public sealed partial class WorkingCopyViewModel(
     ITextClipboard clipboard,
     IWorkingCopyCommit commits,
     IWorkingCopyRevert reverts,
+    IWorkingCopyResolve resolves,
     IWorkingCopyUpdate updates
 ) : ObservableObject
 {
@@ -30,6 +33,7 @@ public sealed partial class WorkingCopyViewModel(
     private IReadOnlySet<string> _shown = new HashSet<string>();
     private CommitComposerViewModel? _composer;
     private RevertPromptViewModel? _revertPrompt;
+    private ResolveViewModel? _resolver;
     private UpdateViewModel? _updater;
 
     /// <summary>
@@ -114,6 +118,8 @@ public sealed partial class WorkingCopyViewModel(
     public CommitComposerViewModel Composer => _composer ??= new(commits, Untick);
 
     public RevertPromptViewModel RevertPrompt => _revertPrompt ??= new(reverts);
+
+    public ResolveViewModel Resolver => _resolver ??= new(resolves);
 
     /// <summary>Updates <see cref="Path"/>, the folder the listing is scoped to, not the whole root.</summary>
     public UpdateViewModel Updater => _updater ??= new(updates, Path, FolderName.Of(Path));
@@ -385,6 +391,34 @@ public sealed partial class WorkingCopyViewModel(
         entry?.Row is { RenamedFrom: null } row
         && RevertConfirmation.For(row, Changes).Lines.Count > 0;
 
+    [RelayCommand(CanExecute = nameof(CanResolve))]
+    private Task KeepMineAsync(ChangeListEntry? entry, CancellationToken cancellationToken) =>
+        ResolveAsync(entry!, ConflictResolution.Mine, cancellationToken);
+
+    [RelayCommand(CanExecute = nameof(CanResolve))]
+    private Task TakeTheirsAsync(ChangeListEntry? entry, CancellationToken cancellationToken) =>
+        ResolveAsync(entry!, ConflictResolution.Theirs, cancellationToken);
+
+    [RelayCommand(CanExecute = nameof(CanResolve))]
+    private Task MarkResolvedAsync(ChangeListEntry? entry, CancellationToken cancellationToken) =>
+        ResolveAsync(entry!, ConflictResolution.Working, cancellationToken);
+
+    private Task ResolveAsync(
+        ChangeListEntry entry,
+        ConflictResolution resolution,
+        CancellationToken cancellationToken
+    ) =>
+        Resolver.ResolveAsync(
+            ResolveScope.For(entry.Row!, resolution, Changes),
+            Location,
+            cancellationToken
+        );
+
+    /// <summary>Only where there is a conflict to settle: the line's own, or one beneath its folder.</summary>
+    private bool CanResolve(ChangeListEntry? entry) =>
+        entry?.Row is { } row
+        && ResolveScope.For(row, ConflictResolution.Working, Changes).Lines.Count > 0;
+
     [RelayCommand(CanExecute = nameof(CanOpen))]
     private Task OpenAsync(ChangeListEntry? entry) =>
         launcher.OpenAsync(PathOf(entry!.Content.RelPath));
@@ -433,6 +467,9 @@ public sealed partial class WorkingCopyViewModel(
         OpenCommand.NotifyCanExecuteChanged();
         ShowHistoryCommand.NotifyCanExecuteChanged();
         RevertCommand.NotifyCanExecuteChanged();
+        KeepMineCommand.NotifyCanExecuteChanged();
+        TakeTheirsCommand.NotifyCanExecuteChanged();
+        MarkResolvedCommand.NotifyCanExecuteChanged();
     }
 
     /// <summary>A failure leaves <see cref="Changes"/> as it was; see <see cref="IsStale"/>.</summary>

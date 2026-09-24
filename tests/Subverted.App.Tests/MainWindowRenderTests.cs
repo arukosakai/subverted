@@ -135,6 +135,26 @@ public sealed class MainWindowRenderTests
     }
 
     [Test]
+    public async Task Taking_theirs_renders_its_question_over_the_list()
+    {
+        var asking = false;
+        await RenderAsync(
+            "Dark",
+            Studio(),
+            "resolve-prompt-dark.png",
+            view =>
+            {
+                view.TakeTheirsCommand.Execute(
+                    view.Entries.Single(entry => entry.Key == "art/characters/villain.png")
+                );
+                asking = view.Resolver.IsAsking;
+            }
+        );
+
+        await Assert.That(asking).IsTrue();
+    }
+
+    [Test]
     public async Task An_update_that_left_conflicts_renders_its_notice_above_the_list()
     {
         var updates = new FakeWorkingCopyUpdate().Answers(
@@ -186,7 +206,7 @@ public sealed class MainWindowRenderTests
         new FakeWorkingCopyStatus().Answers(
             Listing(
                 Entry("art/characters/hero.png"),
-                Entry("art/characters/villain.png", NodeStatus.Conflicted),
+                Entry("art/characters/villain.png", NodeStatus.Conflicted, isConflicted: true),
                 Entry("art/props/crate.png", NodeStatus.Added, isCopied: true),
                 Entry("levels/forest.map", NodeStatus.Modified, PropertyStatus.Modified),
                 Entry("levels/old-cave.map", NodeStatus.Deleted),

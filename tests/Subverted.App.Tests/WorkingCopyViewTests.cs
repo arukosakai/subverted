@@ -174,7 +174,7 @@ public sealed class WorkingCopyViewTests
     [Test]
     public async Task The_context_menu_names_the_platform_s_file_manager_and_holds_history_back()
     {
-        var (headers, historyEnabled) = await OnViewAsync(
+        var (headers, historyEnabled, resolveHeaders) = await OnViewAsync(
             (_, list, _) =>
             {
                 Focus(list, 0);
@@ -182,9 +182,11 @@ public sealed class WorkingCopyViewTests
                 menu.Open(list);
                 Dispatcher.UIThread.RunJobs();
                 var items = menu.Items.OfType<MenuItem>().ToList();
+                var resolve = items.Single(item => Equals(item.Header, "Resolve"));
                 var result = (
                     string.Join("|", items.Select(item => item.Header)),
-                    items.Last().IsEffectivelyEnabled
+                    items.Last().IsEffectivelyEnabled,
+                    string.Join("|", resolve.Items.OfType<MenuItem>().Select(item => item.Header))
                 );
                 menu.Close();
                 return result;
@@ -194,9 +196,10 @@ public sealed class WorkingCopyViewTests
         await Assert
             .That(headers)
             .IsEqualTo(
-                $"Open|{RevealMenuText.For(FileRevealers.ThisPlatform)}|Copy path|Revert…|History of this file"
+                $"Open|{RevealMenuText.For(FileRevealers.ThisPlatform)}|Copy path|Revert…|Resolve|History of this file"
             );
         await Assert.That(historyEnabled).IsFalse();
+        await Assert.That(resolveHeaders).IsEqualTo("Keep mine|Take theirs…|Mark as resolved");
     }
 
     private static void Focus(ListBox list, int index)

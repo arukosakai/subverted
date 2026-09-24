@@ -49,6 +49,7 @@ public sealed partial class App : Application
         var diffs = new DaemonWorkingCopyDiff(channel);
         var commits = new DaemonWorkingCopyCommit(channel);
         var reverts = new DaemonWorkingCopyRevert(channel);
+        var resolves = new DaemonWorkingCopyResolve(channel);
         var updates = new DaemonWorkingCopyUpdate(channel);
         var sizes = new FileSizeReader();
         var launcher = new SystemFileLauncher(() => desktop.MainWindow);
@@ -72,6 +73,7 @@ public sealed partial class App : Application
                 clipboard,
                 commits,
                 reverts,
+                resolves,
                 updates
             ),
             TimeProvider.System,
