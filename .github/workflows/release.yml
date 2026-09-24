@@ -45,11 +45,11 @@ jobs:
           directory: ${{ steps.bundle.outputs.directory }}
           version: ${{ steps.version.outputs.value }}
       - if: runner.os == 'Windows'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: subverted-${{ matrix.rid }}-setup
           path: ${{ steps.installer.outputs.installer }}
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: subverted-${{ matrix.rid }}
           path: ${{ steps.bundle.outputs.archive }}
