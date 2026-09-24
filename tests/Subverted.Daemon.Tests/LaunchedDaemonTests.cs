@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Subverted.Frontend;
 using Subverted.Protocol;
 using static Subverted.Daemon.Tests.DaemonEndToEndTests;
@@ -44,10 +45,8 @@ public sealed class LaunchedDaemonTests
         var directory = Path.Combine(Path.GetTempPath(), $"sv-{Guid.NewGuid():N}"[..12]);
         Directory.CreateDirectory(directory);
         var socketPath = Path.Combine(directory, "daemon.sock");
-        var channel = new DaemonChannel(
-            socketPath,
-            DaemonChannel.ExecutableNextTo(AppContext.BaseDirectory)
-        );
+        var daemonPath = DaemonChannel.ExecutableNextTo(AppContext.BaseDirectory);
+        var channel = new DaemonChannel(socketPath, daemonPath);
 
         Environment.SetEnvironmentVariable(DaemonSocketPath.OverrideVariable, socketPath);
         try
@@ -59,6 +58,44 @@ public sealed class LaunchedDaemonTests
             Environment.SetEnvironmentVariable(DaemonSocketPath.OverrideVariable, null);
             await channel.SendIfRunningAsync(new ShutdownRequest(), None);
             await DeleteOnceStoppedAsync(directory, socketPath);
+            await ExitedAsync(daemonPath);
+        }
+    }
+
+    /// <summary>
+    /// The socket goes before the process does, and until it has exited its SQLite connection keeps
+    /// the working copy's wc.db open, so on Windows the copy could not yet be deleted.
+    /// </summary>
+    private static async Task ExitedAsync(string daemonPath)
+    {
+        foreach (
+            var daemon in Process.GetProcessesByName(Path.GetFileNameWithoutExtension(daemonPath))
+        )
+        {
+            using var _ = daemon;
+            if (IsRunning(daemon, daemonPath))
+            {
+                using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+                await daemon.WaitForExitAsync(timeout.Token);
+            }
+        }
+    }
+
+    /// <summary>A daemon someone runs from elsewhere is theirs, and is left alone.</summary>
+    private static bool IsRunning(Process process, string path)
+    {
+        try
+        {
+            return string.Equals(
+                process.MainModule?.FileName,
+                path,
+                StringComparison.OrdinalIgnoreCase
+            );
+        }
+        catch (Exception exception)
+            when (exception is InvalidOperationException or System.ComponentModel.Win32Exception)
+        {
+            return false;
         }
     }
 

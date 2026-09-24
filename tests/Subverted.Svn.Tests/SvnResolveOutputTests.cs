@@ -3,7 +3,7 @@ namespace Subverted.Svn.Tests;
 /// <summary>
 /// Counting these lines is the only way to tell a resolve that did something from one that did not:
 /// <c>svn resolve</c> prints nothing and exits zero for a path it had no conflict to settle. Every
-/// blob below is what SVN 1.8.15 actually wrote to stdout under <c>LC_ALL=C</c>, copied verbatim.
+/// blob below is what SVN 1.8.15 or 1.14.5 actually wrote to stdout under <c>LC_ALL=C</c>.
 /// </summary>
 public sealed class SvnResolveOutputTests
 {
@@ -68,8 +68,8 @@ public sealed class SvnResolveOutputTests
     }
 
     /// <summary>
-    /// The wording is identical for a text, a property and a tree conflict — SVN does not say which
-    /// kind it settled. One parser is correct here only because of that.
+    /// On 1.8 the wording is identical for a text, a property and a tree conflict — SVN does not
+    /// say which kind it settled — and on 1.14 it is still the wording for a property conflict.
     /// </summary>
     [Test]
     [Arguments("text.txt")]
@@ -97,6 +97,94 @@ public sealed class SvnResolveOutputTests
     public async Task A_line_that_is_not_one_of_these_resolves_nothing(string standardOutput)
     {
         await Assert.That(SvnResolveOutput.ResolvedPaths(standardOutput, true)).IsEmpty();
+    }
+
+    /// <summary>svn 1.14 words a settled text conflict differently from 1.8.</summary>
+    [Test]
+    public async Task A_merge_conflict_marked_resolved_is_a_resolved_node()
+    {
+        var resolved = SvnResolveOutput.ResolvedPaths(
+            "Merge conflicts in 'src\\a.txt' marked as resolved.\r\n",
+            true
+        );
+
+        await Assert.That(resolved).IsEquivalentTo(["src/a.txt"]);
+    }
+
+    [Test]
+    public async Task A_tree_conflict_marked_resolved_is_a_resolved_node()
+    {
+        var resolved = SvnResolveOutput.ResolvedPaths(
+            "Tree conflict at 'src\\a.txt' marked as resolved.\r\n",
+            true
+        );
+
+        await Assert.That(resolved).IsEquivalentTo(["src/a.txt"]);
+    }
+
+    /// <summary>
+    /// 1.14 announces a node with a text and a property conflict once for each; it is still one
+    /// node, and counting it twice would report a resolve of something that is not there.
+    /// </summary>
+    [Test]
+    public async Task A_node_announced_for_two_conflicts_is_one_resolved_node()
+    {
+        var resolved = SvnResolveOutput.ResolvedPaths(
+            "Merge conflicts in 'src\\a.txt' marked as resolved.\r\n"
+                + "Resolved conflicted state of 'src\\a.txt'\r\n",
+            true
+        );
+
+        await Assert.That(resolved).IsEquivalentTo(["src/a.txt"]);
+    }
+
+    [Test]
+    public async Task Nodes_announced_in_both_wordings_keep_svns_order()
+    {
+        var resolved = SvnResolveOutput.ResolvedPaths(
+            "Merge conflicts in 'art\\h.txt' marked as resolved.\r\n"
+                + "Resolved conflicted state of 'src'\r\n"
+                + "Tree conflict at 'src\\a.txt' marked as resolved.\r\n",
+            true
+        );
+
+        await Assert.That(resolved[0]).IsEqualTo("art/h.txt");
+        await Assert.That(resolved[1]).IsEqualTo("src");
+        await Assert.That(resolved[2]).IsEqualTo("src/a.txt");
+        await Assert.That(resolved.Count).IsEqualTo(3);
+    }
+
+    /// <summary>The ending is part of the shape, so a quote inside the name cannot cut the path short.</summary>
+    [Test]
+    public async Task A_quote_inside_the_name_stays_in_the_path()
+    {
+        var resolved = SvnResolveOutput.ResolvedPaths(
+            "Merge conflicts in 'rena's sketch.png' marked as resolved.\n",
+            true
+        );
+
+        await Assert.That(resolved).IsEquivalentTo(["rena's sketch.png"]);
+    }
+
+    [Test]
+    [Arguments("Merge conflicts in 'a.txt'\n")]
+    [Arguments("Tree conflict at 'a.txt' marked as resolved\n")]
+    [Arguments("Merge conflicts in '' marked as resolved.\n")]
+    public async Task A_line_missing_part_of_the_newer_shapes_resolves_nothing(
+        string standardOutput
+    )
+    {
+        await Assert.That(SvnResolveOutput.ResolvedPaths(standardOutput, true)).IsEmpty();
+    }
+
+    [Test]
+    [Arguments("Resolved conflicted state of 'a'\n")]
+    [Arguments("Merge conflicts in 'a' marked as resolved.\n")]
+    public async Task A_one_character_name_is_a_resolved_node(string standardOutput)
+    {
+        await Assert
+            .That(SvnResolveOutput.ResolvedPaths(standardOutput, true))
+            .IsEquivalentTo(["a"]);
     }
 
     [Test]

@@ -1,3 +1,5 @@
+using Subverted.Core;
+
 namespace Subverted.Svn.Tests;
 
 /// <summary>
@@ -119,17 +121,26 @@ public sealed class SvnUpdateIntegrationTests
     }
 
     /// <summary>
-    /// A path SVN was never going to touch is <em>skipped</em> and the command still exits zero, so
-    /// a mistyped target looks exactly like a successful update. That is why the count is modelled
-    /// separately from conflicts rather than folded into them or dropped.
+    /// A path SVN was never going to touch must not read as an update. 1.8 <em>skips</em> it and
+    /// exits zero, which is why the skipped count is modelled separately from conflicts; 1.14
+    /// fails outright with E155007, "None of the targets are working copies".
     /// </summary>
     [Test]
-    public async Task A_path_outside_the_working_copy_is_skipped_rather_than_refused()
+    public async Task A_path_outside_the_working_copy_never_reads_as_an_update()
     {
         using var copy = OneCommit();
         var outside = Path.Combine(copy.RepositoryPath, "conf");
 
-        var outcome = await new SvnUpdateCommand(Svn).UpdateAsync(copy.Root, outside, None);
+        UpdateOutcome outcome;
+        try
+        {
+            outcome = await new SvnUpdateCommand(Svn).UpdateAsync(copy.Root, outside, None);
+        }
+        catch (SvnCommandException refused)
+        {
+            await Assert.That(refused.Message).Contains("E155007");
+            return;
+        }
 
         await Assert.That(outcome.SkippedPaths).IsEqualTo(1);
         await Assert.That(outcome.Conflicts).IsEqualTo(0);

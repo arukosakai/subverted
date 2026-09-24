@@ -6,7 +6,7 @@ namespace Subverted.Svn;
 /// </summary>
 internal static class Utf8ConsoleRule
 {
-    /// <param name="isWindows">Elsewhere svn writes in the locale's charset, which LC_ALL=C settles.</param>
+    /// <param name="isWindows">Elsewhere svn writes in the locale's charset, which <see cref="SvnLocale"/> settles.</param>
     /// <param name="console"><c>null</c> when the process has no console at all.</param>
     public static Utf8ConsoleStep StepFor(bool isWindows, ConsoleCodePages? console)
     {
