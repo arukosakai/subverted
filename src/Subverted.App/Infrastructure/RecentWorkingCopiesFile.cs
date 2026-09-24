@@ -21,7 +21,8 @@ public sealed class RecentWorkingCopiesFile(string path) : IRecentWorkingCopySto
         try
         {
             using var stream = File.OpenRead(path);
-            return JsonSerializer.Deserialize(stream, AppJsonContext.Default.StringArray) ?? [];
+            var listed = JsonSerializer.Deserialize(stream, AppJsonContext.Default.StringArray);
+            return [.. (listed ?? []).Where(entry => !string.IsNullOrWhiteSpace(entry))];
         }
         catch (Exception exception)
             when (exception is IOException or UnauthorizedAccessException or JsonException)
@@ -30,15 +31,36 @@ public sealed class RecentWorkingCopiesFile(string path) : IRecentWorkingCopySto
         }
     }
 
-    /// <summary>Written beside the file and moved over it, so a crash mid-write leaves the old list.</summary>
+    /// <summary>
+    /// Written beside the file and moved over it, so a crash mid-write leaves the old list. A write
+    /// that fails — another instance holding the file, a read-only profile — keeps the old list.
+    /// </summary>
     public void Save(IReadOnlyList<string> recent)
     {
-        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-        var staging = path + ".new";
-        File.WriteAllText(
-            staging,
-            JsonSerializer.Serialize([.. recent], AppJsonContext.Default.StringArray)
-        );
-        File.Move(staging, path, overwrite: true);
+        // Unique per write, so two instances saving at once never share a half-written file.
+        var staging = $"{path}.{Guid.NewGuid():N}.new";
+        try
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+            File.WriteAllText(
+                staging,
+                JsonSerializer.Serialize([.. recent], AppJsonContext.Default.StringArray)
+            );
+            File.Move(staging, path, overwrite: true);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            DeleteQuietly(staging);
+        }
+    }
+
+    private static void DeleteQuietly(string staging)
+    {
+        try
+        {
+            File.Delete(staging);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        { }
     }
 }

@@ -23,7 +23,9 @@ public sealed class InfrastructureTests
         var loaded = new RecentWorkingCopiesFile(path).Load();
 
         await Assert.That(string.Join(",", loaded)).IsEqualTo("/game,/tools");
-        await Assert.That(File.Exists(path + ".new")).IsFalse();
+        await Assert
+            .That(Directory.GetFiles(Path.GetDirectoryName(path)!))
+            .IsEquivalentTo(new[] { path });
     }
 
     [Test]
@@ -45,6 +47,50 @@ public sealed class InfrastructureTests
         File.WriteAllText(path, "{ not json");
 
         await Assert.That(new RecentWorkingCopiesFile(path).Load()).IsEmpty();
+    }
+
+    /// <summary>A hand-edited <c>null</c> would otherwise fail every start until the file is deleted.</summary>
+    [Test]
+    public async Task Blank_and_null_entries_are_dropped_from_the_list()
+    {
+        using var folder = new ScratchFolder();
+        var path = Path.Combine(folder.Path, "recent.json");
+        File.WriteAllText(path, """["/game", null, "", "  ", "/tools"]""");
+
+        var loaded = new RecentWorkingCopiesFile(path).Load();
+
+        await Assert.That(string.Join(",", loaded)).IsEqualTo("/game,/tools");
+    }
+
+    /// <summary>Another instance holding the file, or a read-only profile, costs the list, not the open.</summary>
+    [Test]
+    public async Task A_list_that_cannot_be_written_is_not_an_error()
+    {
+        using var folder = new ScratchFolder();
+        var blocker = Path.Combine(folder.Path, "not-a-folder");
+        File.WriteAllText(blocker, "");
+        var store = new RecentWorkingCopiesFile(Path.Combine(blocker, "recent.json"));
+
+        store.Save(["/game"]);
+
+        await Assert.That(store.Load()).IsEmpty();
+    }
+
+    [Test]
+    public async Task A_failed_write_leaves_the_kept_list_and_no_staging_file()
+    {
+        using var folder = new ScratchFolder();
+        var path = Path.Combine(folder.Path, "recent.json");
+        var store = new RecentWorkingCopiesFile(path);
+        store.Save(["/game"]);
+
+        using (new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.None))
+        {
+            store.Save(["/tools", "/game"]);
+        }
+
+        await Assert.That(string.Join(",", store.Load())).IsEqualTo("/game");
+        await Assert.That(Directory.GetFiles(folder.Path)).IsEquivalentTo(new[] { path });
     }
 
     /// <summary>
