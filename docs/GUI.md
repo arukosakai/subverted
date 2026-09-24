@@ -181,8 +181,11 @@ since resolve recurses. Take theirs asks first with the exact list of conflicts 
 other two are sent at once, by D23's rule, which now lives in `Frontend` (`ResolutionRisk`) so
 `sv resolve` and the app cannot disagree. Base is not offered: it discards both edits, and
 nothing in a studio's day asks for it. The notice keeps D23's honesty — "nothing was conflicted"
-is not "resolved", and Mark as resolved says to look for `<<<<<<<`. Seen in headless renders and
-driven through the real view models against a fake daemon; not yet clicked in the real app.
+is not "resolved", and Mark as resolved says to look for `<<<<<<<`. Seen in the real app on
+`subverted-conflict`, clicked through UI Automation: Keep mine left `text.txt` as `M` with only
+its own line and no markers; Take theirs asked first, and once confirmed `asset.bin` matched
+`.r4` byte for byte. SVN removed the `.mine`/`.rN` files both times, and the conflicted rows
+showed their held, unticked boxes. Not seen: Mark as resolved, a refusal, a folder target, macOS.
 
 ### 6. Diff polish — after History, not part of the M2 exit
 
