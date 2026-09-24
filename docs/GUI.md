@@ -245,7 +245,8 @@ one file, and Lock was offered. Not seen there: the clean copy's offer, a large 
 - Split view, intraline highlighting on paired `-`/`+` lines as a pure function, and the context
   dropdown.
 
-*Status: split view and intraline highlighting built; the context dropdown not.* Split is the
+*Status: split view and intraline highlighting built; the context dropdown not, and blocked:
+1.8.15's `svn diff` has no way to ask for more context (below, "Measured").* Split is the
 default, with a Split / Unified toggle over the lines (operator: "the diff should be two-pane").
 `SplitLines` pairs a hunk's lines: context sits on both sides, and each run of changes between
 context pairs its removals with its additions in order, padding the shorter side with blank filler.
@@ -285,10 +286,22 @@ switching branches (M5).
 
 Each of these is an assumption the plan leans on and has not been run:
 
-- **Whole-file context through `svn diff -x -U<N>`.** Slice 6's "show whole file" would come free if
-  1.8.15 accepts it. Test it on a fixture before designing around it.
 - **What query the incoming count uses.** `svn log -r BASE:HEAD` includes BASE itself, and a
   mixed-revision working copy has no single BASE. Settle both against a real checkout before slice 5
   picks one.
 - **The timer's interval.** Minutes, not seconds; the number should come from what one check costs
   against the studio's server rather than be picked here.
+
+## Measured
+
+- **`svn diff -x -U<N>` does not exist in 1.8.15; slice 6's context dropdown has no CLI to stand
+  on.** Run on 2026-09-24 against a throwaway `svnadmin create` + `file://` checkout (40-line file,
+  two hunks). Every form exits 1 with `E200016: Error in options to internal diff` /
+  `invalid option character: U`: `-x -U5`, `-x -U0`, `-x -U2147483647`, `-x "-U 5"`, and
+  `-x "-U5 --ignore-eol-style"`; `-x --unified=5` fails as `erroneous argument`. The same
+  happens for History's form, `svn diff -c 2 -x -U1 <url>@2`. 1.8.15's `svn help diff` lists
+  only `-u` (fixed at 3 lines), `-b`, `-w`, `--ignore-eol-style` and `-p` for the internal diff,
+  and `-x -p` and `-x --ignore-eol-style` both run, so it is `-U` itself that is refused, not
+  `-x`. The daemon passes no `-x` today. Nothing was built on this. Any other way to get more
+  context (an external `--diff-cmd`, diffing pristine against the working file ourselves,
+  requiring a newer svn) is a design decision still to be made.
