@@ -24,7 +24,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/setup-dotnet@v6
         with:
           global-json-file: global.json
       - run: dotnet tool restore
@@ -66,7 +66,7 @@ jobs:
           - { os: macos-latest, rid: osx-arm64 }
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/setup-dotnet@v6
         with:
           global-json-file: global.json
       - id: bundle
