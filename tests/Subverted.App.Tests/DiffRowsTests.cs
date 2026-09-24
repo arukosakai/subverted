@@ -23,8 +23,8 @@ public sealed class DiffRowsTests
             )
         );
 
-        var marked = DiffRows
-            .Of(document)
+        var marked = DiffLayout
+            .Unified.RowsOf(document)
             .OfType<DiffTextRow>()
             .Select(row => (row.Line.Text, row.Line.EndsWithoutNewline));
 
@@ -36,7 +36,7 @@ public sealed class DiffRowsTests
     [Test]
     public async Task An_empty_document_has_no_rows()
     {
-        await Assert.That(DiffRows.Of(DiffDocument.Empty)).IsEmpty();
+        await Assert.That(DiffLayout.Unified.RowsOf(DiffDocument.Empty)).IsEmpty();
     }
 
     [Test]
@@ -51,14 +51,14 @@ public sealed class DiffRowsTests
         ];
 
         await Assert
-            .That(DiffRows.Of(Modified))
+            .That(DiffLayout.Unified.RowsOf(Modified))
             .IsEquivalentTo(expected, CollectionOrdering.Matching);
     }
 
     [Test]
     public async Task Several_files_each_open_with_a_header_naming_them()
     {
-        var rows = DiffRows.Of(WholeDirectory);
+        var rows = DiffLayout.Unified.RowsOf(WholeDirectory);
 
         DiffRow[] expected =
         [
@@ -101,7 +101,7 @@ public sealed class DiffRowsTests
         var hunk = new Hunk(oldStart, oldCount, newStart, newCount, []);
 
         await Assert
-            .That(DiffRows.Of(Document(Text("a.txt", hunk))))
+            .That(DiffLayout.Unified.RowsOf(Document(Text("a.txt", hunk))))
             .IsEquivalentTo(
                 new DiffRow[] { new DiffHunkRow(expected) },
                 CollectionOrdering.Matching
@@ -112,7 +112,7 @@ public sealed class DiffRowsTests
     public async Task A_text_change_with_no_hunks_says_there_are_no_lines()
     {
         await Assert
-            .That(DiffRows.Of(Document(Text("empty.txt"))))
+            .That(DiffLayout.Unified.RowsOf(Document(Text("empty.txt"))))
             .IsEquivalentTo(
                 new DiffRow[] { new DiffNoLinesRow("empty.txt") },
                 CollectionOrdering.Matching
@@ -131,7 +131,7 @@ public sealed class DiffRowsTests
         ];
 
         await Assert
-            .That(DiffRows.Of(Binary))
+            .That(DiffLayout.Unified.RowsOf(Binary))
             .IsEquivalentTo(expected, CollectionOrdering.Matching);
     }
 
@@ -150,7 +150,7 @@ public sealed class DiffRowsTests
         ];
 
         await Assert
-            .That(DiffRows.Of(PropertiesOnly))
+            .That(DiffLayout.Unified.RowsOf(PropertiesOnly))
             .IsEquivalentTo(expected, CollectionOrdering.Matching);
     }
 
@@ -168,7 +168,7 @@ public sealed class DiffRowsTests
         ];
 
         await Assert
-            .That(DiffRows.Of(ContentAndProperties))
+            .That(DiffLayout.Unified.RowsOf(ContentAndProperties))
             .IsEquivalentTo(expected, CollectionOrdering.Matching);
     }
 
@@ -196,7 +196,7 @@ public sealed class DiffRowsTests
         ];
 
         await Assert
-            .That(DiffRows.Of(Document(new FileDiff(".", null, [externals]))))
+            .That(DiffLayout.Unified.RowsOf(Document(new FileDiff(".", null, [externals]))))
             .IsEquivalentTo(expected, CollectionOrdering.Matching);
     }
 }
