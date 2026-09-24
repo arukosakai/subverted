@@ -17,7 +17,9 @@ public sealed class LongestCommonLinesTests
     {
         var runs = LongestCommonLines.Find([1, 2, 3], [1, 2, 3], Plenty);
 
-        await Assert.That(runs).IsEquivalentTo([new MatchedRun(0, 0, 3)], CollectionOrdering.Matching);
+        await Assert
+            .That(runs)
+            .IsEquivalentTo([new MatchedRun(0, 0, 3)], CollectionOrdering.Matching);
     }
 
     [Test]
@@ -27,7 +29,10 @@ public sealed class LongestCommonLinesTests
 
         await Assert
             .That(runs)
-            .IsEquivalentTo([new MatchedRun(0, 0, 1), new MatchedRun(2, 2, 2)], CollectionOrdering.Matching);
+            .IsEquivalentTo(
+                [new MatchedRun(0, 0, 1), new MatchedRun(2, 2, 2)],
+                CollectionOrdering.Matching
+            );
     }
 
     [Test]
@@ -37,7 +42,10 @@ public sealed class LongestCommonLinesTests
 
         await Assert
             .That(runs)
-            .IsEquivalentTo([new MatchedRun(1, 1, 1), new MatchedRun(2, 3, 1)], CollectionOrdering.Matching);
+            .IsEquivalentTo(
+                [new MatchedRun(1, 1, 1), new MatchedRun(2, 3, 1)],
+                CollectionOrdering.Matching
+            );
     }
 
     /// <summary>svn's own choice between two smallest diffs, captured as <c>ambiguous.txt</c>.</summary>
@@ -49,7 +57,10 @@ public sealed class LongestCommonLinesTests
 
         await Assert
             .That(runs)
-            .IsEquivalentTo([new MatchedRun(0, 0, 3), new MatchedRun(3, 4, 3)], CollectionOrdering.Matching);
+            .IsEquivalentTo(
+                [new MatchedRun(0, 0, 3), new MatchedRun(3, 4, 3)],
+                CollectionOrdering.Matching
+            );
     }
 
     [Test]
@@ -57,7 +68,9 @@ public sealed class LongestCommonLinesTests
     {
         var runs = LongestCommonLines.Find([1, 2], [2, 1], Plenty);
 
-        await Assert.That(runs).IsEquivalentTo([new MatchedRun(0, 1, 1)], CollectionOrdering.Matching);
+        await Assert
+            .That(runs)
+            .IsEquivalentTo([new MatchedRun(0, 1, 1)], CollectionOrdering.Matching);
     }
 
     [Test]
@@ -65,7 +78,9 @@ public sealed class LongestCommonLinesTests
     {
         var runs = LongestCommonLines.Find([1, 2, 3, 4], [3], Plenty);
 
-        await Assert.That(runs).IsEquivalentTo([new MatchedRun(2, 0, 1)], CollectionOrdering.Matching);
+        await Assert
+            .That(runs)
+            .IsEquivalentTo([new MatchedRun(2, 0, 1)], CollectionOrdering.Matching);
     }
 
     [Test]
@@ -86,7 +101,9 @@ public sealed class LongestCommonLinesTests
     {
         var runs = LongestCommonLines.Find([1, 2, 1, 2], [2, 1, 2, 1], budget: 1);
 
-        await Assert.That(runs).IsEquivalentTo([new MatchedRun(0, 1, 3)], CollectionOrdering.Matching);
+        await Assert
+            .That(runs)
+            .IsEquivalentTo([new MatchedRun(0, 1, 3)], CollectionOrdering.Matching);
     }
 
     [Test]

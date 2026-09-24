@@ -48,7 +48,9 @@ public sealed class DiffContextChoiceTests
     [Test]
     public async Task Svns_own_three_lines_are_never_a_context_that_was_not_honoured()
     {
-        await Assert.That(DiffContextOption.Default.WasNotHonouredBy(DiffContext.Default)).IsFalse();
+        await Assert
+            .That(DiffContextOption.Default.WasNotHonouredBy(DiffContext.Default))
+            .IsFalse();
         await Assert.That(DiffContextOption.Default.WasNotHonouredBy(null)).IsFalse();
     }
 
@@ -82,10 +84,12 @@ public sealed class DiffContextChoiceTests
 
         pane.Context = TenLines;
 
-        await Assert.That(_diffs.Paths).IsEquivalentTo(
-            ["/wc/sub/child.txt", "/wc/sub/child.txt"],
-            CollectionOrdering.Matching
-        );
+        await Assert
+            .That(_diffs.Paths)
+            .IsEquivalentTo(
+                ["/wc/sub/child.txt", "/wc/sub/child.txt"],
+                CollectionOrdering.Matching
+            );
         await Assert.That(_diffs.Contexts[1]).IsEqualTo(new DiffContext(10));
         await Assert.That(pane.ContextUnavailable).IsFalse();
     }
@@ -113,7 +117,12 @@ public sealed class DiffContextChoiceTests
         await Assert
             .That(_diffs.Contexts)
             .IsEquivalentTo(
-                new DiffContext?[] { DiffContext.WholeFile, DiffContext.WholeFile, DiffContext.WholeFile },
+                new DiffContext?[]
+                {
+                    DiffContext.WholeFile,
+                    DiffContext.WholeFile,
+                    DiffContext.WholeFile,
+                },
                 CollectionOrdering.Matching
             );
     }
@@ -160,10 +169,16 @@ public sealed class DiffContextChoiceTests
 
         await Assert
             .That(_revisionDiffs.Questions)
-            .IsEquivalentTo([("/wc", "/a.txt", 2L), ("/wc", "/a.txt", 2L)], CollectionOrdering.Matching);
+            .IsEquivalentTo(
+                [("/wc", "/a.txt", 2L), ("/wc", "/a.txt", 2L)],
+                CollectionOrdering.Matching
+            );
         await Assert
             .That(_revisionDiffs.Contexts)
-            .IsEquivalentTo(new DiffContext?[] { null, new DiffContext(10) }, CollectionOrdering.Matching);
+            .IsEquivalentTo(
+                new DiffContext?[] { null, new DiffContext(10) },
+                CollectionOrdering.Matching
+            );
         await Assert.That(pane.ContextUnavailable).IsTrue();
     }
 

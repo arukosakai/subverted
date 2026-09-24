@@ -54,7 +54,9 @@ public sealed class PristineBaseRowTests
     [Test]
     public async Task A_folder_is_left_to_svn()
     {
-        await Assert.That((Comparable with { Kind = NodeKind.Directory }).ComparableLineEndings).IsNull();
+        await Assert
+            .That((Comparable with { Kind = NodeKind.Directory }).ComparableLineEndings)
+            .IsNull();
     }
 
     [Test]
@@ -78,7 +80,9 @@ public sealed class PristineBaseRowTests
     [Test]
     public async Task A_pristine_stored_in_any_other_way_is_left_to_svn()
     {
-        await Assert.That((Comparable with { PristineIsPlain = false }).ComparableLineEndings).IsNull();
+        await Assert
+            .That((Comparable with { PristineIsPlain = false }).ComparableLineEndings)
+            .IsNull();
     }
 
     [Test]

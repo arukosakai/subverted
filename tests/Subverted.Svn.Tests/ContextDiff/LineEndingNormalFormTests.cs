@@ -9,7 +9,9 @@ public sealed class LineEndingNormalFormTests
     {
         byte[] text = "a\r\nb\nc\r"u8.ToArray();
 
-        await Assert.That(LineEndingNormalForm.Of(text, LineEndingStyle.AsCommitted)).IsSameReferenceAs(text);
+        await Assert
+            .That(LineEndingNormalForm.Of(text, LineEndingStyle.AsCommitted))
+            .IsSameReferenceAs(text);
     }
 
     [Test]
@@ -25,7 +27,10 @@ public sealed class LineEndingNormalFormTests
         string normal
     )
     {
-        var normalised = LineEndingNormalForm.Of(Encoding.ASCII.GetBytes(text), StyleNamed(eolStyle));
+        var normalised = LineEndingNormalForm.Of(
+            Encoding.ASCII.GetBytes(text),
+            StyleNamed(eolStyle)
+        );
 
         await Assert.That(Encoding.ASCII.GetString(normalised!)).IsEqualTo(normal);
     }
@@ -56,7 +61,10 @@ public sealed class LineEndingNormalFormTests
     [Arguments("a\rb\r\n")]
     public async Task Two_kinds_of_ending_in_one_file_have_no_normal_form(string text)
     {
-        var normalised = LineEndingNormalForm.Of(Encoding.ASCII.GetBytes(text), LineEndingStyle.Native);
+        var normalised = LineEndingNormalForm.Of(
+            Encoding.ASCII.GetBytes(text),
+            LineEndingStyle.Native
+        );
 
         await Assert.That(normalised).IsNull();
     }

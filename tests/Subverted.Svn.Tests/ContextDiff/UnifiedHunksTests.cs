@@ -17,7 +17,9 @@ public sealed class UnifiedHunksTests
     {
         var hunks = UnifiedHunks.Group(Replacing(line: 10, of: 20), 20, 20, 3);
 
-        await Assert.That(hunks).IsEquivalentTo([new UnifiedHunk(7, 7, 7, 7)], CollectionOrdering.Matching);
+        await Assert
+            .That(hunks)
+            .IsEquivalentTo([new UnifiedHunk(7, 7, 7, 7)], CollectionOrdering.Matching);
     }
 
     [Test]
@@ -25,7 +27,9 @@ public sealed class UnifiedHunksTests
     {
         var atTop = UnifiedHunks.Group(Replacing(line: 1, of: 3), 3, 3, 3);
 
-        await Assert.That(atTop).IsEquivalentTo([new UnifiedHunk(0, 3, 0, 3)], CollectionOrdering.Matching);
+        await Assert
+            .That(atTop)
+            .IsEquivalentTo([new UnifiedHunk(0, 3, 0, 3)], CollectionOrdering.Matching);
     }
 
     /// <summary>Measured at svn's three: five unchanged lines between two changes is one hunk.</summary>
@@ -34,7 +38,9 @@ public sealed class UnifiedHunksTests
     {
         var hunks = UnifiedHunks.Group(TwoChanges(apart: 5), 30, 30, 3);
 
-        await Assert.That(hunks).IsEquivalentTo([new UnifiedHunk(7, 13, 7, 13)], CollectionOrdering.Matching);
+        await Assert
+            .That(hunks)
+            .IsEquivalentTo([new UnifiedHunk(7, 13, 7, 13)], CollectionOrdering.Matching);
     }
 
     /// <summary>…and six is two, although their context would just touch.</summary>
@@ -45,7 +51,10 @@ public sealed class UnifiedHunksTests
 
         await Assert
             .That(hunks)
-            .IsEquivalentTo([new UnifiedHunk(7, 7, 7, 7), new UnifiedHunk(14, 7, 14, 7)], CollectionOrdering.Matching);
+            .IsEquivalentTo(
+                [new UnifiedHunk(7, 7, 7, 7), new UnifiedHunk(14, 7, 14, 7)],
+                CollectionOrdering.Matching
+            );
     }
 
     [Test]
@@ -53,7 +62,9 @@ public sealed class UnifiedHunksTests
     {
         var hunks = UnifiedHunks.Group(TwoChanges(apart: 12), 30, 30, int.MaxValue);
 
-        await Assert.That(hunks).IsEquivalentTo([new UnifiedHunk(0, 30, 0, 30)], CollectionOrdering.Matching);
+        await Assert
+            .That(hunks)
+            .IsEquivalentTo([new UnifiedHunk(0, 30, 0, 30)], CollectionOrdering.Matching);
     }
 
     [Test]
@@ -61,7 +72,9 @@ public sealed class UnifiedHunksTests
     {
         var hunks = UnifiedHunks.Group([new MatchedRun(0, 0, 5)], 5, 7, 3);
 
-        await Assert.That(hunks).IsEquivalentTo([new UnifiedHunk(2, 3, 2, 5)], CollectionOrdering.Matching);
+        await Assert
+            .That(hunks)
+            .IsEquivalentTo([new UnifiedHunk(2, 3, 2, 5)], CollectionOrdering.Matching);
     }
 
     [Test]
@@ -69,7 +82,9 @@ public sealed class UnifiedHunksTests
     {
         var hunks = UnifiedHunks.Group([new MatchedRun(0, 2, 5)], 5, 7, 3);
 
-        await Assert.That(hunks).IsEquivalentTo([new UnifiedHunk(0, 3, 0, 5)], CollectionOrdering.Matching);
+        await Assert
+            .That(hunks)
+            .IsEquivalentTo([new UnifiedHunk(0, 3, 0, 5)], CollectionOrdering.Matching);
     }
 
     /// <summary>Line <paramref name="line"/> (zero-based) replaced by another, all else equal.</summary>

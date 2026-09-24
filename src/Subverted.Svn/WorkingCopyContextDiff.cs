@@ -40,7 +40,10 @@ public sealed class WorkingCopyContextDiff(ISvnTextSpelling spelling, string new
             return null;
         }
 
-        var pristine = await ReadPlainFileAsync(PristinePath(workingCopyRoot, sha1), cancellationToken);
+        var pristine = await ReadPlainFileAsync(
+            PristinePath(workingCopyRoot, sha1),
+            cancellationToken
+        );
         var working = await ReadPlainFileAsync(path, cancellationToken);
         if (
             pristine is null
@@ -53,7 +56,13 @@ public sealed class WorkingCopyContextDiff(ISvnTextSpelling spelling, string new
         }
 
         var header = new DiffSectionHeader(relPath, $"revision {row.Revision}", "working copy");
-        var diff = SvnStyleDiff.Write(header, pristine, normalWorking, context.LinesAround, newline);
+        var diff = SvnStyleDiff.Write(
+            header,
+            pristine,
+            normalWorking,
+            context.LinesAround,
+            newline
+        );
         return diff is null ? null : SvnOutputText.Decode(diff, spelling.LinesThatAreNotUtf8);
     }
 

@@ -27,10 +27,12 @@ public sealed class TextLinesTests
     {
         var lines = TextLines.Split("a\r\rb\n"u8.ToArray());
 
-        await Assert.That(lines).IsEquivalentTo(
-            [new TextLine(0, 2, true), new TextLine(2, 1, true), new TextLine(3, 2, true)],
-            CollectionOrdering.Matching
-        );
+        await Assert
+            .That(lines)
+            .IsEquivalentTo(
+                [new TextLine(0, 2, true), new TextLine(2, 1, true), new TextLine(3, 2, true)],
+                CollectionOrdering.Matching
+            );
     }
 
     [Test]
@@ -38,7 +40,12 @@ public sealed class TextLinesTests
     {
         var lines = TextLines.Split("a\nbc"u8.ToArray());
 
-        await Assert.That(lines).IsEquivalentTo([new TextLine(0, 2, true), new TextLine(2, 2, false)], CollectionOrdering.Matching);
+        await Assert
+            .That(lines)
+            .IsEquivalentTo(
+                [new TextLine(0, 2, true), new TextLine(2, 2, false)],
+                CollectionOrdering.Matching
+            );
     }
 
     [Test]

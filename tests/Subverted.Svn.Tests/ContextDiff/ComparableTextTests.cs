@@ -11,9 +11,10 @@ public sealed class ComparableTextTests
     [Test]
     public async Task Properties_that_change_nothing_on_disk_leave_it_comparable()
     {
-        var style = ComparableText.LineEndingsOf(
-            [new SvnProperty("svn:needs-lock", "*"), new SvnProperty("svn:executable", "*")]
-        );
+        var style = ComparableText.LineEndingsOf([
+            new SvnProperty("svn:needs-lock", "*"),
+            new SvnProperty("svn:executable", "*"),
+        ]);
 
         await Assert.That(style).IsEqualTo(LineEndingStyle.AsCommitted);
     }
@@ -36,7 +37,9 @@ public sealed class ComparableTextTests
     [Arguments("")]
     public async Task An_eol_style_svn_would_not_accept_is_not_guessed_at(string value)
     {
-        await Assert.That(ComparableText.LineEndingsOf([new SvnProperty("svn:eol-style", value)])).IsNull();
+        await Assert
+            .That(ComparableText.LineEndingsOf([new SvnProperty("svn:eol-style", value)]))
+            .IsNull();
     }
 
     [Test]
@@ -45,7 +48,10 @@ public sealed class ComparableTextTests
     [Arguments("svn:mime-type", "application/octet-stream")]
     [Arguments("svn:mime-type", "image/png")]
     [Arguments("svn:mime-type", "textual/x")]
-    public async Task A_property_that_makes_svn_answer_otherwise_is_left_to_svn(string name, string value)
+    public async Task A_property_that_makes_svn_answer_otherwise_is_left_to_svn(
+        string name,
+        string value
+    )
     {
         await Assert.That(ComparableText.LineEndingsOf([new SvnProperty(name, value)])).IsNull();
     }
@@ -63,9 +69,10 @@ public sealed class ComparableTextTests
     [Test]
     public async Task Keywords_are_refused_even_after_an_eol_style_was_read()
     {
-        var style = ComparableText.LineEndingsOf(
-            [new SvnProperty("svn:eol-style", "native"), new SvnProperty("svn:keywords", "Id")]
-        );
+        var style = ComparableText.LineEndingsOf([
+            new SvnProperty("svn:eol-style", "native"),
+            new SvnProperty("svn:keywords", "Id"),
+        ]);
 
         await Assert.That(style).IsNull();
     }
@@ -73,9 +80,10 @@ public sealed class ComparableTextTests
     [Test]
     public async Task An_eol_style_with_a_text_mime_type_keeps_its_line_endings()
     {
-        var style = ComparableText.LineEndingsOf(
-            [new SvnProperty("svn:mime-type", "text/plain"), new SvnProperty("svn:eol-style", "CRLF")]
-        );
+        var style = ComparableText.LineEndingsOf([
+            new SvnProperty("svn:mime-type", "text/plain"),
+            new SvnProperty("svn:eol-style", "CRLF"),
+        ]);
 
         await Assert.That(style).IsEqualTo(LineEndingStyle.CrLf);
     }

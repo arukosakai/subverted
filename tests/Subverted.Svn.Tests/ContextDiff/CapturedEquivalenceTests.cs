@@ -104,9 +104,11 @@ public sealed class CapturedEquivalenceTests
 
     /// <summary>The style the file's properties give it, read the way the daemon reads them.</summary>
     private static LineEndingStyle StyleOf(string eolStyle) =>
-        ComparableText.LineEndingsOf(
-            eolStyle.Length == 0 ? [] : [new SvnProperty("svn:eol-style", eolStyle)]
-        )!.Value;
+        ComparableText
+            .LineEndingsOf(
+                eolStyle.Length == 0 ? [] : [new SvnProperty("svn:eol-style", eolStyle)]
+            )!
+            .Value;
 
     private static byte[] Capture(string name, string extension) =>
         File.ReadAllBytes(

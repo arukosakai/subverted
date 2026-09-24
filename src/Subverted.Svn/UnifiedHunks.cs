@@ -24,7 +24,10 @@ internal static class UnifiedHunks
         while (first < changes.Count)
         {
             var last = first;
-            while (last + 1 < changes.Count && UnchangedBetween(changes[last], changes[last + 1]) < 2L * context)
+            while (
+                last + 1 < changes.Count
+                && UnchangedBetween(changes[last], changes[last + 1]) < 2L * context
+            )
             {
                 last++;
             }
@@ -59,7 +62,8 @@ internal static class UnifiedHunks
         return changes;
     }
 
-    private static int UnchangedBetween(Change before, Change after) => after.OldStart - before.OldEnd;
+    private static int UnchangedBetween(Change before, Change after) =>
+        after.OldStart - before.OldEnd;
 
     /// <remarks>
     /// Lines before the first change and after the last are unchanged on both sides, so taking the

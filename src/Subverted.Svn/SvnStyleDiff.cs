@@ -18,7 +18,8 @@ internal static class SvnStyleDiff
     /// <summary>The steps <see cref="LongestCommonLines"/> may take before the diff is given up on.</summary>
     internal const long SearchBudget = 10_000_000;
 
-    private const string Rule = "===================================================================";
+    private const string Rule =
+        "===================================================================";
     private const string NoNewline = @"\ No newline at end of file";
 
     /// <param name="oldText">The old side, in the form SVN compares: its normal form.</param>
@@ -89,7 +90,9 @@ internal static class SvnStyleDiff
             TextLine[] newLines
         )
         {
-            Text($"@@ -{Range(hunk.OldStart, hunk.OldCount)} +{Range(hunk.NewStart, hunk.NewCount)} @@");
+            Text(
+                $"@@ -{Range(hunk.OldStart, hunk.OldCount)} +{Range(hunk.NewStart, hunk.NewCount)} @@"
+            );
 
             var (oldAt, newAt) = (hunk.OldStart, hunk.NewStart);
             var (oldEnd, newEnd) = (hunk.OldStart + hunk.OldCount, hunk.NewStart + hunk.NewCount);

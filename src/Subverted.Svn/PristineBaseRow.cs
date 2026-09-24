@@ -52,10 +52,15 @@ internal sealed record PristineBaseRow(
                 && PristineIsPlain
                 && SvnChecksum.TryParseSha1(Checksum) is not null;
             var propertiesUnchanged =
-                PropertyStatusResolver.Resolve(OpDepth, false, WorkingProperties, PristineProperties)
-                == PropertyStatus.Unmodified;
+                PropertyStatusResolver.Resolve(
+                    OpDepth,
+                    false,
+                    WorkingProperties,
+                    PristineProperties
+                ) == PropertyStatus.Unmodified;
 
-            return isPlainBaseFile
+            return
+                isPlainBaseFile
                 && propertiesUnchanged
                 && SvnPropertySkel.Parse(PristineProperties) is { } properties
                 ? ComparableText.LineEndingsOf(properties)

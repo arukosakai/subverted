@@ -64,7 +64,10 @@ builder.Services.AddSingleton<ReadWorkingCopyContextDiff>(provider =>
     ).ReadAsync
 );
 builder.Services.AddSingleton<ReadRevisionContextDiff>(provider =>
-    new RevisionContextDiff(provider.GetRequiredService<SvnCommand>(), Environment.NewLine).ReadAsync
+    new RevisionContextDiff(
+        provider.GetRequiredService<SvnCommand>(),
+        Environment.NewLine
+    ).ReadAsync
 );
 
 // Local, but a read of wc.db like status: svnversion is the fallback for a schema this build

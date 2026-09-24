@@ -88,17 +88,26 @@ public sealed class SvnStyleDiffTests
     {
         var written = Write("1\n2\n3\n4\n5\n", "1\n2\nthree\n4\n5\n", context: null);
 
-        await Assert.That(written).IsEqualTo(Headers + "@@ -1,5 +1,5 @@\n 1\n 2\n-3\n+three\n 4\n 5\n");
+        await Assert
+            .That(written)
+            .IsEqualTo(Headers + "@@ -1,5 +1,5 @@\n 1\n 2\n-3\n+three\n 4\n 5\n");
     }
 
     [Test]
     public async Task Two_hunks_are_written_in_order_each_with_its_own_header()
     {
-        var written = Write(Numbered(20), Numbered(20).Replace("\n2\n", "\ntwo\n").Replace("19\n", "nineteen\n"), 1);
+        var written = Write(
+            Numbered(20),
+            Numbered(20).Replace("\n2\n", "\ntwo\n").Replace("19\n", "nineteen\n"),
+            1
+        );
 
         await Assert
             .That(written)
-            .IsEqualTo(Headers + "@@ -1,3 +1,3 @@\n 1\n-2\n+two\n 3\n@@ -18,3 +18,3 @@\n 18\n-19\n+nineteen\n 20\n");
+            .IsEqualTo(
+                Headers
+                    + "@@ -1,3 +1,3 @@\n 1\n-2\n+two\n 3\n@@ -18,3 +18,3 @@\n 18\n-19\n+nineteen\n 20\n"
+            );
     }
 
     [Test]
@@ -120,7 +129,13 @@ public sealed class SvnStyleDiffTests
         string.Concat(Enumerable.Range(1, count).Select(i => $"{i}\n"));
 
     private static string? Write(string old, string @new, int? context, string newline = "\n") =>
-        SvnStyleDiff.Write(Header, Encoding.ASCII.GetBytes(old), Encoding.ASCII.GetBytes(@new), context, newline)
+        SvnStyleDiff.Write(
+            Header,
+            Encoding.ASCII.GetBytes(old),
+            Encoding.ASCII.GetBytes(@new),
+            context,
+            newline
+        )
             is { } bytes
             ? Encoding.ASCII.GetString(bytes)
             : null;

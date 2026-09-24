@@ -27,7 +27,8 @@ internal static class ComparableText
                 case "svn:special":
                     return null;
 
-                case "svn:mime-type" when !property.Value.StartsWith("text/", StringComparison.Ordinal):
+                case "svn:mime-type"
+                    when !property.Value.StartsWith("text/", StringComparison.Ordinal):
                     return null;
 
                 case "svn:eol-style":

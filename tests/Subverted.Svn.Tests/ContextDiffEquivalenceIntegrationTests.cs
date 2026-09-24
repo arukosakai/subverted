@@ -137,7 +137,14 @@ public sealed class ContextDiffEquivalenceIntegrationTests
         var copy = ContextDiffCopy.Copy;
 
         var written = await RevisionDiff()
-            .ReadAsync(copy.Root, ContextDiffCopy.RepositoryRoot, "/plain.txt", 1, DiffContext.Default, None);
+            .ReadAsync(
+                copy.Root,
+                ContextDiffCopy.RepositoryRoot,
+                "/plain.txt",
+                1,
+                DiffContext.Default,
+                None
+            );
 
         await Assert.That(written).IsNull();
     }
@@ -152,7 +159,13 @@ public sealed class ContextDiffEquivalenceIntegrationTests
         var copy = ContextDiffCopy.Copy;
         var repositoryRoot = ContextDiffCopy.RepositoryRoot;
 
-        var svn = await new SvnRevisionDiffCommand(Svn).ReadAsync(copy.Root, repositoryRoot, $"/{name}", 2, None);
+        var svn = await new SvnRevisionDiffCommand(Svn).ReadAsync(
+            copy.Root,
+            repositoryRoot,
+            $"/{name}",
+            2,
+            None
+        );
         var written = await RevisionDiff()
             .ReadAsync(copy.Root, repositoryRoot, $"/{name}", 2, DiffContext.Default, None);
         return (svn, written);

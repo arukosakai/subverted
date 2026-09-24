@@ -33,7 +33,10 @@ Run(basePath, "svnadmin", "create", repository);
 Run(basePath, "svn", "checkout", "-q", "file:///" + repository.Replace('\\', '/'), root);
 
 var random = new Random(50_000);
-var code = Enumerable.Range(0, Lines).Select(i => $"    statement_{i} = compute({i % 97}, {i});\n").ToArray();
+var code = Enumerable
+    .Range(0, Lines)
+    .Select(i => $"    statement_{i} = compute({i % 97}, {i});\n")
+    .ToArray();
 string[] alphabet = ["{\n", "}\n", "\n", "return;\n"];
 var scrambled = Enumerable.Range(0, Lines).Select(_ => alphabet[random.Next(4)]).ToArray();
 File.WriteAllText(Path.Combine(root, "big.cs"), string.Concat(code));
@@ -55,30 +58,73 @@ File.WriteAllText(
 var svn = new SvnCommand("svn");
 var inProcess = new WorkingCopyContextDiff(svn.Spelling, Environment.NewLine);
 var big = Path.Combine(root, "big.cs");
-var pristines = Directory.EnumerateFiles(Path.Combine(root, ".svn", "pristine"), "*.svn-base", SearchOption.AllDirectories).ToArray();
+var pristines = Directory
+    .EnumerateFiles(
+        Path.Combine(root, ".svn", "pristine"),
+        "*.svn-base",
+        SearchOption.AllDirectories
+    )
+    .ToArray();
 string[] evicted = [big, .. pristines];
 
-Console.WriteLine($"big.cs: {Lines:N0} lines, {new FileInfo(big).Length:N0} bytes, 5 lines edited\n");
+Console.WriteLine(
+    $"big.cs: {Lines:N0} lines, {new FileInfo(big).Length:N0} bytes, 5 lines edited\n"
+);
 
 var svnText = await new SvnDiffCommand(svn).ReadAsync(root, big, CancellationToken.None);
 var ours = await inProcess.ReadAsync(root, big, DiffContext.Default, CancellationToken.None);
 Console.WriteLine($"at 3 lines, in-process equals svn diff: {ours == svnText}\n");
 
-await Report("svn diff, 3 lines, warm", async () => await new SvnDiffCommand(svn).ReadAsync(root, big, CancellationToken.None));
-await Report("in-process, 10 lines, warm", () => inProcess.ReadAsync(root, big, new DiffContext(10), CancellationToken.None));
-await Report("in-process, whole file, warm", () => inProcess.ReadAsync(root, big, DiffContext.WholeFile, CancellationToken.None));
+await Report(
+    "svn diff, 3 lines, warm",
+    async () => await new SvnDiffCommand(svn).ReadAsync(root, big, CancellationToken.None)
+);
+await Report(
+    "in-process, 10 lines, warm",
+    () => inProcess.ReadAsync(root, big, new DiffContext(10), CancellationToken.None)
+);
+await Report(
+    "in-process, whole file, warm",
+    () => inProcess.ReadAsync(root, big, DiffContext.WholeFile, CancellationToken.None)
+);
 Console.WriteLine();
 await Report("read only, warm", () => Task.FromResult<string?>(ReadAll(evicted)));
-await Report("read only, cold", () => { Evict(evicted); return Task.FromResult<string?>(ReadAll(evicted)); });
-await Report("in-process, 10 lines, cold", () => { Evict(evicted); return inProcess.ReadAsync(root, big, new DiffContext(10), CancellationToken.None); });
-await Report("in-process, whole file, cold", () => { Evict(evicted); return inProcess.ReadAsync(root, big, DiffContext.WholeFile, CancellationToken.None); });
+await Report(
+    "read only, cold",
+    () =>
+    {
+        Evict(evicted);
+        return Task.FromResult<string?>(ReadAll(evicted));
+    }
+);
+await Report(
+    "in-process, 10 lines, cold",
+    () =>
+    {
+        Evict(evicted);
+        return inProcess.ReadAsync(root, big, new DiffContext(10), CancellationToken.None);
+    }
+);
+await Report(
+    "in-process, whole file, cold",
+    () =>
+    {
+        Evict(evicted);
+        return inProcess.ReadAsync(root, big, DiffContext.WholeFile, CancellationToken.None);
+    }
+);
 Console.WriteLine();
 var scrambledPath = Path.Combine(root, "scrambled.txt");
 await Report(
     "scrambled 50k vs 50k, until the budget declines",
     () => inProcess.ReadAsync(root, scrambledPath, new DiffContext(10), CancellationToken.None)
 );
-var declined = await inProcess.ReadAsync(root, scrambledPath, new DiffContext(10), CancellationToken.None);
+var declined = await inProcess.ReadAsync(
+    root,
+    scrambledPath,
+    new DiffContext(10),
+    CancellationToken.None
+);
 Console.WriteLine($"  declined (svn diff answers instead): {declined is null}");
 return 0;
 
@@ -93,7 +139,9 @@ async Task Report(string label, Func<Task<string?>> pass)
     }
 
     times.Sort();
-    Console.WriteLine($"{label,-50} {times[0],8:F1} – {times[^1],8:F1} ms  (median {times[times.Count / 2]:F1})");
+    Console.WriteLine(
+        $"{label, -50} {times[0], 8:F1} – {times[^1], 8:F1} ms  (median {times[times.Count / 2]:F1})"
+    );
 }
 
 static string ReadAll(string[] paths)
@@ -113,13 +161,24 @@ static void Evict(string[] paths)
 {
     foreach (var path in paths)
     {
-        using var handle = File.OpenHandle(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, (FileOptions)FileFlagNoBuffering);
+        using var handle = File.OpenHandle(
+            path,
+            FileMode.Open,
+            FileAccess.Read,
+            FileShare.ReadWrite,
+            (FileOptions)FileFlagNoBuffering
+        );
     }
 }
 
 static void Run(string workingDirectory, string executable, params string[] arguments)
 {
-    var start = new ProcessStartInfo(executable) { WorkingDirectory = workingDirectory, UseShellExecute = false, RedirectStandardError = true };
+    var start = new ProcessStartInfo(executable)
+    {
+        WorkingDirectory = workingDirectory,
+        UseShellExecute = false,
+        RedirectStandardError = true,
+    };
     foreach (var argument in arguments)
     {
         start.ArgumentList.Add(argument);

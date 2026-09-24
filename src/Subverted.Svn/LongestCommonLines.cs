@@ -59,7 +59,10 @@ internal static class LongestCommonLines
 
         if (suffix > 0)
         {
-            Append(runs, new MatchedRun(oldLines.Length - suffix, newLines.Length - suffix, suffix));
+            Append(
+                runs,
+                new MatchedRun(oldLines.Length - suffix, newLines.Length - suffix, suffix)
+            );
         }
 
         return runs;
@@ -115,7 +118,10 @@ internal static class LongestCommonLines
         {
             for (var i = 0; i < run.Length; i++)
             {
-                Append(runs, new MatchedRun(oldIndex[run.OldStart + i], newIndex[run.NewStart + i], 1));
+                Append(
+                    runs,
+                    new MatchedRun(oldIndex[run.OldStart + i], newIndex[run.NewStart + i], 1)
+                );
             }
         }
 
@@ -217,9 +223,8 @@ internal static class LongestCommonLines
         }
 
         reached[at] = y;
-        chains[at] = x > startX
-            ? new Chain(new MatchedRun(startX, startY, x - startX), chain)
-            : chain;
+        chains[at] =
+            x > startX ? new Chain(new MatchedRun(startX, startY, x - startX), chain) : chain;
         return 1 + x - startX;
     }
 

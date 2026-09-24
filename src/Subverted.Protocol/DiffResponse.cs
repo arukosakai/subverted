@@ -12,5 +12,4 @@ namespace Subverted.Protocol;
 /// including when more was asked for and this file could not have it — and <see langword="null"/>
 /// only from a daemon that predates the field, which always sent SVN's.
 /// </param>
-public sealed record DiffResponse(string UnifiedDiff, DiffContext? Context = null)
-    : DaemonResponse;
+public sealed record DiffResponse(string UnifiedDiff, DiffContext? Context = null) : DaemonResponse;

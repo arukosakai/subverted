@@ -1404,7 +1404,9 @@ public sealed class DaemonRequestHandlerTests
     [Arguments(3)]
     [Arguments(2)]
     [Arguments(0)]
-    public async Task A_diff_asked_for_with_three_lines_or_fewer_is_svns_without_writing_one(int lines)
+    public async Task A_diff_asked_for_with_three_lines_or_fewer_is_svns_without_writing_one(
+        int lines
+    )
     {
         var handler = Handler(
             _ => new WorkingCopySession(new FakeWorkingCopyScan("/wc"), new FakeChangeNotifier()),
@@ -1505,8 +1507,13 @@ public sealed class DaemonRequestHandlerTests
     [Test]
     public async Task A_revision_diff_asked_for_with_more_context_is_written_with_it()
     {
-        (string Root, string RepositoryRoot, string Path, long Revision, DiffContext Context)? written =
-            null;
+        (
+            string Root,
+            string RepositoryRoot,
+            string Path,
+            long Revision,
+            DiffContext Context
+        )? written = null;
         var handler = Handler(
             _ => new WorkingCopySession(new FakeWorkingCopyScan("/wc"), new FakeChangeNotifier()),
             readRevisionContextDiff: (root, repositoryRoot, path, revision, context, _) =>

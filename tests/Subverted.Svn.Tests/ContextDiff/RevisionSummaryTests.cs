@@ -32,7 +32,10 @@ public sealed class RevisionSummaryTests
         await Assert
             .That(changes)
             .IsEquivalentTo(
-                [new SummarisedPath("none", "modified", "file"), new SummarisedPath("added", "none", "dir")],
+                [
+                    new SummarisedPath("none", "modified", "file"),
+                    new SummarisedPath("added", "none", "dir"),
+                ],
                 CollectionOrdering.Matching
             );
     }
@@ -55,10 +58,16 @@ public sealed class RevisionSummaryTests
     [Test]
     public async Task Only_a_file_whose_text_alone_changed_is_a_text_edit()
     {
-        await Assert.That(new SummarisedPath("modified", "none", "file").IsTextEditOfAFile).IsTrue();
+        await Assert
+            .That(new SummarisedPath("modified", "none", "file").IsTextEditOfAFile)
+            .IsTrue();
         await Assert.That(new SummarisedPath("added", "none", "file").IsTextEditOfAFile).IsFalse();
-        await Assert.That(new SummarisedPath("modified", "modified", "file").IsTextEditOfAFile).IsFalse();
-        await Assert.That(new SummarisedPath("modified", "none", "dir").IsTextEditOfAFile).IsFalse();
+        await Assert
+            .That(new SummarisedPath("modified", "modified", "file").IsTextEditOfAFile)
+            .IsFalse();
+        await Assert
+            .That(new SummarisedPath("modified", "none", "dir").IsTextEditOfAFile)
+            .IsFalse();
     }
 
     [Test]
@@ -80,7 +89,10 @@ public sealed class RevisionSummaryTests
         await Assert
             .That(SvnPropertyListXml.Parse(xml))
             .IsEquivalentTo(
-                [new SvnProperty("svn:keywords", "Id Rev"), new SvnProperty("svn:eol-style", "native")],
+                [
+                    new SvnProperty("svn:keywords", "Id Rev"),
+                    new SvnProperty("svn:eol-style", "native"),
+                ],
                 CollectionOrdering.Matching
             );
     }
@@ -90,7 +102,11 @@ public sealed class RevisionSummaryTests
     {
         await Assert.That(SvnPropertyListXml.Parse("<properties>\n</properties>")).IsEmpty();
         await Assert
-            .That(SvnPropertyListXml.Parse("<properties><target><property>v</property></target></properties>"))
+            .That(
+                SvnPropertyListXml.Parse(
+                    "<properties><target><property>v</property></target></properties>"
+                )
+            )
             .IsEquivalentTo([new SvnProperty("", "v")]);
     }
 

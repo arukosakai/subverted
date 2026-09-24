@@ -67,7 +67,9 @@ public sealed class DiffContextMessageTests
             """{"$kind":"revision-diff","workingCopyPath":"/wc","repositoryPath":"/a.txt","revision":7}"""u8
         );
 
-        await Assert.That(decoded).IsEqualTo(new RevisionDiffRequest("/wc", "/a.txt", 7, Context: null));
+        await Assert
+            .That(decoded)
+            .IsEqualTo(new RevisionDiffRequest("/wc", "/a.txt", 7, Context: null));
     }
 
     [Test]

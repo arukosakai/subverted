@@ -212,7 +212,12 @@ public sealed class DaemonRequestHandler(
                 var root = session.Info.RootPath;
                 if (
                     request.Context is { IsWiderThanDefault: true } wider
-                    && await readWorkingCopyContextDiff(root, request.Path, wider, cancellationToken)
+                    && await readWorkingCopyContextDiff(
+                        root,
+                        request.Path,
+                        wider,
+                        cancellationToken
+                    )
                         is { } written
                 )
                 {

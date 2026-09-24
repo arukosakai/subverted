@@ -40,8 +40,10 @@ public sealed class ContextDiffAlignmentIntegrationTests
         {
             var path = copy.Absolute(name);
             var svn = await new SvnDiffCommand(Svn).ReadAsync(copy.Root, path, None);
-            var written = await new WorkingCopyContextDiff(Svn.Spelling, Environment.NewLine)
-                .ReadAsync(copy.Root, path, DiffContext.Default, None);
+            var written = await new WorkingCopyContextDiff(
+                Svn.Spelling,
+                Environment.NewLine
+            ).ReadAsync(copy.Root, path, DiffContext.Default, None);
             if (written != svn)
             {
                 differing.Add($"{name}\n--- svn\n{svn}\n--- ours\n{written}");
