@@ -212,7 +212,7 @@
                     <Separator />
                     <MenuItem Header="Revert…"
                               Command="{Binding RevertCommand}" CommandParameter="{Binding SelectedEntry}" />
-                    <MenuItem Header="Resolve" x:Name="ResolveMenu">
+                    <MenuItem Header="Resolve" x:Name="ResolveMenu" IsEnabled="{Binding IsResolveOffered}">
                       <MenuItem Header="Keep mine"
                                 Command="{Binding KeepMineCommand}" CommandParameter="{Binding SelectedEntry}" />
                       <MenuItem Header="Take theirs…"

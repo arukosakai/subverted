@@ -185,7 +185,8 @@ before, so a file an update left conflicted is offered for commit the moment it 
 
 Resolve is a **Resolve** submenu on a line's menu — Keep mine, Take theirs…, Mark as resolved —
 offered only where the line is conflicted or, for a listed folder, holds a conflict beneath it,
-since resolve recurses. Take theirs asks first with the exact list of conflicts it reaches; the
+since resolve recurses. Elsewhere the **Resolve** header itself is greyed, as Revert… is, rather
+than opening onto three disabled items. Take theirs asks first with the exact list of conflicts it reaches; the
 other two are sent at once, by D23's rule, which now lives in `Frontend` (`ResolutionRisk`) so
 `sv resolve` and the app cannot disagree. Base is not offered: it discards both edits, and
 nothing in a studio's day asks for it. The notice keeps D23's honesty — "nothing was conflicted"

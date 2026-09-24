@@ -444,6 +444,7 @@ public sealed partial class WorkingCopyViewModel(
 
     partial void OnSelectedEntryChanged(ChangeListEntry? value)
     {
+        OnPropertyChanged(nameof(IsResolveOffered));
         if (_isRelayingOut)
         {
             return;
@@ -594,6 +595,12 @@ public sealed partial class WorkingCopyViewModel(
             cancellationToken
         );
 
+    /// <summary>
+    /// Whether the picked line has anything to resolve, for the submenu that holds the three: a
+    /// header has no command of its own, so it would otherwise stay enabled over disabled items.
+    /// </summary>
+    public bool IsResolveOffered => CanResolve(SelectedEntry);
+
     /// <summary>Only where there is a conflict to settle: the line's own, or one beneath its folder.</summary>
     private bool CanResolve(ChangeListEntry? entry) =>
         entry?.Row is { } row
@@ -665,6 +672,7 @@ public sealed partial class WorkingCopyViewModel(
         KeepMineCommand.NotifyCanExecuteChanged();
         TakeTheirsCommand.NotifyCanExecuteChanged();
         MarkResolvedCommand.NotifyCanExecuteChanged();
+        OnPropertyChanged(nameof(IsResolveOffered));
         LockCommand.NotifyCanExecuteChanged();
         UnlockCommand.NotifyCanExecuteChanged();
     }

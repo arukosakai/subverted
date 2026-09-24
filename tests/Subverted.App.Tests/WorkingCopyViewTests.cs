@@ -270,6 +270,42 @@ public sealed class WorkingCopyViewTests
         await Assert.That(offered).IsEqualTo("edited.png:lock/-,held.psd:-/unlock,notes.txt:-/-");
     }
 
+    /// <summary>
+    /// Resolve is offered only where there is a conflict to settle, so its header greys out with
+    /// its items rather than opening onto three disabled ones — as Revert… does.
+    /// </summary>
+    [Test]
+    public async Task The_resolve_submenu_is_enabled_only_on_a_line_with_a_conflict_to_settle()
+    {
+        var offered = await OnViewAsync(
+            (_, list, view) =>
+                string.Join(
+                    ",",
+                    new[] { "clash.png", "edited.png" }.Select(key =>
+                    {
+                        Focus(list, IndexOf(view, key));
+                        var menu = list.ContextMenu!;
+                        menu.Open(list);
+                        Dispatcher.UIThread.RunJobs();
+                        var resolve = menu
+                            .Items.OfType<MenuItem>()
+                            .Single(item => Equals(item.Header, "Resolve"));
+                        var result = $"{key}:{Enabled(resolve)}";
+                        menu.Close();
+                        return result;
+                    })
+                ),
+            status: new FakeWorkingCopyStatus().Answers(
+                Listing(
+                    Entry("clash.png", NodeStatus.Conflicted, isConflicted: true),
+                    Entry("edited.png")
+                )
+            )
+        );
+
+        await Assert.That(offered).IsEqualTo("clash.png:resolve,edited.png:-");
+    }
+
     /// <summary>A refusal is the one answer that must be read, so its SVN text is on screen, not only in the log.</summary>
     [Test]
     public async Task Clicking_lock_sends_the_file_and_a_refusal_shows_svn_s_text_above_the_list()
