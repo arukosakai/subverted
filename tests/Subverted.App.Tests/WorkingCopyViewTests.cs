@@ -732,6 +732,36 @@ public sealed class WorkingCopyViewTests
         await Assert.That(lines).IsEqualTo(",art,art/chars,src");
     }
 
+    [Test]
+    public async Task The_folder_pane_s_menu_offers_revert_and_delete_by_the_chosen_folder()
+    {
+        var offered = await OnViewAsync(
+            (_, list, view) =>
+            {
+                var folders = FoldersOf(list);
+                return string.Join(
+                    ",",
+                    new[] { "", "src" }.Select(relPath =>
+                    {
+                        FocusFolder(folders, view, relPath);
+                        var menu = folders.ContextMenu!;
+                        menu.Open(folders);
+                        Dispatcher.UIThread.RunJobs();
+                        var items = menu.Items.OfType<MenuItem>().Select(Enabled);
+                        var result = $"{relPath}:{string.Join("/", items)}";
+                        menu.Close();
+                        return result;
+                    })
+                );
+            },
+            status: new FakeWorkingCopyStatus().Answers(
+                Listing(Entry("art/a.png"), Entry("src/b.cs", NodeStatus.Unversioned))
+            )
+        );
+
+        await Assert.That(offered).IsEqualTo(":revert…/-,src:-/delete…");
+    }
+
     private static FakeWorkingCopyStatus NestedStatus() =>
         new FakeWorkingCopyStatus().Answers(
             Listing(

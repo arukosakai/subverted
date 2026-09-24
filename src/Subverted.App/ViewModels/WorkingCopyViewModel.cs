@@ -604,6 +604,34 @@ public sealed partial class WorkingCopyViewModel(
         )
             is null;
 
+    /// <summary>The same question a line's Revert… puts, for a folder that may have no line of its own.</summary>
+    [RelayCommand(CanExecute = nameof(CanRevertFolder))]
+    private void RevertFolder(FolderEntry? folder)
+    {
+        var target = folder!.Content.RelPath;
+        RevertPrompt.Ask(
+            RevertConfirmation.For(target, Changes),
+            Location,
+            () => RevertConfirmation.For(target, Changes)
+        );
+    }
+
+    private bool CanRevertFolder(FolderEntry? folder) =>
+        folder is not null
+        && FolderOffer.CanRevert(
+            folder.Content.RelPath,
+            TargetCoverage.RelativeTo(Location, Path),
+            Changes
+        );
+
+    /// <summary>The same question a line's Delete… puts, for a folder that may have no line of its own.</summary>
+    [RelayCommand(CanExecute = nameof(CanDeleteFolder))]
+    private Task DeleteFolderAsync(FolderEntry? folder, CancellationToken cancellationToken) =>
+        DeletePrompt.AskAsync(Location, folder!.Content.RelPath, cancellationToken);
+
+    private bool CanDeleteFolder(FolderEntry? folder) =>
+        folder is not null && FolderOffer.CanDelete(folder.Content.RelPath, _rows);
+
     [RelayCommand(CanExecute = nameof(CanResolve))]
     private Task KeepMineAsync(ChangeListEntry? entry, CancellationToken cancellationToken) =>
         ResolveAsync(entry!, ConflictResolution.Mine, cancellationToken);
@@ -711,6 +739,8 @@ public sealed partial class WorkingCopyViewModel(
         ShowHistoryCommand.NotifyCanExecuteChanged();
         RevertCommand.NotifyCanExecuteChanged();
         DeleteCommand.NotifyCanExecuteChanged();
+        RevertFolderCommand.NotifyCanExecuteChanged();
+        DeleteFolderCommand.NotifyCanExecuteChanged();
         KeepMineCommand.NotifyCanExecuteChanged();
         TakeTheirsCommand.NotifyCanExecuteChanged();
         MarkResolvedCommand.NotifyCanExecuteChanged();

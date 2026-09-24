@@ -423,6 +423,10 @@ Avalonia front-end over the same daemon. Update, commit, diff, log. Nothing clev
   and seen in the real app deleting an edited file. **`sv rm` does not use them yet, and disagrees with them in three
   places:** its preview calls an added file recoverable, which it is not, it says nothing about an
   external's contents, and it will send an obstruction.
+- **Revert… and Delete… on the folder pane's menu** (GUI.md slice 3, forum #63), so a clean
+  folder can be deleted. They use the same prompts and rules as the line's menu. The root is
+  refused, and Revert is greyed above the opened folder, because the listing there cannot name
+  everything it would reach. Headless tests only; not seen in the real app.
 - **A bug pass over what was built (2026-09-24).** Reviewed across the Changes screen, the diff
   path and History/shell, then fixed test-first:
   - A slow open overtaken by a second one, or an activation answered after a deactivate or
