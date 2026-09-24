@@ -132,7 +132,7 @@ whole list per keystroke, unmeasured on a large listing.
 - Tick state is keyed by path beside the rows, so the once-a-second resync never clears it.
 - Revert and delete confirm with the exact list of what is lost (D19, D27).
 
-*Status: commit and revert built; delete not.* Rename rows come from `UnrecordedMoves`, one row
+*Status: commit, revert and delete built.* Rename rows come from `UnrecordedMoves`, one row
 at the new path that sends both halves. A path takes its default tick once, when first listed
 (`TickedPaths`), so an untick survives the resync. **Only ticks the filter shows are sent**
 (operator's call); hidden ones are kept. D20 goes through `DecidedSubtrees`; a line a folder
@@ -148,6 +148,52 @@ committed at r2 with the move's `copyfrom` in the log, a hook refusal left `A` a
 committed, an obstruction was refused with nothing written, and two reverts ran. Seen in the real
 app: default ticks, the rename row, the button count. Not seen there: clicking, Ctrl+Enter, the
 notice or the revert overlay (headless tests and renders only), and nothing on macOS.
+
+**Delete** is on a line's menu next to Revert…. Before asking, it reads the target again from the
+daemon with unmodified and ignored nodes included, because the Changes listing leaves out both
+and `svn delete --force` takes both. The overlay lists every node it reaches, what is lost for good
+first. Confirm reads it again and asks again if anything changed (forum #59's rule). The offer and
+the loss rules are pure and live in `Frontend` (`DeletionOffer`, `DeletionLoss`, `DeletionPreview`),
+and `sv rm` refuses and warns by the same `DeletionOffer` and `DeletionLoss`. **Measured on 1.8.15 on throwaway repositories:** without
+`--force`, SVN refuses anything with local changes (`E195006`) or unversioned (`E200005`). With it,
+everything is deleted from disk. An add is gone for good, and so is a copy with its edits (an
+edited copied file still reads plain `A  +`). Unversioned and ignored files inside a folder go
+silently. **An external inside a folder goes too, edits included, and SVN prints no line for it.**
+A missing node is just recorded as deleted, and a clean one comes back with Revert. **Deleting an
+obstructed node (`~`) fails in SVN's work queue, and `svn cleanup` then fails the same way until
+someone moves the obstruction by hand.** A folder that only holds one deletes fine. A conflicted
+file goes with its `.mine`/`.rN` files beside it, and a tree-conflicted one printed nothing. The
+working-copy root is refused (`E155035`). So Delete is offered on clean, edited, added, copied,
+replaced, missing and locked lines. It is not offered on `?`, ignored, externals, lines already
+`D`, conflicts, obstructions, renames (their line is the `?` half), the root, a folder heading,
+or anything holding a half-updated (`Incomplete`) node, which was not measured. Driven through the
+real `DeletePromptViewModel`, adapter and daemon on a throwaway repository: a folder holding an
+edit, an add, a `?` and an ignored file listed all four as lost. A file saved into it while the
+question was open made Confirm ask again. The second Confirm deleted it, and `svn revert` then
+brought back exactly the versioned files, at their pristine. A clean file deleted, and an
+obstruction was refused with nothing written. **Seen in the real app** on a throwaway
+`subverted-delete-check`, clicked through UI Automation: Delete… on an edited file's menu, the
+overlay saying its edits go with it, then `D` in `svn status`, the notice and the log line; greyed
+on a `?` line. Not seen there: a folder, the re-ask, a refusal, and nothing on macOS.
+
+**Revert… and Delete… on the folder pane's menu too** (operator's call, forum #63), since an
+untouched folder, or one with changes only beneath it, never gets a line. They start the same
+two prompts as the line's menu, aimed at the folder, so the overlay, the re-ask and one-at-a-time
+are shared, and one menu's question blocks the other's. Delete is offered by `DeletionOffer`
+(`FolderOffer` in the App): the folder's own line if it has one, otherwise a clean versioned folder,
+because the pane only shows a folder that holds something listed. So the root stays refused
+(`E155035`), and so do a folder already `D`, a conflicted one, an obstructed one, an external, and one
+holding a half-updated node. A clean folder is offered, and the fresh read lists its clean and
+ignored contents. Revert asks with the same `RevertConfirmation`, recursive as `--depth infinity`
+is, and is greyed where nothing beneath would change. **It is also greyed above the opened
+folder.** When a subfolder is opened, the root and the folders between are in the pane, but the
+listing does not reach their other children, so the list could not name everything the revert
+would touch. Delete stays offered there, because it reads its target again (operator: keep it
+greyed, forum #64). **Seen in the real app** on `subverted-delete-check`: Delete… on the pane's
+`art` listed its clean file (which no line showed), an add and a `?` as lost, and `svn status` then
+read `D` for the folder and both files; Revert… on it put them back and `svn status` came up
+empty. Not seen: the greyed cases, a refusal, macOS. A question that loses nothing now warns in
+the quiet tone rather than the danger red, in Revert and Delete both.
 
 ### 4. History
 

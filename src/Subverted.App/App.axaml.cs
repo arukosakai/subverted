@@ -49,6 +49,7 @@ public sealed partial class App : Application
         var diffs = new DaemonWorkingCopyDiff(channel);
         var commits = new DaemonWorkingCopyCommit(channel);
         var reverts = new DaemonWorkingCopyRevert(channel);
+        var deletions = new DaemonWorkingCopyDeletion(channel);
         var resolves = new DaemonWorkingCopyResolve(channel);
         var locks = new DaemonWorkingCopyLocks(channel);
         var updates = new DaemonWorkingCopyUpdate(channel);
@@ -75,6 +76,7 @@ public sealed partial class App : Application
                 clipboard,
                 commits,
                 reverts,
+                deletions,
                 resolves,
                 locks,
                 updates,

@@ -67,6 +67,22 @@ public sealed class RevertConfirmationTests
     }
 
     [Test]
+    [Arguments(NodeStatus.Modified, true)]
+    [Arguments(NodeStatus.Missing, false)]
+    public async Task It_loses_work_exactly_when_one_of_its_lines_does(
+        NodeStatus status,
+        bool loses
+    )
+    {
+        var rows = Rows(
+            Entry("d", NodeStatus.Deleted, kind: NodeKind.Directory),
+            Entry("d/a.png", status)
+        );
+
+        await Assert.That(RevertConfirmation.For(rows[0], rows).LosesWork).IsEqualTo(loses);
+    }
+
+    [Test]
     public async Task Something_revert_leaves_alone_has_nothing_to_confirm()
     {
         var rows = Rows(Entry("new.log", NodeStatus.Unversioned));

@@ -413,6 +413,28 @@ Avalonia front-end over the same daemon. Update, commit, diff, log. Nothing clev
   changes. The status request gained an optional held scan so a 100k-file All listing is re-sent
   only when it changed: 3–5 ms a poll unchanged, ~400–700 ms when it did, measured warm on
   `subverted-100k`. Headless tests only; not seen in the real app.
+- **Delete from a line's menu (GUI.md slice 3), the last verb of that slice.** It asks first, over
+  a fresh listing of the target with clean and ignored nodes in it, and lists what is lost for
+  good first. It asks again if that list changed by the time Confirm is pressed. What is offered
+  was decided by running `svn delete --force` on 1.8.15 against every status a line can have.
+  **An obstruction (`~`) wedges the working copy, and `svn cleanup` cannot undo that.** An external
+  inside a folder is deleted with its edits, and SVN prints nothing for it. The rules are in
+  `Frontend`. Driven through the real view model, adapter and daemon on a throwaway repository,
+  and seen in the real app deleting an edited file. **`sv rm` now uses them too.** It had disagreed in three places, each a
+  bug, each fixed test-first: its preview called an added file recoverable, it said nothing about
+  an external's contents, and it would send an obstruction, `--yes` or not. It now refuses what
+  Delete refuses, on stderr with the app's sentence, exit 1 and nothing sent. It lists what
+  `DeletionLoss` says is lost for good, each line with its reason. After the delete it says out
+  loud that an external went, since SVN prints nothing for it. An edited file now counts as losing
+  work too. A `?` or ignored target is refused, where `sv rm` used to unlink it, and so is one
+  already `D`. The confirmation is `RemovalConversation`, driven by tests through `IPrompt`. Driven
+  through the shipped `sv` and daemon on a throwaway repository: an obstruction with `--yes` was
+  refused and `svn status` still read the copy. A folder holding an add and a `?` listed both as
+  lost. A folder holding an edited external listed it, and `--yes` removed it and said so.
+- **Revert… and Delete… on the folder pane's menu** (GUI.md slice 3, forum #63), so a clean
+  folder can be deleted. They use the same prompts and rules as the line's menu. The root is
+  refused, and Revert is greyed above the opened folder, because the listing there cannot name
+  everything it would reach. Seen in the real app deleting and reverting a folder.
 - **A bug pass over what was built (2026-09-24).** Reviewed across the Changes screen, the diff
   path and History/shell, then fixed test-first:
   - A slow open overtaken by a second one, or an activation answered after a deactivate or
@@ -548,7 +570,7 @@ These need a human decision and are deliberately not resolved in code:
 ## Status
 
 M0 complete; M1 partly done and M2 begun, see their sections for exactly which parts. Solution builds clean with
-zero warnings, **3383 tests green** across seven test projects, status output diffed against
+zero warnings, **3544 tests green** across seven test projects, status output diffed against
 `svn status --no-ignore` on eight fixture working copies — column 4 included, as of D28 — with only
 the two divergences above.
 
@@ -599,7 +621,8 @@ Three things worth recording, all of them measured rather than assumed:
   `is not a directory`, which is why `sv mv` phrases them itself.
 - **`svn delete --force` on an unversioned file unlinks it, prints nothing and exits zero.** There
   is no pristine behind it and nothing brings it back. `sv rm` previews its targets split on exactly
-  that line, and its report counts the silent removals out loud.
+  that line, and its report counts the silent removals out loud. *(Since GUI slice 3 the split is
+  `DeletionLoss`'s, which also counts an add, an edit and an external's contents as lost.)*
 - **A lock does not follow a rename.** `svn status` shows `D    K` on the old path afterwards: the
   file is unlocked under its new name and nothing says so. `sv mv` warns.
 
@@ -941,9 +964,9 @@ with both sides of the refusal, `MoveRefusal` 20/20 and 6/6 counting the throw, 
 and 4/4, `RemovalReport` 11/11 and 4/4, `WorkingFileDigest` 11/11, and `StatusReport` 63/63 and
 28/28 with both sides of the rename note. Two are short and both are named rather than excused:
 
-- `RemovalPreview` is 27/27 lines and 17/18 branches. The one short is compiler-emitted, on the
-  `AddRange` that ends the getter — a loop only reached when the list it enumerates is non-empty.
-  Both list shapes above it are tested, one entry and two.
+- `RemovalPreview` was 27/27 lines and 17/18 branches, the one short compiler-emitted. Rebuilt on
+  `DeletionOffer`/`DeletionLoss` after GUI slice 3, it is 48/48 and 20/20, with `RemovalReport`
+  24/24 and 12/12 and the new `RemovalConversation` 36/36 and 12/12.
 - `WorkingCopyScanner` is 240/243 lines and 84/86 branches. **Two of those three shortfalls predate
   D27**: lines 271–273 and the branch above them are the pristine compare on the incremental
   `Resolve`, which is the missing test already recorded under D26. The one D27 adds is a single side

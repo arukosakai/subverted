@@ -1154,6 +1154,9 @@ confirmation is about. The second is the one worth stating plainly: **an unversi
 pristine, so `svn delete --force` unlinks it, prints nothing, and exits zero.** Nothing brings it
 back. The preview splits its targets on exactly that line and counts the unrecoverable ones
 separately, and the report says how many went that way, because SVN's own output for them is silence.
+*(Since GUI slice 3, what is refused and what counts as lost are `DeletionOffer` and `DeletionLoss`
+in `Frontend`, shared with the app: an add, an edit and an external's contents are lost too, and an
+obstruction is refused because deleting one wedges the working copy.)*
 
 **A lock does not follow a rename.** Measured: after moving a locked file, `svn status` shows
 `D    K  art/villain.png` — the token stays on the path that now exists only to be deleted, and the

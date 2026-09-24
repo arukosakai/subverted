@@ -1,9 +1,9 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:Subverted.App.ViewModels"
-             xmlns:p="using:Subverted.App.Presentation"
-             x:Class="Subverted.App.Views.RevertPromptView"
-             x:DataType="vm:RevertPromptViewModel"
+             xmlns:f="using:Subverted.Frontend"
+             x:Class="Subverted.App.Views.DeletePromptView"
+             x:DataType="vm:DeletePromptViewModel"
              IsVisible="{Binding IsAsking}">
   <UserControl.Styles>
     <Style Selector="TextBlock.loses">
@@ -26,29 +26,28 @@
                    Text="{Binding Pending.Warning}" />
         <TextBlock x:Name="Changed" FontWeight="Medium" TextWrapping="Wrap" IsVisible="{Binding HasChangedSinceAsked}"
                    Foreground="{DynamicResource Tone.Conflict}"
-                   Text="The list changed since you were asked. Check it again before reverting." />
+                   Text="The list changed since you were asked. Check it again before deleting." />
       </StackPanel>
 
       <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Spacing="10" Margin="0,12,0,0"
                   HorizontalAlignment="Right">
         <Button x:Name="CancelButton" Content="Cancel" Command="{Binding CancelCommand}" />
-        <Button x:Name="ConfirmButton" Content="Revert" Command="{Binding ConfirmCommand}"
+        <Button x:Name="ConfirmButton" Content="Delete" Command="{Binding ConfirmCommand}"
                 Background="{DynamicResource Tone.Deleted}" Foreground="White" />
       </StackPanel>
 
-      <ScrollViewer>
-        <ItemsControl x:Name="Lines" ItemsSource="{Binding Pending.Lines}">
-          <ItemsControl.ItemTemplate>
-            <DataTemplate x:DataType="p:RevertLine">
-              <StackPanel Margin="0,4">
-                <TextBlock Text="{Binding RelPath}" FontWeight="Medium" TextTrimming="CharacterEllipsis" />
-                <TextBlock Text="{Binding What}" FontSize="12" TextWrapping="Wrap"
-                           Classes.muted="{Binding !LosesWork}" Classes.loses="{Binding LosesWork}" />
-              </StackPanel>
-            </DataTemplate>
-          </ItemsControl.ItemTemplate>
-        </ItemsControl>
-      </ScrollViewer>
+      <!-- A folder's list can run to thousands of lines, so it is a virtualising list, not a stack. -->
+      <ListBox x:Name="Lines" ItemsSource="{Binding Pending.Lines}" Background="Transparent">
+        <ListBox.ItemTemplate>
+          <DataTemplate x:DataType="f:DeletionLine">
+            <StackPanel Margin="0,4">
+              <TextBlock Text="{Binding RelPath}" FontWeight="Medium" TextTrimming="CharacterEllipsis" />
+              <TextBlock Text="{Binding What}" FontSize="12" TextWrapping="Wrap"
+                         Classes.muted="{Binding !LosesWork}" Classes.loses="{Binding LosesWork}" />
+            </StackPanel>
+          </DataTemplate>
+        </ListBox.ItemTemplate>
+      </ListBox>
     </DockPanel>
   </Panel>
 </UserControl>

@@ -66,6 +66,9 @@
       <v:NoticeView Margin="8" Notice="{Binding RevertPrompt.Notice}"
                     IsVisible="{Binding RevertPrompt.Notice, Converter={x:Static ObjectConverters.IsNotNull}}"
                     DismissCommand="{Binding RevertPrompt.DismissNoticeCommand}" />
+      <v:NoticeView x:Name="DeleteNotice" Margin="8" Notice="{Binding DeletePrompt.Notice}"
+                    IsVisible="{Binding DeletePrompt.Notice, Converter={x:Static ObjectConverters.IsNotNull}}"
+                    DismissCommand="{Binding DeletePrompt.DismissNoticeCommand}" />
       <v:NoticeView x:Name="ResolveNotice" Margin="8" Notice="{Binding Resolver.Notice}"
                     IsVisible="{Binding Resolver.Notice, Converter={x:Static ObjectConverters.IsNotNull}}"
                     DismissCommand="{Binding Resolver.DismissNoticeCommand}" />
@@ -116,6 +119,15 @@
                 <Setter Property="Stroke" Value="{DynamicResource TextBrush}" />
               </Style>
             </ListBox.Styles>
+            <!-- An untouched folder has no line in the table, so this is where it is reverted or deleted from. -->
+            <ListBox.ContextMenu>
+              <ContextMenu>
+                <MenuItem Header="Revert…"
+                          Command="{Binding RevertFolderCommand}" CommandParameter="{Binding SelectedFolder}" />
+                <MenuItem Header="Delete…"
+                          Command="{Binding DeleteFolderCommand}" CommandParameter="{Binding SelectedFolder}" />
+              </ContextMenu>
+            </ListBox.ContextMenu>
             <ListBox.ItemTemplate>
               <DataTemplate x:DataType="vm:FolderEntry">
                 <Grid ColumnDefinitions="Auto,14,Auto,*,Auto" Height="22" Margin="4,0,8,0">
@@ -212,6 +224,8 @@
                     <Separator />
                     <MenuItem Header="Revert…"
                               Command="{Binding RevertCommand}" CommandParameter="{Binding SelectedEntry}" />
+                    <MenuItem Header="Delete…"
+                              Command="{Binding DeleteCommand}" CommandParameter="{Binding SelectedEntry}" />
                     <MenuItem Header="Resolve" x:Name="ResolveMenu" IsEnabled="{Binding IsResolveOffered}">
                       <MenuItem Header="Keep mine"
                                 Command="{Binding KeepMineCommand}" CommandParameter="{Binding SelectedEntry}" />
@@ -321,6 +335,7 @@
 
       <!-- Last, so it covers everything while the question stands. -->
       <v:RevertPromptView DataContext="{Binding RevertPrompt}" />
+      <v:DeletePromptView DataContext="{Binding DeletePrompt}" />
       <v:ResolvePromptView DataContext="{Binding Resolver}" />
     </Panel>
   </DockPanel>
