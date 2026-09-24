@@ -3,14 +3,16 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Input.Platform;
+using Avalonia.Interactivity;
 using Subverted.App.Presentation;
 using Subverted.Frontend.Diff;
 
 namespace Subverted.App.Views;
 
 /// <summary>
-/// A diff as a virtualised list of lines with old and new number gutters. Lines are selected like
-/// list items, and the platform's copy gesture puts the selected lines' text on the clipboard.
+/// A diff as a virtualised list of lines with old and new number gutters, side by side or in one
+/// column. Lines are selected like list items, and the platform's copy gesture puts the selected
+/// lines' text on the clipboard.
 /// </summary>
 public sealed partial class DiffLinesView : UserControl
 {
@@ -26,6 +28,24 @@ public sealed partial class DiffLinesView : UserControl
     public static readonly StyledProperty<ICommand?> OpenInAppCommandProperty =
         AvaloniaProperty.Register<DiffLinesView, ICommand?>(nameof(OpenInAppCommand));
 
+    /// <summary>Old beside new unless someone picks the unified column.</summary>
+    public static readonly StyledProperty<DiffLayout> LayoutProperty = AvaloniaProperty.Register<
+        DiffLinesView,
+        DiffLayout
+    >(nameof(Layout), DiffLayout.Split);
+
+    /// <summary>What the left side of the split layout shows, named over its column.</summary>
+    public static readonly StyledProperty<string> OldTitleProperty = AvaloniaProperty.Register<
+        DiffLinesView,
+        string
+    >(nameof(OldTitle), "Before");
+
+    /// <summary>What the right side of the split layout shows, named over its column.</summary>
+    public static readonly StyledProperty<string> NewTitleProperty = AvaloniaProperty.Register<
+        DiffLinesView,
+        string
+    >(nameof(NewTitle), "After");
+
     public DiffLinesView()
     {
         InitializeComponent();
@@ -35,6 +55,24 @@ public sealed partial class DiffLinesView : UserControl
     {
         get => GetValue(DocumentProperty);
         set => SetValue(DocumentProperty, value);
+    }
+
+    public DiffLayout Layout
+    {
+        get => GetValue(LayoutProperty);
+        set => SetValue(LayoutProperty, value);
+    }
+
+    public string OldTitle
+    {
+        get => GetValue(OldTitleProperty);
+        set => SetValue(OldTitleProperty, value);
+    }
+
+    public string NewTitle
+    {
+        get => GetValue(NewTitleProperty);
+        set => SetValue(NewTitleProperty, value);
     }
 
     public long? SizeInBytes
@@ -48,6 +86,10 @@ public sealed partial class DiffLinesView : UserControl
         get => GetValue(OpenInAppCommandProperty);
         set => SetValue(OpenInAppCommandProperty, value);
     }
+
+    private void OnSplitClicked(object? sender, RoutedEventArgs e) => Layout = DiffLayout.Split;
+
+    private void OnUnifiedClicked(object? sender, RoutedEventArgs e) => Layout = DiffLayout.Unified;
 
     protected override void OnKeyDown(KeyEventArgs e)
     {

@@ -33,6 +33,62 @@ public sealed class DiffClipboardTextTests
             .IsEqualTo(string.Join(Environment.NewLine, "first", "native"));
     }
 
+    private static readonly DiffRow[] SplitRows =
+    [
+        new DiffHunkRow("@@ -1,4 +1,4 @@"),
+        new DiffSplitRow(Context(1, 1, "first"), Context(1, 1, "first")),
+        new DiffSplitRow(Removed(2, "second"), Added(2, "second, changed")),
+        new DiffSplitRow(Removed(3, "third"), null),
+        new DiffSplitRow(Context(4, 3, "fourth"), Context(4, 3, "fourth")),
+        new DiffHunkRow("@@ -9 +8,2 @@"),
+        new DiffSplitRow(Removed(9, "ninth"), Added(8, "eighth")),
+        new DiffSplitRow(null, Added(9, "ninth, again")),
+    ];
+
+    /// <summary>The same lines copy the same text in either layout: a context line once, a run old before new.</summary>
+    [Test]
+    public async Task Side_by_side_lines_copy_in_the_order_a_unified_diff_lists_them()
+    {
+        await Assert
+            .That(DiffClipboardText.Of(SplitRows, [4, 3, 2, 1]))
+            .IsEqualTo(
+                string.Join(
+                    Environment.NewLine,
+                    "first",
+                    "second",
+                    "third",
+                    "second, changed",
+                    "fourth"
+                )
+            );
+    }
+
+    /// <summary>A hunk header closes a run as context does, so one hunk's new lines never trail the next's.</summary>
+    [Test]
+    public async Task A_header_between_two_runs_keeps_each_runs_lines_together()
+    {
+        await Assert
+            .That(DiffClipboardText.Of(SplitRows, [2, 5, 6, 7]))
+            .IsEqualTo(
+                string.Join(
+                    Environment.NewLine,
+                    "second",
+                    "second, changed",
+                    "ninth",
+                    "eighth",
+                    "ninth, again"
+                )
+            );
+    }
+
+    [Test]
+    public async Task A_run_selected_alone_copies_its_old_side_then_its_new_side()
+    {
+        await Assert
+            .That(DiffClipboardText.Of(SplitRows, [6, 7]))
+            .IsEqualTo(string.Join(Environment.NewLine, "ninth", "eighth", "ninth, again"));
+    }
+
     [Test]
     public async Task Nothing_selected_copies_nothing()
     {

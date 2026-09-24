@@ -11,27 +11,63 @@ public sealed class DiffConverterTests
 {
     private static readonly CultureInfo Culture = CultureInfo.InvariantCulture;
 
+    public static IEnumerable<Func<DiffLayout>> Layouts() =>
+        [() => DiffLayout.Split, () => DiffLayout.Unified];
+
     [Test]
-    public async Task A_document_converts_to_its_flattened_rows()
+    [MethodDataSource(nameof(Layouts))]
+    public async Task A_document_converts_to_the_rows_of_the_layout_it_is_given(DiffLayout layout)
     {
         var rows =
             (IReadOnlyList<DiffRow>)
-                FlatDiff.Rows.Convert(Diffs.Modified, typeof(object), null, Culture)!;
+                FlatDiff.Rows.Convert([Diffs.Modified, layout], typeof(object), null, Culture)!;
 
         await Assert
             .That(rows)
-            .IsEquivalentTo(DiffRows.Of(Diffs.Modified), CollectionOrdering.Matching);
+            .IsEquivalentTo(layout.RowsOf(Diffs.Modified), CollectionOrdering.Matching);
+    }
+
+    public static IEnumerable<Func<object?[]>> NotADocumentAndALayout() =>
+        [
+            () => [null, DiffLayout.Split],
+            () => ["not a document", DiffLayout.Split],
+            () => [Diffs.Modified, null],
+            () => [Diffs.Modified, "not a layout"],
+            () => [Diffs.Modified],
+            () => [Diffs.Modified, DiffLayout.Split, DiffLayout.Unified],
+        ];
+
+    [Test]
+    [MethodDataSource(nameof(NotADocumentAndALayout))]
+    public async Task Anything_but_a_document_and_a_layout_lists_no_rows(object?[] values)
+    {
+        var rows =
+            (IReadOnlyList<DiffRow>)FlatDiff.Rows.Convert(values, typeof(object), null, Culture)!;
+
+        await Assert.That(rows).IsEmpty();
     }
 
     [Test]
-    [Arguments(null)]
-    [Arguments("not a document")]
-    public async Task Anything_but_a_document_lists_no_rows(object? value)
+    [Arguments("Split", true, false)]
+    [Arguments("Unified", false, true)]
+    public async Task A_layout_takes_its_own_style_class_only(string name, bool split, bool unified)
     {
-        var rows =
-            (IReadOnlyList<DiffRow>)FlatDiff.Rows.Convert(value, typeof(object), null, Culture)!;
+        var layout = name == "Split" ? DiffLayout.Split : DiffLayout.Unified;
 
-        await Assert.That(rows).IsEmpty();
+        await Assert
+            .That(LayoutIs.Split.Convert(layout, typeof(bool), null, Culture))
+            .IsEqualTo(split);
+        await Assert
+            .That(LayoutIs.Unified.Convert(layout, typeof(bool), null, Culture))
+            .IsEqualTo(unified);
+    }
+
+    [Test]
+    public async Task Anything_but_a_layout_takes_no_layout_style_class()
+    {
+        await Assert
+            .That((bool)LayoutIs.Split.Convert("Split", typeof(bool), null, Culture)!)
+            .IsFalse();
     }
 
     [Test]
@@ -130,7 +166,7 @@ public sealed class DiffConverterTests
     public async Task No_diff_converter_pretends_to_convert_back()
     {
         await Assert
-            .That(() => FlatDiff.Rows.ConvertBack(null, typeof(DiffDocument), null, Culture))
+            .That(() => LayoutIs.Split.ConvertBack(true, typeof(DiffLayout), null, Culture))
             .Throws<NotSupportedException>();
         await Assert
             .That(() => FileSizeText.Human.ConvertBack("1 KB", typeof(long), null, Culture))

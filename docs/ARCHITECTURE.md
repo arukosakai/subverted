@@ -1572,7 +1572,12 @@ changed. Supporting both is a decision taken 2026-09-23; CI runs the suite again
   paths `add`, `commit` and friends list — is still lossy for a name outside the code page; nothing
   acts on those paths, since a write drops the whole index (D19). D33's console switch stays for
   the builds that do follow it.
-- On the plus side, 1.14 takes a Japanese name as an argument, which D33's open end found 1.8 would not.
+- **Arguments go through the ANSI code page too — on every Windows build.** Measured with
+  `ドラゴン.txt` on a CP1250 machine: the Win32SVN-style and SlikSVN 1.8.15, SlikSVN and TortoiseSVN
+  1.14.5 all refuse it named as an argument (`W155010`, the name arriving as `????`) and named in a
+  `--targets` file, which is read in the code page as well. So on Windows a file whose name the
+  code page cannot hold cannot be named to svn at all — only reached through a folder above it.
+  D33's open end, closed with a worse answer than it hoped for; an open question in PLAN.md.
 
 *Status: the Svn and Daemon suites green against the Win32SVN-style 1.8.15 and SlikSVN 1.14.5 on
 Windows, and against apt's 1.14.3 in an Ubuntu container. macOS and the US code page are CI's.*

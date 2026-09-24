@@ -465,6 +465,10 @@ Where we leave Tortoise behind.
 
 These need a human decision and are deliberately not resolved in code:
 
+- **On Windows a name outside the ANSI code page cannot be named to svn** (D34) — not as an
+  argument, not through `--targets`. `sv add`, `commit`, `revert`, `lock` of such a file by its own
+  path fail; its folder works. Whether to fall back to the folder with a narrower depth, or to say
+  so plainly and stop, is a decision about what a command naming one file may touch.
 - **A mistyped `sv resolve` target is silent on 1.14** (D34). The daemon could check each target
   against its index before asking svn, and refuse the ones it does not hold.
 - **On macOS the CLI fallback names a root by its real path** — `/private/var/…` for a copy reached
