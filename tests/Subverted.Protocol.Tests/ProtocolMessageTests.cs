@@ -194,6 +194,99 @@ public sealed class ProtocolMessageTests
     }
 
     [Test]
+    public async Task A_status_request_round_trips_the_scan_it_holds()
+    {
+        var held = Guid.NewGuid();
+
+        var decoded = (StatusRequest)
+            ProtocolMessage.DecodeRequest(
+                ProtocolMessage.Encode(new StatusRequest("/wc", true, false, HeldScan: held))
+            );
+
+        await Assert.That(decoded.HeldScan).IsEqualTo(held);
+    }
+
+    /// <summary>
+    /// A front-end built before the field asks without it, and must be sent the listing: a held
+    /// scan read as some default would be one it could be told "unchanged" about.
+    /// </summary>
+    [Test]
+    public async Task A_status_request_from_a_front_end_that_predates_held_scans_holds_none()
+    {
+        var json = Json(new StatusRequest("/wc", false, false));
+        var withoutField = json.Replace(",\"heldScan\":null", string.Empty, StringComparison.Ordinal);
+
+        var decoded = (StatusRequest)
+            ProtocolMessage.DecodeRequest(Encoding.UTF8.GetBytes(withoutField));
+
+        await Assert.That(withoutField).DoesNotContain("heldScan");
+        await Assert.That(decoded.HeldScan).IsNull();
+    }
+
+    /// <summary>
+    /// The other direction: a daemon older than a front-end skips a field it has never heard of
+    /// rather than refusing the request, so a newer front-end asking with a held scan still gets a
+    /// listing. Shown with a made-up field, since this build knows every real one.
+    /// </summary>
+    [Test]
+    public async Task A_request_carrying_a_field_this_build_does_not_know_still_arrives()
+    {
+        var json = Json(new StatusRequest("/wc", false, false));
+        var withNewerField = json.Replace(
+            "\"workingCopyPath\"",
+            "\"fromTheFuture\":\"x\",\"workingCopyPath\"",
+            StringComparison.Ordinal
+        );
+
+        var decoded = (StatusRequest)
+            ProtocolMessage.DecodeRequest(Encoding.UTF8.GetBytes(withNewerField));
+
+        await Assert.That(withNewerField).Contains("fromTheFuture");
+        await Assert.That(decoded.WorkingCopyPath).IsEqualTo("/wc");
+    }
+
+    [Test]
+    public async Task A_status_response_round_trips_the_scan_it_was_read_from()
+    {
+        var scan = Guid.NewGuid();
+
+        var decoded = (StatusResponse)
+            ProtocolMessage.DecodeResponse(
+                ProtocolMessage.Encode(SampleStatusResponse() with { ScanId = scan })
+            );
+
+        await Assert.That(decoded.ScanId).IsEqualTo(scan);
+    }
+
+    /// <summary>
+    /// A daemon built before scan ids answers without one. That reads as "cannot be asked", so the
+    /// front-end never sends a held scan it would have to invent.
+    /// </summary>
+    [Test]
+    public async Task A_status_response_from_a_daemon_that_predates_scan_ids_names_no_scan()
+    {
+        var json = Json(SampleStatusResponse());
+        var withoutField = json.Replace(",\"scanId\":null", string.Empty, StringComparison.Ordinal);
+
+        var decoded = (StatusResponse)
+            ProtocolMessage.DecodeResponse(Encoding.UTF8.GetBytes(withoutField));
+
+        await Assert.That(withoutField).DoesNotContain("scanId");
+        await Assert.That(decoded.ScanId).IsNull();
+    }
+
+    [Test]
+    public async Task An_unchanged_status_answer_is_named_on_the_wire_and_round_trips()
+    {
+        var response = new StatusUnchangedResponse(Guid.NewGuid(), 0.25);
+
+        var decoded = ProtocolMessage.DecodeResponse(ProtocolMessage.Encode(response));
+
+        await Assert.That(Json(response)).Contains("\"$kind\":\"status-unchanged\"");
+        await Assert.That(decoded).IsEqualTo(response);
+    }
+
+    [Test]
     public async Task A_daemon_info_response_round_trips_each_watched_working_copy()
     {
         var response = new DaemonInfoResponse(

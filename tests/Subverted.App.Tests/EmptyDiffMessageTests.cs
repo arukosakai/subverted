@@ -25,7 +25,6 @@ public sealed class EmptyDiffMessageTests
     [Arguments(NodeStatus.Added, true, Copied)]
     [Arguments(NodeStatus.Added, false, Added)]
     [Arguments(NodeStatus.Modified, true, Otherwise)]
-    [Arguments(NodeStatus.Unmodified, false, Otherwise)]
     public async Task An_empty_diff_is_explained_by_why_the_row_is_listed(
         NodeStatus status,
         bool copied,
@@ -35,5 +34,32 @@ public sealed class EmptyDiffMessageTests
         var row = ChangeRow.From(Entry("a.png", status, isCopied: copied));
 
         await Assert.That(EmptyDiffMessage.For(row)).IsEqualTo(message);
+    }
+
+    /// <summary>
+    /// Listing all, a file with nothing to report is said to be unchanged — against the revision
+    /// it was updated to, or against its copy's source when a copied folder carried it.
+    /// </summary>
+    [Test]
+    [Arguments(false, "Unchanged: it matches the revision you last updated to.")]
+    [Arguments(true, "Unchanged since the copy that carried it, so it matches its source.")]
+    public async Task An_unmodified_file_is_said_to_be_unchanged(bool copied, string message)
+    {
+        var row = ChangeRow.From(Entry("a.png", NodeStatus.Unmodified, isCopied: copied));
+
+        await Assert.That(EmptyDiffMessage.For(row)).IsEqualTo(message);
+    }
+
+    /// <summary>Clean content with something else to report is a change, and is not called unchanged.</summary>
+    [Test]
+    public async Task A_clean_file_listed_for_its_lock_or_its_properties_is_not_called_unchanged()
+    {
+        var locked = ChangeRow.From(Entry("a.png", NodeStatus.Unmodified, hasLockToken: true));
+        var propsOnly = ChangeRow.From(
+            Entry("a.png", NodeStatus.Unmodified, PropertyStatus.Modified)
+        );
+
+        await Assert.That(EmptyDiffMessage.For(locked)).IsEqualTo(Otherwise);
+        await Assert.That(EmptyDiffMessage.For(propsOnly)).IsEqualTo(Otherwise);
     }
 }

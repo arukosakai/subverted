@@ -1,3 +1,4 @@
+using Subverted.App.Presentation;
 using Subverted.App.ViewModels;
 using Subverted.Protocol;
 
@@ -16,6 +17,8 @@ internal sealed class GatedWorkingCopyStatus : IWorkingCopyStatus
 
     public async Task<DaemonResponse> ReadAsync(
         string workingCopyPath,
+        ListedNodes listed,
+        Guid? heldScan,
         CancellationToken cancellationToken
     )
     {

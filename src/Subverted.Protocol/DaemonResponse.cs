@@ -12,6 +12,7 @@ namespace Subverted.Protocol;
 /// </remarks>
 [JsonPolymorphic(TypeDiscriminatorPropertyName = "$kind")]
 [JsonDerivedType(typeof(StatusResponse), "status")]
+[JsonDerivedType(typeof(StatusUnchangedResponse), "status-unchanged")]
 [JsonDerivedType(typeof(LogResponse), "log")]
 [JsonDerivedType(typeof(DiffResponse), "diff")]
 [JsonDerivedType(typeof(AddResponse), "add")]

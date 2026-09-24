@@ -569,6 +569,86 @@ public sealed class WorkingCopySessionTests
         await Assert.That(current.UnrecordedMoves.Count).IsEqualTo(1);
     }
 
+    /// <summary>
+    /// The id is what lets a front-end be told "nothing new" instead of being sent a hundred
+    /// thousand entries again, so an answer from the held scan must carry that scan's id.
+    /// </summary>
+    [Test]
+    public async Task A_warm_answer_carries_the_id_of_the_scan_it_was_served_from()
+    {
+        var (session, _, _) = Session();
+        var cold = await session.CurrentAsync(None);
+
+        var warm = await session.CurrentAsync(None);
+
+        await Assert.That(warm.ServedFromWarmIndex).IsTrue();
+        await Assert.That(warm.ScanId).IsEqualTo(cold.ScanId);
+    }
+
+    [Test]
+    public async Task A_rescan_after_a_change_is_a_new_reading_with_a_new_id()
+    {
+        var (session, _, notifier) = Session();
+        var before = await session.CurrentAsync(None);
+
+        notifier.RaiseChanged();
+        var after = await session.CurrentAsync(None);
+
+        await Assert.That(after.ScanId).IsNotEqualTo(before.ScanId);
+    }
+
+    /// <summary>An incremental apply changes the entries as surely as a rescan does.</summary>
+    [Test]
+    public async Task A_change_applied_without_rescanning_still_gets_a_new_id()
+    {
+        var (session, scan, notifier, _) = IncrementalSession();
+        var before = await session.CurrentAsync(None);
+
+        notifier.RaiseChangedAt("art/hero.png");
+        var after = await session.CurrentAsync(None);
+
+        await Assert.That(scan.Scans).IsEqualTo(1);
+        await Assert.That(after.ScanId).IsNotEqualTo(before.ScanId);
+    }
+
+    /// <summary>
+    /// Unwatched, the generation never moves while the working copy can change under every scan,
+    /// so an id tied to the generation would call two different readings the same.
+    /// </summary>
+    [Test]
+    public async Task Every_rescan_of_an_unwatched_session_gets_its_own_id()
+    {
+        var (session, _, notifier) = Session();
+        notifier.IsWatching = false;
+        var first = await session.CurrentAsync(None);
+
+        var second = await session.CurrentAsync(None);
+
+        await Assert.That(second.ServedFromWarmIndex).IsFalse();
+        await Assert.That(second.ScanId).IsNotEqualTo(first.ScanId);
+    }
+
+    [Test]
+    public async Task Callers_sharing_one_scan_are_given_its_one_id()
+    {
+        var (session, scan, _) = Session();
+        using var inScan = new SemaphoreSlim(0);
+        using var release = new SemaphoreSlim(0);
+        scan.DuringScan = () =>
+        {
+            inScan.Release();
+            release.Wait();
+        };
+
+        var first = Task.Run(() => session.CurrentAsync(None));
+        await inScan.WaitAsync();
+        var second = Task.Run(() => session.CurrentAsync(None));
+        release.Release();
+        var results = await Task.WhenAll(first, second);
+
+        await Assert.That(results[1].ScanId).IsEqualTo(results[0].ScanId);
+    }
+
     private static (
         WorkingCopySession Session,
         FakeWorkingCopyScan Scan,

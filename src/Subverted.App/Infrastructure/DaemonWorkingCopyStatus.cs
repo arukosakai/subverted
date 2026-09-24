@@ -1,4 +1,5 @@
 using System.Net.Sockets;
+using Subverted.App.Presentation;
 using Subverted.App.ViewModels;
 using Subverted.Frontend;
 using Subverted.Protocol;
@@ -14,6 +15,8 @@ public sealed class DaemonWorkingCopyStatus(DaemonChannel channel) : IWorkingCop
 {
     public async Task<DaemonResponse> ReadAsync(
         string workingCopyPath,
+        ListedNodes listed,
+        Guid? heldScan,
         CancellationToken cancellationToken
     )
     {
@@ -22,9 +25,10 @@ public sealed class DaemonWorkingCopyStatus(DaemonChannel channel) : IWorkingCop
             return await channel.SendAsync(
                 new StatusRequest(
                     workingCopyPath,
-                    IncludeUnmodified: false,
+                    IncludeUnmodified: listed == ListedNodes.All,
                     IncludeIgnored: false,
-                    Scope: [workingCopyPath]
+                    Scope: [workingCopyPath],
+                    HeldScan: heldScan
                 ),
                 cancellationToken
             );

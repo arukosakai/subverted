@@ -7,6 +7,7 @@ using Avalonia.LogicalTree;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Subverted.App.Infrastructure;
+using Subverted.App.Presentation;
 using Subverted.App.ViewModels;
 using Subverted.App.Views;
 using Subverted.Core;
@@ -303,6 +304,209 @@ public sealed class WorkingCopyViewTests
         await Assert.That(cardShown).IsTrue();
         await Assert.That(detail).IsEqualTo(heldByRena);
     }
+
+    /// <summary>The toggle's reason to exist: an untouched file gets a line, and that line offers Lock.</summary>
+    [Test]
+    public async Task Clicking_all_lists_an_untouched_file_with_no_tick_box_and_lock_on_its_menu()
+    {
+        var status = new FakeWorkingCopyStatus()
+            .Answers(Listing(Entry("edited.png")))
+            .Answers(Listing(Entry("edited.png"), Entry("tree.png", NodeStatus.Unmodified)));
+
+        var (before, after, ticks, folderIcons, lockOffered) = await OnViewAsync(
+            (window, list, view) =>
+            {
+                var header = list.FindAncestorOfType<WorkingCopyView>()!;
+                var all = header.FindControl<Button>("ListAll")!;
+                var changes = header.FindControl<Button>("ListChanges")!;
+                var activeBefore = Active(changes, all);
+                Click(window, all);
+                var activeAfter = Active(changes, all);
+                var boxes = string.Join(",", VisibleOnLines<CheckBox>(list, view));
+                var icons = string.Join(",", VisibleOnLines<Avalonia.Controls.Shapes.Path>(list, view));
+                Focus(list, IndexOf(view, "tree.png"));
+                var (take, _) = LockItems(list);
+                var offered = Enabled(take);
+                list.ContextMenu!.Close();
+                return (activeBefore, activeAfter, boxes, icons, offered);
+            },
+            status: status
+        );
+
+        await Assert.That(before).IsEqualTo("changes");
+        await Assert.That(after).IsEqualTo("all");
+        await Assert.That(status.Listings).IsEquivalentTo([ListedNodes.Changes, ListedNodes.All]);
+        await Assert.That(ticks).IsEqualTo("edited.png");
+        await Assert.That(folderIcons).IsEqualTo("");
+        await Assert.That(lockOffered).IsEqualTo("lock");
+    }
+
+    [Test]
+    public async Task Clicking_changed_again_takes_the_untouched_file_s_line_away()
+    {
+        var status = new FakeWorkingCopyStatus()
+            .Answers(Listing(Entry("edited.png")))
+            .Answers(Listing(Entry("edited.png"), Entry("tree.png", NodeStatus.Unmodified)))
+            .Answers(Listing(Entry("edited.png")));
+
+        var (active, keys) = await OnViewAsync(
+            (window, list, view) =>
+            {
+                var header = list.FindAncestorOfType<WorkingCopyView>()!;
+                var all = header.FindControl<Button>("ListAll")!;
+                var changes = header.FindControl<Button>("ListChanges")!;
+                Click(window, all);
+                Click(window, changes);
+                return (Active(changes, all), string.Join(",", view.Entries.Select(e => e.Key)));
+            },
+            status: status
+        );
+
+        await Assert.That(active).IsEqualTo("changes");
+        await Assert.That(keys).IsEqualTo("edited.png");
+    }
+
+    [Test]
+    public async Task In_the_tree_a_folder_line_draws_its_icon_where_an_untouched_file_draws_nothing()
+    {
+        var status = new FakeWorkingCopyStatus()
+            .Answers(Listing(Entry("art/hero.png")))
+            .Answers(
+                Listing(Entry("art/hero.png"), Entry("art/tree.png", NodeStatus.Unmodified))
+            );
+
+        var (ticks, folderIcons) = await OnViewAsync(
+            (window, list, view) =>
+            {
+                Click(window, list.FindAncestorOfType<WorkingCopyView>()!.FindControl<Button>("ListAll")!);
+                view.ShowTreeCommand.Execute(null);
+                Dispatcher.UIThread.RunJobs();
+                return (
+                    string.Join(",", VisibleOnLines<CheckBox>(list, view)),
+                    string.Join(",", VisibleOnLines<Avalonia.Controls.Shapes.Path>(list, view))
+                );
+            },
+            status: status
+        );
+
+        await Assert.That(ticks).IsEqualTo("art/hero.png");
+        await Assert.That(folderIcons).IsEqualTo("art/");
+    }
+
+    /// <summary>Clean is where an artist locks before starting, so the message offers the full list.</summary>
+    [Test]
+    public async Task A_clean_copy_s_message_offers_every_file_and_clicking_it_lists_them()
+    {
+        var status = new FakeWorkingCopyStatus()
+            .Answers(Listing())
+            .Answers(Listing(Entry("tree.png", NodeStatus.Unmodified)));
+
+        var (messageBefore, offerBefore, messageAfter, shown) = await OnViewAsync(
+            (window, list, _) =>
+            {
+                var view = list.FindAncestorOfType<WorkingCopyView>()!;
+                var message = view.FindControl<StackPanel>("CleanMessage")!;
+                var offer = view.FindControl<Button>("CleanListAll")!;
+                var shownBefore = (message.IsEffectivelyVisible, offer.IsEffectivelyVisible);
+                Click(window, offer);
+                return (
+                    shownBefore.Item1,
+                    shownBefore.Item2,
+                    message.IsEffectivelyVisible,
+                    list.GetVisualDescendants().OfType<ListBoxItem>().Count()
+                );
+            },
+            status: status
+        );
+
+        await Assert.That(messageBefore).IsTrue();
+        await Assert.That(offerBefore).IsTrue();
+        await Assert.That(messageAfter).IsFalse();
+        await Assert.That(shown).IsEqualTo(1);
+    }
+
+    /// <summary>Already listing all, a copy with no files says it is clean and offers nothing more.</summary>
+    [Test]
+    public async Task A_copy_with_no_files_listing_all_keeps_its_message_without_the_offer()
+    {
+        var status = new FakeWorkingCopyStatus()
+            .Answers(Listing())
+            .Answers(Listing(Entry("", NodeStatus.Unmodified, kind: NodeKind.Directory)));
+
+        var (message, offer) = await OnViewAsync(
+            (window, list, _) =>
+            {
+                var view = list.FindAncestorOfType<WorkingCopyView>()!;
+                var offered = view.FindControl<Button>("CleanListAll")!;
+                Click(window, offered);
+                return (
+                    view.FindControl<StackPanel>("CleanMessage")!.IsEffectivelyVisible,
+                    offered.IsEffectivelyVisible
+                );
+            },
+            status: status
+        );
+
+        await Assert.That(message).IsTrue();
+        await Assert.That(offer).IsFalse();
+    }
+
+    /// <summary>A folder holding only untouched files is in the tree, but a zero is not a count worth drawing.</summary>
+    [Test]
+    public async Task Listing_all_a_folder_of_untouched_files_draws_no_count()
+    {
+        var status = new FakeWorkingCopyStatus()
+            .Answers(Listing(Entry("art/hero.png")))
+            .Answers(
+                Listing(Entry("art/hero.png"), Entry("src/main.cs", NodeStatus.Unmodified))
+            );
+
+        var counts = await OnViewAsync(
+            (window, list, _) =>
+            {
+                var view = list.FindAncestorOfType<WorkingCopyView>()!;
+                Click(window, view.FindControl<Button>("ListAll")!);
+                return string.Join(
+                    "|",
+                    view.FindControl<ListBox>("Folders")!
+                        .GetVisualDescendants()
+                        .OfType<ListBoxItem>()
+                        .Select(item =>
+                            item.GetVisualDescendants()
+                                .OfType<TextBlock>()
+                                .Single(text => text.Name == "FolderCount")
+                        )
+                        .Select(count => count.IsEffectivelyVisible ? count.Text : "-")
+                );
+            },
+            status: status
+        );
+
+        await Assert.That(counts).IsEqualTo("1|1|-");
+    }
+
+    private static string Active(Button changes, Button all) =>
+        (changes.Classes.Contains("active"), all.Classes.Contains("active")) switch
+        {
+            (true, false) => "changes",
+            (false, true) => "all",
+            var both => $"changes={both.Item1}, all={both.Item2}",
+        };
+
+    /// <summary>The keys of the lines whose <typeparamref name="T"/> in the line's leading column is drawn.</summary>
+    private static IEnumerable<string> VisibleOnLines<T>(ListBox list, WorkingCopyViewModel view)
+        where T : Control =>
+        view.Entries.Where(entry =>
+                list.ContainerFromItem(entry)!
+                    .GetVisualDescendants()
+                    .OfType<T>()
+                    .Any(control =>
+                        control.GetVisualParent() is Grid { ColumnDefinitions.Count: 5 } line
+                        && Grid.GetColumn(control) == 0
+                        && control.IsEffectivelyVisible
+                    )
+            )
+            .Select(entry => entry.Key);
 
     private static FakeWorkingCopyStatus LockStatus() =>
         new FakeWorkingCopyStatus().Answers(

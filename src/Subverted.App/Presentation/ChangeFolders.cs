@@ -1,16 +1,20 @@
 namespace Subverted.App.Presentation;
 
 /// <summary>
-/// The directory pane: every folder that holds a change, in tree order, and which changes choosing
+/// The directory pane: every folder that holds a listed row, in tree order, and which rows choosing
 /// one keeps. Each is drawn in the most urgent tone below it, so a conflict three levels down still
 /// colours the root. A rename belongs to the folders of both its names, as the filter finds it by either.
 /// </summary>
 public static class ChangeFolders
 {
+    /// <param name="rows">
+    /// Every listed row. One with nothing to report (<see cref="ChangeRow.IsUnmodified"/>) puts its
+    /// folders in the tree but is neither counted nor coloured: the pane's numbers are about changes.
+    /// </param>
     /// <param name="rootName">What the root's line is called: the working copy's own folder name.</param>
     /// <returns>
     /// The root first, then each folder straight after its parent, siblings by name ignoring case;
-    /// empty when there are no changes, so a clean copy shows no tree at all.
+    /// empty when nothing is listed, so a clean copy shows no tree at all.
     /// </returns>
     public static IReadOnlyList<FolderLine> Of(IReadOnlyList<ChangeRow> rows, string rootName)
     {
@@ -28,6 +32,7 @@ public static class ChangeFolders
             }
         }
 
+        var held = TonesHeld(rows, folders);
         var branches = folders
             .Where(folder => folder.Length > 0)
             .Select(ParentOf)
@@ -36,27 +41,55 @@ public static class ChangeFolders
         [
             .. folders
                 .Order(TreeOrder.Instance)
-                .Select(folder => LineOf(folder, rows, rootName, branches.Contains(folder))),
+                .Select(folder => LineOf(folder, held[folder], rootName, branches.Contains(folder))),
         ];
+    }
+
+    /// <summary>
+    /// The tone of every change each folder holds, in one pass over the rows rather than one per
+    /// folder — on an everything-listing of a large copy, milliseconds instead of seconds.
+    /// </summary>
+    private static Dictionary<string, List<ChangeTone>> TonesHeld(
+        IReadOnlyList<ChangeRow> rows,
+        HashSet<string> folders
+    )
+    {
+        var held = folders.ToDictionary(
+            folder => folder,
+            _ => new List<ChangeTone>(),
+            StringComparer.Ordinal
+        );
+        foreach (var row in rows.Where(row => !row.IsUnmodified))
+        {
+            // A set, so a rename with both names in one folder counts there once.
+            var holders = PathsOf(row)
+                .SelectMany(path => AncestorsOf(path).Append(path))
+                .Where(folders.Contains)
+                .Append("")
+                .ToHashSet(StringComparer.Ordinal);
+            foreach (var folder in holders)
+            {
+                held[folder].Add(row.Badge.Tone);
+            }
+        }
+
+        return held;
     }
 
     private static FolderLine LineOf(
         string folder,
-        IReadOnlyList<ChangeRow> rows,
+        List<ChangeTone> held,
         string rootName,
         bool hasSubfolders
-    )
-    {
-        var held = rows.Where(row => Contains(folder, row)).ToList();
-        return new FolderLine(
+    ) =>
+        new(
             folder,
             folder.Length == 0 ? rootName : NameOf(folder),
             DepthOf(folder),
             held.Count,
-            ChangeUrgency.MostUrgentOf(held.Select(row => row.Badge.Tone)),
+            ChangeUrgency.MostUrgentOf(held),
             hasSubfolders
         );
-    }
 
     private static string ParentOf(string folder) =>
         folder.LastIndexOf('/') is var slash and >= 0 ? folder[..slash] : "";

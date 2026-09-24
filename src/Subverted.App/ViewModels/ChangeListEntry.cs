@@ -16,6 +16,7 @@ public sealed partial class ChangeListEntry(ChangeListItem content)
         nameof(Key),
         nameof(Row),
         nameof(CanTick),
+        nameof(IsFolder),
         nameof(IsTickable),
         nameof(IsHeldByConflict),
         nameof(TickMark)
@@ -54,6 +55,12 @@ public sealed partial class ChangeListEntry(ChangeListItem content)
     /// <summary>The change on this line; <c>null</c> for a folder that only holds others.</summary>
     public ChangeRow? Row => Content.Row;
 
-    /// <summary>A folder that only holds others is not a change, so it has nothing to tick.</summary>
-    public bool CanTick => Content.Row is not null;
+    /// <summary>
+    /// A folder that only holds others is not a change, and neither is an unmodified file listed
+    /// among them: neither has anything to tick.
+    /// </summary>
+    public bool CanTick => Content.Row is { IsUnmodified: false };
+
+    /// <summary>A line for a folder that only holds others, drawn with a folder where a tick would be.</summary>
+    public bool IsFolder => Content.Row is null;
 }

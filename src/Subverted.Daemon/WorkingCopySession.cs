@@ -122,7 +122,7 @@ public sealed class WorkingCopySession : IDisposable
             // SVN — carrying the old answer forward would hide the pair exactly when it appears.
             var moves = _unrecordedMoves?.FindUnrecordedMoves(entries) ?? [];
 
-            var scanned = new Scanned(entries, generation, unfinished, moves);
+            var scanned = new Scanned(entries, generation, unfinished, moves, Guid.NewGuid());
             Volatile.Write(ref _scanned, scanned);
             return Answer(scanned, servedFromWarmIndex: false);
         }
@@ -137,7 +137,8 @@ public sealed class WorkingCopySession : IDisposable
             scanned.Entries,
             servedFromWarmIndex,
             scanned.UnfinishedOperations,
-            scanned.UnrecordedMoves
+            scanned.UnrecordedMoves,
+            scanned.Id
         );
 
     /// <summary>
@@ -226,10 +227,15 @@ public sealed class WorkingCopySession : IDisposable
         _rescanning.Dispose();
     }
 
+    /// <param name="Id">
+    /// Not the generation: a session that is not watching rescans at the same generation every
+    /// time, and a daemon restarted counts from the start again. A fresh id per reading is neither.
+    /// </param>
     private sealed record Scanned(
         IReadOnlyList<WorkingCopyEntry> Entries,
         long Generation,
         int UnfinishedOperations,
-        IReadOnlyList<UnrecordedMove> UnrecordedMoves
+        IReadOnlyList<UnrecordedMove> UnrecordedMoves,
+        Guid Id
     );
 }

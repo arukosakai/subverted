@@ -6,6 +6,14 @@ namespace Subverted.App.ViewModels;
 public static class EmptyDiffMessage
 {
     public static string For(ChangeRow row) =>
+        (row.IsUnmodified, row.IsCopied) switch
+        {
+            (true, false) => "Unchanged: it matches the revision you last updated to.",
+            (true, true) => "Unchanged since the copy that carried it, so it matches its source.",
+            _ => ForChange(row),
+        };
+
+    private static string ForChange(ChangeRow row) =>
         (row.Badge.Tone, row.IsCopied) switch
         {
             (ChangeTone.Unversioned, _) =>

@@ -32,7 +32,7 @@ public static class StatusFilter
                 continue;
             }
 
-            if (includeUnmodified || HasSomethingToReport(entry))
+            if (includeUnmodified || !CleanNode.Is(entry))
             {
                 kept.Add(entry);
             }
@@ -79,21 +79,4 @@ public static class StatusFilter
         IReadOnlyList<string> scope,
         StringComparison comparison
     ) => scope.Any(target => TargetCoverage.Covers(target, relPath, comparison));
-
-    /// <summary>
-    /// A held lock token, a conflict and a working-copy write lock are all reported by
-    /// <c>svn status</c> in their own columns even when the content and the properties are clean,
-    /// so none of them is "nothing to report".
-    /// </summary>
-    /// <remarks>
-    /// The write lock is the one that would otherwise be hidden exactly when it matters: the
-    /// directory it sits on is usually unmodified, and it is the reason every write to this working
-    /// copy is about to fail.
-    /// </remarks>
-    private static bool HasSomethingToReport(WorkingCopyEntry entry) =>
-        entry.Status != NodeStatus.Unmodified
-        || entry.PropertyStatus != PropertyStatus.Unmodified
-        || entry.IsConflicted
-        || entry.HasLockToken
-        || entry.IsWriteLocked;
 }

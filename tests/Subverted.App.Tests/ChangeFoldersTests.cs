@@ -22,6 +22,42 @@ public sealed class ChangeFoldersTests
             .IsEquivalentTo([new FolderLine("", "game", 0, 2, ChangeTone.Modified, false)]);
     }
 
+    /// <summary>
+    /// Listing all, the tree is every folder a file sits in — so an untouched one can be browsed to
+    /// — but its numbers and colours stay about changes: a folder of untouched files counts none.
+    /// </summary>
+    [Test]
+    public async Task An_unmodified_file_puts_its_folders_in_the_tree_but_is_neither_counted_nor_coloured()
+    {
+        var folders = ChangeFolders.Of(
+            [Row("art/hero.png"), Row("art/tree.png", NodeStatus.Unmodified), Row("src/main.cs", NodeStatus.Unmodified)],
+            "game"
+        );
+
+        await Assert
+            .That(folders)
+            .IsEquivalentTo(
+                [
+                    new FolderLine("", "game", 0, 1, ChangeTone.Modified, true),
+                    new FolderLine("art", "art", 1, 1, ChangeTone.Modified, false),
+                    new FolderLine("src", "src", 1, 0, ChangeTone.Quiet, false),
+                ]
+            );
+    }
+
+    /// <summary>The same row with something to report does count: the line is drawn at the change, not the listing.</summary>
+    [Test]
+    public async Task A_clean_file_that_holds_a_lock_is_counted_where_an_unmodified_one_is_not()
+    {
+        var held = ChangeRow.From(
+            Entry("src/held.psd", NodeStatus.Unmodified, hasLockToken: true)
+        );
+
+        var folders = ChangeFolders.Of([held], "game");
+
+        await Assert.That(folders.Select(folder => folder.Count)).IsEquivalentTo(new[] { 1, 1 });
+    }
+
     [Test]
     public async Task Every_folder_above_a_change_is_listed_with_its_depth_and_last_segment()
     {
@@ -96,6 +132,45 @@ public sealed class ChangeFoldersTests
         await Assert
             .That(folders.Select(folder => (folder.RelPath, folder.Count)))
             .IsEquivalentTo([("", 1), ("new", 1), ("old", 1)]);
+    }
+
+    [Test]
+    public async Task A_rename_within_one_folder_counts_there_once()
+    {
+        var rename = ChangeRow.Rename(
+            Entry("art/hero.png", NodeStatus.Unversioned),
+            "art/protagonist.png"
+        );
+
+        var folders = ChangeFolders.Of([rename], "game");
+
+        await Assert
+            .That(folders.Select(folder => (folder.RelPath, folder.Count)))
+            .IsEquivalentTo([("", 1), ("art", 1)]);
+    }
+
+    /// <summary>Choosing a folder keeps its own row, so the folder counts it among what it holds.</summary>
+    [Test]
+    public async Task A_changed_folder_that_is_also_a_tree_line_counts_itself()
+    {
+        var folders = ChangeFolders.Of(
+            [
+                ChangeRow.From(
+                    Entry(
+                        "art",
+                        NodeStatus.Unmodified,
+                        PropertyStatus.Modified,
+                        kind: NodeKind.Directory
+                    )
+                ),
+                Row("art/a.png"),
+            ],
+            "game"
+        );
+
+        await Assert
+            .That(folders.Select(folder => (folder.RelPath, folder.Count)))
+            .IsEquivalentTo([("", 2), ("art", 2)]);
     }
 
     /// <summary>A conflict deep down colours every folder above it, and none beside it.</summary>

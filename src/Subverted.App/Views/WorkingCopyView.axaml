@@ -31,6 +31,24 @@
       <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
       <Setter Property="VerticalAlignment" Value="Center" />
     </Style>
+    <!-- The Changed / All pair, drawn as the diff's Split / Unified pair is. -->
+    <Style Selector="Button.listing">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Padding" Value="9,2" />
+      <Setter Property="CornerRadius" Value="5" />
+      <Setter Property="FontSize" Value="11.5" />
+      <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
+    </Style>
+    <Style Selector="Button.listing:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
+    </Style>
+    <Style Selector="Button.listing.active">
+      <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+    </Style>
+    <Style Selector="Button.listing.active /template/ ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource SelectedBrush}" />
+    </Style>
   </UserControl.Styles>
 
   <DockPanel>
@@ -62,7 +80,7 @@
     <Panel>
       <!-- SmartSVN's arrangement: the directory tree on the left, the file table top right, and the
            selected file's diff under it at the table's full width. -->
-      <Grid IsVisible="{Binding HasChanges}">
+      <Grid IsVisible="{Binding HasLines}">
         <Grid.ColumnDefinitions>
           <ColumnDefinition Width="232" MinWidth="160" />
           <ColumnDefinition Width="1" />
@@ -119,9 +137,9 @@
                         Fill="{Binding Content.Tone, Converter={x:Static v:ToneBrush.Soft}}" />
                   <TextBlock Grid.Column="3" FontSize="12.5" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
                              Classes.root="{Binding Content.IsRoot}" Text="{Binding Content.Name}" />
-                  <TextBlock Grid.Column="4" FontSize="11" FontWeight="Medium" Margin="6,0,0,0" VerticalAlignment="Center"
+                  <TextBlock x:Name="FolderCount" Grid.Column="4" FontSize="11" FontWeight="Medium" Margin="6,0,0,0" VerticalAlignment="Center"
                              Foreground="{Binding Content.Tone, Converter={x:Static v:ToneBrush.Solid}}"
-                             Text="{Binding Content.Count}" />
+                             IsVisible="{Binding !!Content.Count}" Text="{Binding Content.Count}" />
                 </Grid>
               </DataTemplate>
             </ListBox.ItemTemplate>
@@ -139,20 +157,26 @@
           </Grid.RowDefinitions>
 
           <DockPanel Grid.Row="0" Classes.alone="{Binding !Diff.HasSelection}">
-            <!-- The filter, and what it hides. Acting on a row is its menu's job. -->
+            <!-- The filter, which files are listed, and what the filter hides. Acting on a row is its menu's job. -->
             <Border DockPanel.Dock="Top" Classes="pane-header" Height="40">
-              <Grid ColumnDefinitions="260,Auto">
+              <Grid ColumnDefinitions="260,Auto,Auto">
                 <TextBox x:Name="FilterBox" Classes="filter" Text="{Binding Filter, Mode=TwoWay}"
                          PlaceholderText="Filter by path" AutomationProperties.Name="Filter changes by path">
                   <TextBox.InnerLeftContent>
                     <Path Classes="icon" Data="{StaticResource Icon.Search}" Width="13" Height="13" Margin="8,0,0,0" />
                   </TextBox.InnerLeftContent>
                 </TextBox>
-                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" Margin="12,0,0,0"
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="2" Margin="8,0,0,0" VerticalAlignment="Center">
+                  <Button x:Name="ListChanges" Classes="listing" Content="Changed" Classes.active="{Binding !IsListingAll}"
+                          Command="{Binding ListChangesCommand}" AutomationProperties.Name="List changes only" />
+                  <Button x:Name="ListAll" Classes="listing" Content="All" Classes.active="{Binding IsListingAll}"
+                          Command="{Binding ListAllCommand}" AutomationProperties.Name="List every file" />
+                </StackPanel>
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" Margin="12,0,0,0"
                             IsVisible="{Binding HiddenText, Converter={x:Static ObjectConverters.IsNotNull}}">
                   <TextBlock x:Name="HiddenLine" Classes="faint" FontSize="12" VerticalAlignment="Center"
                              Text="{Binding HiddenText}" />
-                  <Button Classes="link" Content="Show all" VerticalAlignment="Center" Command="{Binding ClearFilterCommand}" />
+                  <Button Classes="link" Content="Clear filter" VerticalAlignment="Center" Command="{Binding ClearFilterCommand}" />
                 </StackPanel>
               </Grid>
             </Border>
@@ -214,7 +238,7 @@
                                 Command="{Binding $parent[ListBox].((vm:WorkingCopyViewModel)DataContext).ToggleTickCommand}"
                                 CommandParameter="{Binding}" AutomationProperties.Name="Tick" />
                       <Path Classes="icon" Data="{StaticResource Icon.Folder}" Width="14" Height="14"
-                            HorizontalAlignment="Left" IsVisible="{Binding !CanTick}" />
+                            HorizontalAlignment="Left" IsVisible="{Binding IsFolder}" />
 
                       <ContentControl Grid.Column="1" Content="{Binding Row}" VerticalAlignment="Center">
                         <ContentControl.ContentTemplate>
@@ -267,14 +291,17 @@
         </Grid>
       </Grid>
 
-      <!-- Clean is an answer, and says so rather than showing an empty table. -->
-      <StackPanel Spacing="10" HorizontalAlignment="Center" VerticalAlignment="Center"
-                  IsVisible="{Binding IsClean}">
+      <!-- Clean is an answer, and says so rather than showing an empty table. Listing all is still
+           a click away, since an untouched file is locked from there. -->
+      <StackPanel x:Name="CleanMessage" Spacing="10" HorizontalAlignment="Center" VerticalAlignment="Center"
+                  IsVisible="{Binding ShowsCleanMessage}">
         <Path Classes="icon" Data="{StaticResource Icon.Check}" Width="28" Height="28"
               Stroke="{DynamicResource Tone.Added}" StrokeThickness="2" HorizontalAlignment="Center" />
         <TextBlock Classes="empty-title" Text="No local changes" />
         <TextBlock Classes="muted" HorizontalAlignment="Center"
                    Text="Everything here matches the revision you last updated to." />
+        <Button x:Name="CleanListAll" Classes="link" Content="List every file" HorizontalAlignment="Center"
+                IsVisible="{Binding !IsListingAll}" Command="{Binding ListAllCommand}" />
       </StackPanel>
 
       <StackPanel Spacing="10" HorizontalAlignment="Center" VerticalAlignment="Center"

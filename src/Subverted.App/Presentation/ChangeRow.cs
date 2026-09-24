@@ -42,6 +42,12 @@ public sealed record ChangeRow(
         RenamedFrom is null ? null : Presentation.RenameCaption.For(RenamedFrom, RelPath);
 
     /// <summary>
+    /// Listed only because everything was asked for: nothing to commit, revert or diff. A clean
+    /// file that holds a lock is not one of these — it is listed either way, as <c>svn status</c> does.
+    /// </summary>
+    public bool IsUnmodified => CleanNode.Is(Entry);
+
+    /// <summary>
     /// One row for a D27 pair: the new path, badged as a rename. Its <c>svn log</c> lives under the
     /// old name until the move is committed, so it offers none.
     /// </summary>
