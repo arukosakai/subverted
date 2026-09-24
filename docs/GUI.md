@@ -188,8 +188,12 @@ ignored contents. Revert asks with the same `RevertConfirmation`, recursive as `
 is, and is greyed where nothing beneath would change. **It is also greyed above the opened
 folder.** When a subfolder is opened, the root and the folders between are in the pane, but the
 listing does not reach their other children, so the list could not name everything the revert
-would touch. Delete stays offered there, because it reads its target again. Headless tests only:
-not seen in the real app, and nothing on macOS.
+would touch. Delete stays offered there, because it reads its target again (operator: keep it
+greyed, forum #64). **Seen in the real app** on `subverted-delete-check`: Delete… on the pane's
+`art` listed its clean file (which no line showed), an add and a `?` as lost, and `svn status` then
+read `D` for the folder and both files; Revert… on it put them back and `svn status` came up
+empty. Not seen: the greyed cases, a refusal, macOS. A question that loses nothing now warns in
+the quiet tone rather than the danger red, in Revert and Delete both.
 
 ### 4. History
 

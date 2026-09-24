@@ -434,7 +434,7 @@ Avalonia front-end over the same daemon. Update, commit, diff, log. Nothing clev
 - **Revert… and Delete… on the folder pane's menu** (GUI.md slice 3, forum #63), so a clean
   folder can be deleted. They use the same prompts and rules as the line's menu. The root is
   refused, and Revert is greyed above the opened folder, because the listing there cannot name
-  everything it would reach. Headless tests only; not seen in the real app.
+  everything it would reach. Seen in the real app deleting and reverting a folder.
 - **A bug pass over what was built (2026-09-24).** Reviewed across the Changes screen, the diff
   path and History/shell, then fixed test-first:
   - A slow open overtaken by a second one, or an activation answered after a deactivate or
@@ -570,7 +570,7 @@ These need a human decision and are deliberately not resolved in code:
 ## Status
 
 M0 complete; M1 partly done and M2 begun, see their sections for exactly which parts. Solution builds clean with
-zero warnings, **3290 tests green** across seven test projects, status output diffed against
+zero warnings, **3298 tests green** across seven test projects, status output diffed against
 `svn status --no-ignore` on eight fixture working copies — column 4 included, as of D28 — with only
 the two divergences above.
 
