@@ -124,6 +124,19 @@ internal sealed class SvnWorkingCopy : IDisposable
         File.WriteAllText(path, content);
     }
 
+    /// <summary>Writes exact bytes, for fixtures where a line ending is the point.</summary>
+    public void WriteBytes(string relPath, byte[] content)
+    {
+        var path = Absolute(relPath);
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        if (File.Exists(path))
+        {
+            File.SetAttributes(path, FileAttributes.Normal);
+        }
+
+        File.WriteAllBytes(path, content);
+    }
+
     public void Delete(string relPath) => File.Delete(Absolute(relPath));
 
     public void CreateDirectory(string relPath) => Directory.CreateDirectory(Absolute(relPath));

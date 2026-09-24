@@ -1,4 +1,5 @@
 using Subverted.App.ViewModels;
+using Subverted.Core;
 using Subverted.Protocol;
 
 namespace Subverted.App.Tests;
@@ -13,6 +14,9 @@ internal sealed class FakeWorkingCopyDiff : IWorkingCopyDiff
     private Answer _last = new(() => new DiffResponse(""), Task.CompletedTask);
 
     public List<string> Paths { get; } = [];
+
+    /// <summary>The context each question asked for, beside <see cref="Paths"/>.</summary>
+    public List<DiffContext?> Contexts { get; } = [];
 
     public List<CancellationToken> Tokens { get; } = [];
 
@@ -47,9 +51,14 @@ internal sealed class FakeWorkingCopyDiff : IWorkingCopyDiff
     }
 
     /// <summary>Otherwise ignores cancellation on purpose: a real answer can already be on the wire.</summary>
-    public async Task<DaemonResponse> ReadAsync(string path, CancellationToken cancellationToken)
+    public async Task<DaemonResponse> ReadAsync(
+        string path,
+        DiffContext? context,
+        CancellationToken cancellationToken
+    )
     {
         Paths.Add(path);
+        Contexts.Add(context);
         Tokens.Add(cancellationToken);
         if (_answers.TryDequeue(out var next))
         {

@@ -43,7 +43,7 @@ public sealed class HistoryInfrastructureTests
         var diffs = new DaemonRevisionDiff(Nobody(folder));
 
         var thrown = await Assert
-            .That(async () => await diffs.ReadAsync(folder.Path, "/a.txt", 2, None))
+            .That(async () => await diffs.ReadAsync(folder.Path, "/a.txt", 2, null, None))
             .Throws<DaemonUnreachableException>();
 
         await Assert.That(thrown!.Message).Contains("no-daemon.exe");

@@ -972,6 +972,8 @@ public sealed class DaemonEndToEndTests
                 new SvnLogCommand(svn).ReadAsync,
                 new SvnDiffCommand(svn).ReadAsync,
                 new SvnRevisionDiffCommand(svn).ReadAsync,
+                new WorkingCopyContextDiff(svn.Spelling, Environment.NewLine).ReadAsync,
+                new RevisionContextDiff(svn, Environment.NewLine).ReadAsync,
                 new BaseRevisionRangeReader(
                     new SvnVersionCommand(new SvnCommand("svnversion"))
                 ).ReadAsync,

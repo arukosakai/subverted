@@ -1,0 +1,13 @@
+Index: crlf-style.txt
+===================================================================
+--- crlf-style.txt	(revision 2)
++++ crlf-style.txt	(working copy)
+@@ -4,7 +4,7 @@
+ line 4
+ line 5
+ line six
+-line 7
++line seven
+ line 8
+ line 9
+ line 10

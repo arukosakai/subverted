@@ -12,4 +12,8 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Subverted.Svn\Subverted.Svn.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <None Include="ContextDiff\Captures\*" Exclude="ContextDiff\Captures\*.py;ContextDiff\Captures\*.md" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
 </Project>

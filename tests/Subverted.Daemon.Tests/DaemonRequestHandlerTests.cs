@@ -1387,6 +1387,163 @@ public sealed class DaemonRequestHandlerTests
         await Assert.That(response.Version).IsNotEmpty();
     }
 
+    [Test]
+    public async Task A_diff_asked_for_without_a_context_is_svns_and_says_it_has_three_lines()
+    {
+        var handler = Handler(
+            _ => new WorkingCopySession(new FakeWorkingCopyScan("/wc"), new FakeChangeNotifier()),
+            readWorkingCopyDiff: (_, _, _) => Task.FromResult("svn's")
+        );
+
+        var response = await handler.HandleAsync(new DiffRequest(Path.GetFullPath("/wc/a")), None);
+
+        await Assert.That(response).IsEqualTo(new DiffResponse("svn's", DiffContext.Default));
+    }
+
+    [Test]
+    [Arguments(3)]
+    [Arguments(2)]
+    [Arguments(0)]
+    public async Task A_diff_asked_for_with_three_lines_or_fewer_is_svns_without_writing_one(int lines)
+    {
+        var handler = Handler(
+            _ => new WorkingCopySession(new FakeWorkingCopyScan("/wc"), new FakeChangeNotifier()),
+            readWorkingCopyDiff: (_, _, _) => Task.FromResult("svn's")
+        );
+
+        var response = await handler.HandleAsync(
+            new DiffRequest(Path.GetFullPath("/wc/a"), new DiffContext(lines)),
+            None
+        );
+
+        await Assert.That(response).IsEqualTo(new DiffResponse("svn's", DiffContext.Default));
+    }
+
+    [Test]
+    [Arguments(4)]
+    [Arguments(null)]
+    public async Task A_diff_asked_for_with_more_context_is_written_with_it(int? lines)
+    {
+        var asked = new DiffContext(lines);
+        (string Root, string Path, DiffContext Context)? written = null;
+        var handler = Handler(
+            _ => new WorkingCopySession(new FakeWorkingCopyScan("/wc"), new FakeChangeNotifier()),
+            readWorkingCopyContextDiff: (root, path, context, _) =>
+            {
+                written = (root, path, context);
+                return Task.FromResult<string?>("ours");
+            }
+        );
+
+        var response = await handler.HandleAsync(
+            new DiffRequest(Path.GetFullPath("/wc/a"), asked),
+            None
+        );
+
+        await Assert.That(response).IsEqualTo(new DiffResponse("ours", asked));
+        await Assert.That(written).IsEqualTo(("/wc", Path.GetFullPath("/wc/a"), asked));
+    }
+
+    [Test]
+    public async Task A_file_that_cannot_have_more_context_gets_svns_diff_marked_as_three_lines()
+    {
+        var handler = Handler(
+            _ => new WorkingCopySession(new FakeWorkingCopyScan("/wc"), new FakeChangeNotifier()),
+            readWorkingCopyDiff: (_, _, _) => Task.FromResult("svn's"),
+            readWorkingCopyContextDiff: (_, _, _, _) => Task.FromResult<string?>(null)
+        );
+
+        var response = await handler.HandleAsync(
+            new DiffRequest(Path.GetFullPath("/wc/a"), new DiffContext(10)),
+            None
+        );
+
+        await Assert.That(response).IsEqualTo(new DiffResponse("svn's", DiffContext.Default));
+    }
+
+    [Test]
+    public async Task A_negative_context_is_refused_without_asking_anything()
+    {
+        var handler = Handler(_ => new WorkingCopySession(
+            new FakeWorkingCopyScan("/wc"),
+            new FakeChangeNotifier()
+        ));
+
+        var diff = await handler.HandleAsync(
+            new DiffRequest(Path.GetFullPath("/wc/a"), new DiffContext(-1)),
+            None
+        );
+        var revisionDiff = await handler.HandleAsync(
+            new RevisionDiffRequest(Path.GetFullPath("/wc"), "/a", 2, new DiffContext(-1)),
+            None
+        );
+
+        foreach (var response in new[] { diff, revisionDiff })
+        {
+            var error = await Assert.That(response).IsTypeOf<ErrorResponse>();
+            await Assert.That(error!.Kind).IsEqualTo(DaemonErrorKind.RequestRefused);
+            await Assert.That(error.Message).Contains("-1 lines");
+        }
+    }
+
+    [Test]
+    public async Task A_revision_diff_asked_for_without_a_context_is_svns_marked_as_three_lines()
+    {
+        var handler = Handler(
+            _ => new WorkingCopySession(new FakeWorkingCopyScan("/wc"), new FakeChangeNotifier()),
+            readRevisionDiff: (_, _, _, _, _) => Task.FromResult("svn's")
+        );
+
+        var response = await handler.HandleAsync(
+            new RevisionDiffRequest(Path.GetFullPath("/wc"), "/a", 2, new DiffContext(3)),
+            None
+        );
+
+        await Assert.That(response).IsEqualTo(new DiffResponse("svn's", DiffContext.Default));
+    }
+
+    [Test]
+    public async Task A_revision_diff_asked_for_with_more_context_is_written_with_it()
+    {
+        (string Root, string RepositoryRoot, string Path, long Revision, DiffContext Context)? written =
+            null;
+        var handler = Handler(
+            _ => new WorkingCopySession(new FakeWorkingCopyScan("/wc"), new FakeChangeNotifier()),
+            readRevisionContextDiff: (root, repositoryRoot, path, revision, context, _) =>
+            {
+                written = (root, repositoryRoot, path, revision, context);
+                return Task.FromResult<string?>("ours");
+            }
+        );
+
+        var response = await handler.HandleAsync(
+            new RevisionDiffRequest(Path.GetFullPath("/wc"), "/a", 2, DiffContext.WholeFile),
+            None
+        );
+
+        await Assert.That(response).IsEqualTo(new DiffResponse("ours", DiffContext.WholeFile));
+        await Assert
+            .That(written)
+            .IsEqualTo(("/wc", "https://svn.example/repo", "/a", 2L, DiffContext.WholeFile));
+    }
+
+    [Test]
+    public async Task A_revision_that_cannot_have_more_context_gets_svns_diff_marked_as_three_lines()
+    {
+        var handler = Handler(
+            _ => new WorkingCopySession(new FakeWorkingCopyScan("/wc"), new FakeChangeNotifier()),
+            readRevisionDiff: (_, _, _, _, _) => Task.FromResult("svn's"),
+            readRevisionContextDiff: (_, _, _, _, _, _) => Task.FromResult<string?>(null)
+        );
+
+        var response = await handler.HandleAsync(
+            new RevisionDiffRequest(Path.GetFullPath("/wc"), "/a", 2, new DiffContext(25)),
+            None
+        );
+
+        await Assert.That(response).IsEqualTo(new DiffResponse("svn's", DiffContext.Default));
+    }
+
     private static DaemonRequestHandler Handler(
         Func<string, WorkingCopySession> open,
         IDaemonShutdown? shutdown = null,
@@ -1394,6 +1551,8 @@ public sealed class DaemonRequestHandlerTests
         ReadRevisionLog? readRevisionLog = null,
         ReadWorkingCopyDiff? readWorkingCopyDiff = null,
         ReadRevisionDiff? readRevisionDiff = null,
+        ReadWorkingCopyContextDiff? readWorkingCopyContextDiff = null,
+        ReadRevisionContextDiff? readRevisionContextDiff = null,
         ReadBaseRevisionRange? readBaseRevisionRange = null,
         ScheduleAddition? scheduleAddition = null,
         RevertChanges? revertChanges = null,
@@ -1417,6 +1576,8 @@ public sealed class DaemonRequestHandlerTests
             readRevisionLog ?? NoLog,
             readWorkingCopyDiff ?? NoDiff,
             readRevisionDiff ?? NoRevisionDiff,
+            readWorkingCopyContextDiff ?? NoContextDiff,
+            readRevisionContextDiff ?? NoRevisionContextDiff,
             readBaseRevisionRange ?? NoBaseRevisionRange,
             scheduleAddition ?? NoAdd,
             revertChanges ?? NoRevert,
@@ -1458,6 +1619,25 @@ public sealed class DaemonRequestHandlerTests
         long revision,
         CancellationToken cancellationToken
     ) => throw new InvalidOperationException("This test should not have read a revision's diff.");
+
+    private static Task<string?> NoContextDiff(
+        string root,
+        string path,
+        DiffContext context,
+        CancellationToken cancellationToken
+    ) => throw new InvalidOperationException("This test should not have written a diff itself.");
+
+    private static Task<string?> NoRevisionContextDiff(
+        string root,
+        string repositoryRoot,
+        string repositoryPath,
+        long revision,
+        DiffContext context,
+        CancellationToken cancellationToken
+    ) =>
+        throw new InvalidOperationException(
+            "This test should not have written a revision's diff itself."
+        );
 
     private static Task<BaseRevisionRange?> NoBaseRevisionRange(
         string root,

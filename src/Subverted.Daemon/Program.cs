@@ -55,6 +55,18 @@ builder.Services.AddSingleton<ReadRevisionDiff>(provider =>
     new SvnRevisionDiffCommand(provider.GetRequiredService<SvnCommand>()).ReadAsync
 );
 
+// svn diff prints three lines of context and no more, so a wider diff is written here from the
+// pristine or two `svn cat`s — only where that is provably svn's own diff, and svn's otherwise.
+builder.Services.AddSingleton<ReadWorkingCopyContextDiff>(provider =>
+    new WorkingCopyContextDiff(
+        provider.GetRequiredService<SvnCommand>().Spelling,
+        Environment.NewLine
+    ).ReadAsync
+);
+builder.Services.AddSingleton<ReadRevisionContextDiff>(provider =>
+    new RevisionContextDiff(provider.GetRequiredService<SvnCommand>(), Environment.NewLine).ReadAsync
+);
+
 // Local, but a read of wc.db like status: svnversion is the fallback for a schema this build
 // does not understand, and it ships beside svn.
 builder.Services.AddSingleton<ReadBaseRevisionRange>(

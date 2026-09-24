@@ -1,0 +1,15 @@
+Index: tie-deletion.txt
+===================================================================
+--- tie-deletion.txt	(revision 2)
++++ tie-deletion.txt	(working copy)
+@@ -1,8 +1,8 @@
+ a
++a
+ {
+-a
++}
+ 
+ 
+-
+ }
+ a

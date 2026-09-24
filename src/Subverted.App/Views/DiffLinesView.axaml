@@ -138,12 +138,26 @@
                  IsVisible="{Binding #Root.Layout, Converter={x:Static v:LayoutIs.Split}}" />
       <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="2" HorizontalAlignment="Right"
                   VerticalAlignment="Center" Margin="0,0,8,0">
+        <ComboBox x:Name="ContextChoice" FontSize="11.5" MinHeight="22" Padding="8,1" Margin="0,0,6,0"
+                  VerticalAlignment="Center" AutomationProperties.Name="Lines of context"
+                  ItemsSource="{Binding #Root.ContextOptions}" SelectedItem="{Binding #Root.Context}"
+                  IsVisible="{Binding #Root.ContextOptions, Converter={x:Static ObjectConverters.IsNotNull}}" />
         <Button Classes="layout" Content="Split" Click="OnSplitClicked"
                 Classes.active="{Binding #Root.Layout, Converter={x:Static v:LayoutIs.Split}}" />
         <Button Classes="layout" Content="Unified" Click="OnUnifiedClicked"
                 Classes.active="{Binding #Root.Layout, Converter={x:Static v:LayoutIs.Unified}}" />
       </StackPanel>
     </Grid>
+
+    <!-- Its own line rather than beside the dropdown, where it would run over the column's name. -->
+    <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="6" Margin="72,0,8,4"
+                IsVisible="{Binding #Root.ContextUnavailable}"
+                ToolTip.Tip="SVN's own diff is shown, with its three lines: a binary file, keywords, a property change or an add, copy or delete cannot be shown with more.">
+      <Path Classes="icon" Data="{StaticResource Icon.Alert}" Width="11" Height="11" StrokeThickness="1.5"
+            VerticalAlignment="Center" />
+      <TextBlock Classes="muted" FontSize="11.5" VerticalAlignment="Center"
+                 Text="Context unavailable for this file" />
+    </StackPanel>
 
     <ListBox x:Name="Lines" Classes="diff" SelectionMode="Multiple"
              Classes.split="{Binding #Root.Layout, Converter={x:Static v:LayoutIs.Split}}">

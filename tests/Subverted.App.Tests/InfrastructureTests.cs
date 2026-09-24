@@ -181,7 +181,7 @@ public sealed class InfrastructureTests
         );
 
         var thrown = await Assert
-            .That(async () => await diffs.ReadAsync(folder.Path, CancellationToken.None))
+            .That(async () => await diffs.ReadAsync(folder.Path, null, CancellationToken.None))
             .Throws<DaemonUnreachableException>();
 
         await Assert.That(thrown!.Message).Contains("no-daemon.exe");

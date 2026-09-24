@@ -1,3 +1,5 @@
+using Subverted.Core;
+
 namespace Subverted.Protocol;
 
 /// <summary>
@@ -11,8 +13,10 @@ namespace Subverted.Protocol;
 /// diff's headers relative to it, so a file's header is its bare name.
 /// </param>
 /// <param name="Revision">The revision, at least 1.</param>
+/// <param name="Context">As <see cref="DiffRequest.Context"/>: null is <c>svn diff -c</c>'s own three lines.</param>
 public sealed record RevisionDiffRequest(
     string WorkingCopyPath,
     string RepositoryPath,
-    long Revision
+    long Revision,
+    DiffContext? Context = null
 ) : DaemonRequest;

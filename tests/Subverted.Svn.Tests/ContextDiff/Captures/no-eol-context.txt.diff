@@ -1,0 +1,11 @@
+Index: no-eol-context.txt
+===================================================================
+--- no-eol-context.txt	(revision 2)
++++ no-eol-context.txt	(working copy)
+@@ -1,4 +1,4 @@
+-a
++A
+ B
+ c
+ d
+\ No newline at end of file

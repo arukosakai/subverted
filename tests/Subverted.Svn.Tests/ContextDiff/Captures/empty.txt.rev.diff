@@ -1,0 +1,7 @@
+Index: empty.txt
+===================================================================
+--- empty.txt	(revision 1)
++++ empty.txt	(revision 2)
+@@ -0,0 +1,2 @@
++line 1
++line 2

@@ -1,6 +1,7 @@
 using System.Windows.Input;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Data;
 using Avalonia.Input;
 using Avalonia.Input.Platform;
 using Avalonia.Interactivity;
@@ -55,9 +56,44 @@ public sealed partial class DiffLinesView : UserControl
         string
     >(nameof(NewTitle), "After");
 
+    /// <summary>What the context dropdown offers; the dropdown is hidden while there is nothing.</summary>
+    public static readonly StyledProperty<IReadOnlyList<DiffContextOption>?> ContextOptionsProperty =
+        AvaloniaProperty.Register<DiffLinesView, IReadOnlyList<DiffContextOption>?>(
+            nameof(ContextOptions)
+        );
+
+    /// <summary>The picked amount of context; two-way, since the pane asks the daemon with it.</summary>
+    public static readonly StyledProperty<DiffContextOption?> ContextProperty =
+        AvaloniaProperty.Register<DiffLinesView, DiffContextOption?>(
+            nameof(Context),
+            defaultBindingMode: BindingMode.TwoWay
+        );
+
+    /// <summary>The diff shown is SVN's own three lines although more was picked.</summary>
+    public static readonly StyledProperty<bool> ContextUnavailableProperty =
+        AvaloniaProperty.Register<DiffLinesView, bool>(nameof(ContextUnavailable));
+
     public DiffLinesView()
     {
         InitializeComponent();
+    }
+
+    public IReadOnlyList<DiffContextOption>? ContextOptions
+    {
+        get => GetValue(ContextOptionsProperty);
+        set => SetValue(ContextOptionsProperty, value);
+    }
+
+    public DiffContextOption? Context
+    {
+        get => GetValue(ContextProperty);
+        set => SetValue(ContextProperty, value);
+    }
+
+    public bool ContextUnavailable
+    {
+        get => GetValue(ContextUnavailableProperty);
+        set => SetValue(ContextUnavailableProperty, value);
     }
 
     public DiffDocument? Document

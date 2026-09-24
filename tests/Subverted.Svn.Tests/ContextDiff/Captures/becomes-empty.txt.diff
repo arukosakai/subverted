@@ -1,0 +1,7 @@
+Index: becomes-empty.txt
+===================================================================
+--- becomes-empty.txt	(revision 2)
++++ becomes-empty.txt	(working copy)
+@@ -0,0 +1,2 @@
++line 1
++line 2
