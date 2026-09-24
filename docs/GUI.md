@@ -207,9 +207,13 @@ while it is unchanged. The outcome is a notice above the tree and an output-log 
 own text: a refusal is `NeedsAttention` and shows the warning as it came, which names the holder
 (D22), and never reads as success; an unlock whose lock had gone says so. Whether an answer needs a
 person is `LockAttention` in `Frontend`, which `sv lock`'s exit code now reads too. No comment is
-sent, and stealing or breaking somebody else's lock is not offered (M4). **Seen in headless tests
-only** — the menu's offers, a click that sends, and a refusal's text on screen — not in the real
-app, and nothing on macOS. A file nobody has touched — the one an artist locks *before* starting —
+sent, and stealing or breaking somebody else's lock is not offered (M4). **Seen in the real app** on a
+throwaway `subverted-gui-check`, clicked through UI Automation: Lock on an untouched file drew the
+notice, the log line and the lock icon, and `svn status` read `K`; Lock greys out while it is held
+and Unlock releases it; a lock a second checkout held was refused with SVN's `W160035` naming the
+holder. Not seen: an unlock whose lock had gone, and nothing on macOS. **Open:** a locked unchanged
+line takes an unticked box and counts in the tree's folder counts, while it still reads
+"Unchanged" and the status line does not count it. A file nobody has touched — the one an artist locks *before* starting —
 is reached through **All** (below).
 
 **Changed / All.** All asks the daemon for `IncludeUnmodified`, the field `sv st -v` already sent,
@@ -225,9 +229,9 @@ daemon answers, and a poll answered for the side the toggle has left is dropped 
 each poll says which scan it holds and an unchanged answer costs 3–5 ms (ARCHITECTURE, D35). Under
 the `svn status` fallback All lists every node, folders included since `svn status` reports no kind,
 and Lock is offered on none of them for the same reason. That is the fallback's existing gap, not a
-new one. **Seen in headless tests only** (the toggle's buttons, an untouched line with no tick box
-and Lock enabled, the clean copy's offer, the folder pane without a zero count), not in the real
-app, and nothing on macOS.
+new one. **Seen in the real app** on `subverted-gui-check`: All listed
+the untouched files with no tick box and the untouched folder without a count, Commit still counted
+one file, and Lock was offered. Not seen there: the clean copy's offer, a large listing, macOS.
 
 ### 6. Diff polish — after History, not part of the M2 exit
 
@@ -244,8 +248,8 @@ has its own number gutter; hunk headers span both. Column names read BASE / Work
 and "Before rN" / rN in History, which shares the same `DiffLinesView`. Side by side, the list does
 not scroll sideways — each half is half the viewport and a long line is cut off with an ellipsis;
 Unified still scrolls. Copying from the split list gives the lines in unified order (a run's old
-lines, then its new ones), so the same selection copies the same text in either layout. Seen only
-in headless renders (dark and the Default Light preset), not in the real app, and nothing on macOS.
+lines, then its new ones), so the same selection copies the same text in either layout. Seen in the
+real app on Windows 11 in the dark preset, both layouts; nothing on macOS.
 
 Intraline highlighting marks what changed inside each removed/added pair — the pairs `SplitLines`
 makes, and in the unified layout `UnifiedLines` gives each changed line the same partner. The pure
@@ -260,9 +264,9 @@ box, 2,000 calls each: a typical code line ~14 µs a call, the worst cases withi
 ~60–170 µs; a split row computes it twice (once per side), and only realised rows compute it at all.
 `IntralineTextBlock` paints the spans behind plain `Text` in `Diff.Added.Word` / `Diff.Removed.Word`
 (Tokens.axaml, per light/dark, so every preset has them), so copying and trimming are unchanged. A
-long split line's marks past the ellipsis are simply not visible. Headless renders only (dark and
-Default Light, both layouts; a test reads the frame's pixels to confirm the span is painted), not
-the real app, nothing on macOS. The 50k-line headless jump-to-end took ~175–185 ms in Debug with
+long split line's marks past the ellipsis are simply not visible. Seen in the real app on Windows 11
+(dark, both layouts: `Velocity`→`Speed` and `100`→`120` marked word by word); headless renders cover
+Default Light, and a test reads the frame's pixels to confirm the span is painted. Nothing on macOS. The 50k-line headless jump-to-end took ~175–185 ms in Debug with
 highlighting on; no before/after comparison was taken.
 
 ## Not in M2
