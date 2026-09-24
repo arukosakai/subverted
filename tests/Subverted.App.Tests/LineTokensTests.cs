@@ -28,7 +28,11 @@ public sealed class LineTokensTests
         await Assert
             .That(LineTokens.Of("a-b"))
             .IsEquivalentTo(
-                [new LineToken(0, 1, false), new LineToken(1, 1, false), new LineToken(2, 1, false)],
+                [
+                    new LineToken(0, 1, false),
+                    new LineToken(1, 1, false),
+                    new LineToken(2, 1, false),
+                ],
                 CollectionOrdering.Matching
             );
     }
@@ -86,7 +90,11 @@ public sealed class LineTokensTests
         await Assert
             .That(LineTokens.Of("e\u0301.x"))
             .IsEquivalentTo(
-                [new LineToken(0, 2, false), new LineToken(2, 1, false), new LineToken(3, 1, false)],
+                [
+                    new LineToken(0, 2, false),
+                    new LineToken(2, 1, false),
+                    new LineToken(3, 1, false),
+                ],
                 CollectionOrdering.Matching
             );
     }
@@ -97,7 +105,11 @@ public sealed class LineTokensTests
         await Assert
             .That(LineTokens.Of("a\uD83Db"))
             .IsEquivalentTo(
-                [new LineToken(0, 1, false), new LineToken(1, 1, false), new LineToken(2, 1, false)],
+                [
+                    new LineToken(0, 1, false),
+                    new LineToken(1, 1, false),
+                    new LineToken(2, 1, false),
+                ],
                 CollectionOrdering.Matching
             );
     }

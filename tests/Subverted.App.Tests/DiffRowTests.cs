@@ -50,9 +50,15 @@ public sealed class DiffRowTests
     public static IEnumerable<Func<(DiffTextRow, ChangedSpan[])>> TextRowChanges() =>
         [
             () =>
-                (new DiffTextRow(Diffs.Removed(1, "count = 1"), Diffs.Added(1, "count = 22")), [new(8, 1)]),
+                (
+                    new DiffTextRow(Diffs.Removed(1, "count = 1"), Diffs.Added(1, "count = 22")),
+                    [new(8, 1)]
+                ),
             () =>
-                (new DiffTextRow(Diffs.Added(1, "count = 22"), Diffs.Removed(1, "count = 1")), [new(8, 2)]),
+                (
+                    new DiffTextRow(Diffs.Added(1, "count = 22"), Diffs.Removed(1, "count = 1")),
+                    [new(8, 2)]
+                ),
             () => (new DiffTextRow(Diffs.Removed(1, "count = 1")), []),
             () => (new DiffTextRow(Diffs.Added(1, "count = 22")), []),
             () => (new DiffTextRow(Diffs.Context(1, 1, "count = 1")), []),
@@ -69,7 +75,9 @@ public sealed class DiffRowTests
         await Assert.That(row.Changes).IsEquivalentTo(changes, CollectionOrdering.Matching);
     }
 
-    public static IEnumerable<Func<(DiffSplitRow, ChangedSpan[], ChangedSpan[])>> SplitRowChanges() =>
+    public static IEnumerable<
+        Func<(DiffSplitRow, ChangedSpan[], ChangedSpan[])>
+    > SplitRowChanges() =>
         [
             () =>
                 (
@@ -81,7 +89,10 @@ public sealed class DiffRowTests
             () => (new DiffSplitRow(null, Diffs.Added(1, "count = 22")), [], []),
             () =>
                 (
-                    new DiffSplitRow(Diffs.Context(1, 1, "count = 1"), Diffs.Context(1, 1, "count = 1")),
+                    new DiffSplitRow(
+                        Diffs.Context(1, 1, "count = 1"),
+                        Diffs.Context(1, 1, "count = 1")
+                    ),
                     [],
                     []
                 ),

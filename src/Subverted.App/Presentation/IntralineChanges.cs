@@ -108,7 +108,10 @@ public sealed class IntralineChanges
             {
                 common[row * width + column] = Side.Same(old, from + row, @new, from + column)
                     ? common[(row + 1) * width + column + 1] + 1
-                    : Math.Max(common[(row + 1) * width + column], common[row * width + column + 1]);
+                    : Math.Max(
+                        common[(row + 1) * width + column],
+                        common[row * width + column + 1]
+                    );
             }
         }
 
@@ -122,8 +125,7 @@ public sealed class IntralineChanges
                 newIndex++;
             }
             else if (
-                common[(oldIndex + 1) * width + newIndex]
-                >= common[oldIndex * width + newIndex + 1]
+                common[(oldIndex + 1) * width + newIndex] >= common[oldIndex * width + newIndex + 1]
             )
             {
                 old.Changed[from + oldIndex] = true;
@@ -146,12 +148,18 @@ public sealed class IntralineChanges
         private readonly string _text;
         private readonly int[] _textIds;
 
-        public Side(string text, Dictionary<string, int>.AlternateLookup<ReadOnlySpan<char>> vocabulary)
+        public Side(
+            string text,
+            Dictionary<string, int>.AlternateLookup<ReadOnlySpan<char>> vocabulary
+        )
         {
             _text = text;
             Tokens = LineTokens.Of(text);
             Changed = new bool[Tokens.Count];
-            _textIds = [.. Tokens.Select(token => IdOf(text.AsSpan(token.Start, token.Length), vocabulary))];
+            _textIds =
+            [
+                .. Tokens.Select(token => IdOf(text.AsSpan(token.Start, token.Length), vocabulary)),
+            ];
         }
 
         public IReadOnlyList<LineToken> Tokens { get; }

@@ -45,9 +45,7 @@ public sealed class IntralineChangesTests
     [Test]
     public async Task Sharing_one_word_is_enough_to_mark_the_rest()
     {
-        await Assert
-            .That(Marked("foo bar", "foo qux"))
-            .IsEqualTo(("foo ⟦bar⟧", "foo ⟦qux⟧"));
+        await Assert.That(Marked("foo bar", "foo qux")).IsEqualTo(("foo ⟦bar⟧", "foo ⟦qux⟧"));
     }
 
     [Test]
@@ -111,9 +109,7 @@ public sealed class IntralineChangesTests
     [Test]
     public async Task Changes_separated_only_by_whitespace_read_as_one()
     {
-        await Assert
-            .That(Marked("let a b;", "let c d;"))
-            .IsEqualTo(("let ⟦a b⟧;", "let ⟦c d⟧;"));
+        await Assert.That(Marked("let a b;", "let c d;")).IsEqualTo(("let ⟦a b⟧;", "let ⟦c d⟧;"));
     }
 
     [Test]

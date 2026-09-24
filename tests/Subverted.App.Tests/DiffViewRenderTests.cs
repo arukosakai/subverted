@@ -322,7 +322,9 @@ public sealed class DiffViewRenderTests
                     .Select(block =>
                     {
                         var span = block.Changes.Single();
-                        var bounds = block.TextLayout.HitTestTextRange(span.Start, span.Length).Single();
+                        var bounds = block
+                            .TextLayout.HitTestTextRange(span.Start, span.Length)
+                            .Single();
                         var origin = block.TranslatePoint(bounds.TopLeft, window)!.Value;
                         var y = origin.Y + bounds.Height - 2;
                         return (

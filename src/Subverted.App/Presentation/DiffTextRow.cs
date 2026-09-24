@@ -21,10 +21,12 @@ public sealed record DiffTextRow(DiffLine Line, DiffLine? Counterpart = null) : 
     public IReadOnlyList<ChangedSpan> Changes =>
         (Line, Counterpart) switch
         {
-            ({ Kind: DiffLineKind.Removed }, { } added) =>
-                IntralineChanges.Between(Line.Text, added.Text).Old,
-            ({ Kind: DiffLineKind.Added }, { } removed) =>
-                IntralineChanges.Between(removed.Text, Line.Text).New,
+            ({ Kind: DiffLineKind.Removed }, { } added) => IntralineChanges
+                .Between(Line.Text, added.Text)
+                .Old,
+            ({ Kind: DiffLineKind.Added }, { } removed) => IntralineChanges
+                .Between(removed.Text, Line.Text)
+                .New,
             _ => [],
         };
 }
