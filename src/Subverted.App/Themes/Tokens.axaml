@@ -81,7 +81,7 @@
   <StreamGeometry x:Key="Icon.Diff">M12 3v14 M5 10h14 M5 21h14</StreamGeometry>
   <StreamGeometry x:Key="Icon.File">M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z M14 2v4a2 2 0 0 0 2 2h4</StreamGeometry>
   <StreamGeometry x:Key="Icon.Open">M15 3h6v6 M10 14L21 3 M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6</StreamGeometry>
-  <StreamGeometry x:Key="Icon.Branch">M6 3v12 M18 6a3 3 0 1 0 0 6a3 3 0 1 0 0-6Z M6 15a3 3 0 1 0 0 6a3 3 0 1 0 0-6Z M18 12a9 9 0 0 1-9 9</StreamGeometry>
+  <StreamGeometry x:Key="Icon.Branch">M6 3v12 M18 9a3 3 0 1 0 0-6a3 3 0 0 0 0 6z M6 21a3 3 0 1 0 0-6a3 3 0 0 0 0 6z M18 9a9 9 0 0 1-9 9</StreamGeometry>
   <StreamGeometry x:Key="Icon.Changes">M3 17l2 2l4-4 M3 7l2 2l4-4 M13 6h8 M13 12h8 M13 18h8</StreamGeometry>
   <StreamGeometry x:Key="Icon.Palette">M12 22a1 1 0 0 1 0-20a10 9 0 0 1 10 9a5 5 0 0 1-5 5h-2.25a1.75 1.75 0 0 0-1.4 2.8l0.3 0.4a1.75 1.75 0 0 1-1.4 2.8Z M7.5 10.5h0.01 M10.5 6.5h0.01 M15.5 7.5h0.01</StreamGeometry>
   <StreamGeometry x:Key="Icon.ChevronDown">M6 9l6 6l6-6</StreamGeometry>

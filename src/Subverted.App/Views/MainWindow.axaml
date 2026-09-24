@@ -24,7 +24,15 @@
         <SolidColorBrush Color="{DynamicResource RailColor}" Opacity="0.7" />
       </Border.Background>
       <Grid RowDefinitions="44,*,Auto">
-        <Border Grid.Row="0" Background="Transparent" WindowDecorationProperties.ElementRole="TitleBar" />
+        <!-- The title line runs on through the rail's corner, and the mark lets drags through to it. -->
+        <Border Grid.Row="0" Classes="line-bottom" Background="Transparent"
+                WindowDecorationProperties.ElementRole="TitleBar">
+          <Border x:Name="AppMark" Width="28" Height="28" CornerRadius="{StaticResource CardRadius}"
+                  Background="{DynamicResource SurfaceBrush}" IsHitTestVisible="False">
+            <Path Classes="icon" Data="{StaticResource Icon.Branch}" Width="16" Height="16"
+                  StrokeThickness="2" Stroke="{DynamicResource TextBrush}" />
+          </Border>
+        </Border>
 
         <StackPanel Grid.Row="1" Spacing="6" HorizontalAlignment="Center" Margin="0,6,0,0">
           <Button x:Name="ChangesView" Classes="nav" Classes.active="{Binding IsShowingChanges}"
