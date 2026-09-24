@@ -10,9 +10,7 @@ public sealed class DiffLayout
 {
     public static readonly DiffLayout Split = new(SplitLines.Of);
 
-    public static readonly DiffLayout Unified = new(lines =>
-        lines.Select(line => new DiffTextRow(line)).ToList()
-    );
+    public static readonly DiffLayout Unified = new(UnifiedLines.Of);
 
     private readonly Func<IReadOnlyList<DiffLine>, IEnumerable<DiffRow>> _rowsOfLines;
 
