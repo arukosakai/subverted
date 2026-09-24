@@ -12,7 +12,10 @@ public sealed class RemovalReportTests
     [Test]
     public async Task Svns_own_notification_is_passed_through()
     {
-        var lines = RemovalReport.Lines(new DeleteResponse("D         art/hero.png\n"), NothingSilent);
+        var lines = RemovalReport.Lines(
+            new DeleteResponse("D         art/hero.png\n"),
+            NothingSilent
+        );
 
         await Assert.That(lines).IsEquivalentTo(["D         art/hero.png"]);
     }
@@ -25,9 +28,18 @@ public sealed class RemovalReportTests
     public async Task Files_svn_removed_silently_are_counted_out_loud()
     {
         var confirmed = Confirmed(
-            Entry("art") with { Kind = NodeKind.Directory },
-            Entry("art/one.txt") with { Status = NodeStatus.Unversioned },
-            Entry("art/two.txt.bak") with { Status = NodeStatus.Ignored }
+            Entry("art") with
+            {
+                Kind = NodeKind.Directory,
+            },
+            Entry("art/one.txt") with
+            {
+                Status = NodeStatus.Unversioned,
+            },
+            Entry("art/two.txt.bak") with
+            {
+                Status = NodeStatus.Ignored,
+            }
         );
 
         var lines = RemovalReport.Lines(new DeleteResponse(string.Empty), confirmed);
@@ -61,8 +73,15 @@ public sealed class RemovalReportTests
     public async Task An_external_svn_removed_silently_is_said_out_loud()
     {
         var confirmed = Confirmed(
-            Entry("vendor") with { Kind = NodeKind.Directory },
-            Entry("vendor/lib") with { Kind = NodeKind.Directory, Status = NodeStatus.External }
+            Entry("vendor") with
+            {
+                Kind = NodeKind.Directory,
+            },
+            Entry("vendor/lib") with
+            {
+                Kind = NodeKind.Directory,
+                Status = NodeStatus.External,
+            }
         );
 
         var lines = RemovalReport.Lines(new DeleteResponse("D         vendor\n"), confirmed);

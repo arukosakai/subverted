@@ -61,7 +61,9 @@ public sealed record RemovalPreview(
 
         var reached = AffectedNodes
             .Under(status, paths, comparison, _ => true)
-            .Select(entry => DeletionLoss.For(entry) is { } loss ? new RemovedNode(entry, loss) : null)
+            .Select(entry =>
+                DeletionLoss.For(entry) is { } loss ? new RemovedNode(entry, loss) : null
+            )
             .OfType<RemovedNode>()
             .ToList();
 
@@ -82,7 +84,9 @@ public sealed record RemovalPreview(
     {
         get
         {
-            var lines = new List<string>(Recoverable.Select(node => StatusLine.Compact(node.Entry)));
+            var lines = new List<string>(
+                Recoverable.Select(node => StatusLine.Compact(node.Entry))
+            );
             if (Unrecoverable.Count == 0)
             {
                 return lines;

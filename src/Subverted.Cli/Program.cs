@@ -543,8 +543,9 @@ async Task<(int? Instead, RemovalPreview? Confirmed)> ConfirmRemovalAsync(
         Console.Error,
         lines => Emit(lines, output)
     );
-    return conversation.Confirm(preview, command.AlreadyConfirmed, Console.IsInputRedirected)
-        is { } instead
+    return
+        conversation.Confirm(preview, command.AlreadyConfirmed, Console.IsInputRedirected)
+            is { } instead
         ? (instead, null)
         : (null, preview);
 }

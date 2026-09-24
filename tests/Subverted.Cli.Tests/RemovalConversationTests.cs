@@ -30,7 +30,11 @@ public sealed class RemovalConversationTests
         var talk = new Talk();
         var preview = Preview(Entry("art/hero.png") with { Status = NodeStatus.Obstructed });
 
-        var instead = talk.Conversation.Confirm(preview, alreadyConfirmed: true, inputRedirected: false);
+        var instead = talk.Conversation.Confirm(
+            preview,
+            alreadyConfirmed: true,
+            inputRedirected: false
+        );
 
         await Assert.That(instead).IsEqualTo(ExitCode.UserError);
         await Assert
@@ -50,7 +54,11 @@ public sealed class RemovalConversationTests
         var talk = new Talk();
         var preview = OneClean with { Refusals = ["art/x is in conflict."] };
 
-        var instead = talk.Conversation.Confirm(preview, alreadyConfirmed: false, inputRedirected: false);
+        var instead = talk.Conversation.Confirm(
+            preview,
+            alreadyConfirmed: false,
+            inputRedirected: false
+        );
 
         await Assert.That(instead).IsEqualTo(ExitCode.UserError);
         await Assert.That(talk.Shown).IsEmpty();
@@ -73,7 +81,11 @@ public sealed class RemovalConversationTests
     {
         var talk = new Talk();
 
-        var instead = talk.Conversation.Confirm(OneClean, alreadyConfirmed: true, inputRedirected: false);
+        var instead = talk.Conversation.Confirm(
+            OneClean,
+            alreadyConfirmed: true,
+            inputRedirected: false
+        );
 
         await Assert.That(instead).IsNull();
         await Assert.That(talk.Shown).IsEmpty();
@@ -86,7 +98,11 @@ public sealed class RemovalConversationTests
     {
         var talk = new Talk();
 
-        var instead = talk.Conversation.Confirm(OneClean, alreadyConfirmed: false, inputRedirected: true);
+        var instead = talk.Conversation.Confirm(
+            OneClean,
+            alreadyConfirmed: false,
+            inputRedirected: true
+        );
 
         await Assert.That(instead).IsEqualTo(ExitCode.UserError);
         await Assert.That(talk.Shown).IsEquivalentTo(OneClean.Lines);
@@ -104,7 +120,11 @@ public sealed class RemovalConversationTests
     {
         var talk = new Talk("y");
 
-        var instead = talk.Conversation.Confirm(OneClean, alreadyConfirmed: false, inputRedirected: false);
+        var instead = talk.Conversation.Confirm(
+            OneClean,
+            alreadyConfirmed: false,
+            inputRedirected: false
+        );
 
         await Assert.That(instead).IsNull();
         await Assert.That(talk.Shown).IsEquivalentTo(OneClean.Lines);
@@ -119,7 +139,11 @@ public sealed class RemovalConversationTests
     {
         var talk = new Talk(answer);
 
-        var instead = talk.Conversation.Confirm(OneClean, alreadyConfirmed: false, inputRedirected: false);
+        var instead = talk.Conversation.Confirm(
+            OneClean,
+            alreadyConfirmed: false,
+            inputRedirected: false
+        );
 
         await Assert.That(instead).IsEqualTo(ExitCode.Success);
         await Assert

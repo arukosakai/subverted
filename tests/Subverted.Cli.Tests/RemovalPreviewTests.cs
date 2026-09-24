@@ -21,7 +21,9 @@ public sealed class RemovalPreviewTests
     {
         var preview = Of(Clean("art/hero.png"));
 
-        await Assert.That(preview.Recoverable.Select(node => node.Entry.RelPath)).IsEquivalentTo(["art/hero.png"]);
+        await Assert
+            .That(preview.Recoverable.Select(node => node.Entry.RelPath))
+            .IsEquivalentTo(["art/hero.png"]);
         await Assert.That(preview.Unrecoverable).IsEmpty();
         await Assert.That(preview.Count).IsEqualTo(1);
     }
@@ -64,10 +66,20 @@ public sealed class RemovalPreviewTests
     [Test]
     public async Task An_external_inside_a_removed_folder_is_unrecoverable()
     {
-        var preview = Of(Folder("vendor"), Folder("vendor/lib") with { Status = NodeStatus.External });
+        var preview = Of(
+            Folder("vendor"),
+            Folder("vendor/lib") with
+            {
+                Status = NodeStatus.External,
+            }
+        );
 
-        await Assert.That(preview.Recoverable.Select(node => node.Entry.RelPath)).IsEquivalentTo(["vendor"]);
-        await Assert.That(preview.Unrecoverable.Select(node => node.Entry.RelPath)).IsEquivalentTo(["vendor/lib"]);
+        await Assert
+            .That(preview.Recoverable.Select(node => node.Entry.RelPath))
+            .IsEquivalentTo(["vendor"]);
+        await Assert
+            .That(preview.Unrecoverable.Select(node => node.Entry.RelPath))
+            .IsEquivalentTo(["vendor/lib"]);
         await Assert.That(preview.Unrecoverable[0].Loss.What).StartsWith("An external checkout:");
     }
 
@@ -128,7 +140,13 @@ public sealed class RemovalPreviewTests
     [Test]
     public async Task A_folder_holding_a_half_updated_node_is_refused()
     {
-        var preview = Of(Folder("art"), Clean("art/hero.png") with { Status = NodeStatus.Incomplete });
+        var preview = Of(
+            Folder("art"),
+            Clean("art/hero.png") with
+            {
+                Status = NodeStatus.Incomplete,
+            }
+        );
 
         await Assert
             .That(preview.Refusals)
@@ -142,16 +160,24 @@ public sealed class RemovalPreviewTests
     {
         var preview = RemovalPreview.Of(
             Status(
-                Clean("art/hero.png") with { Status = NodeStatus.Obstructed },
+                Clean("art/hero.png") with
+                {
+                    Status = NodeStatus.Obstructed,
+                },
                 Clean("art/ok.png"),
-                Clean("art/scratch.txt") with { Status = NodeStatus.Unversioned }
+                Clean("art/scratch.txt") with
+                {
+                    Status = NodeStatus.Unversioned,
+                }
             ),
             [At("art/hero.png"), At("art/ok.png"), At("art/scratch.txt")],
             Sensitive
         );
 
         await Assert.That(preview.Refusals.Count).IsEqualTo(2);
-        await Assert.That(preview.Refusals[0]).StartsWith("Something else is in art/hero.png's place");
+        await Assert
+            .That(preview.Refusals[0])
+            .StartsWith("Something else is in art/hero.png's place");
         await Assert.That(preview.Refusals[1]).StartsWith("art/scratch.txt is not in SVN");
     }
 
@@ -208,7 +234,9 @@ public sealed class RemovalPreviewTests
     {
         var preview = Of(Folder("art"), Clean("art/scratch.txt") with { Status = status });
 
-        await Assert.That(preview.Unrecoverable.Select(node => node.Entry.RelPath)).IsEquivalentTo(["art/scratch.txt"]);
+        await Assert
+            .That(preview.Unrecoverable.Select(node => node.Entry.RelPath))
+            .IsEquivalentTo(["art/scratch.txt"]);
     }
 
     /// <summary>A node already marked deleted is something the delete does nothing more to.</summary>
@@ -230,7 +258,9 @@ public sealed class RemovalPreviewTests
             Sensitive
         );
 
-        await Assert.That(preview.Recoverable.Select(node => node.Entry.RelPath)).IsEquivalentTo(["art/hero.png"]);
+        await Assert
+            .That(preview.Recoverable.Select(node => node.Entry.RelPath))
+            .IsEquivalentTo(["art/hero.png"]);
     }
 
     [Test]
@@ -266,8 +296,14 @@ public sealed class RemovalPreviewTests
     {
         var lines = Of(
             Folder("art"),
-            Clean("art/new.png") with { Status = NodeStatus.Added },
-            Clean("art/one.txt") with { Status = NodeStatus.Unversioned }
+            Clean("art/new.png") with
+            {
+                Status = NodeStatus.Added,
+            },
+            Clean("art/one.txt") with
+            {
+                Status = NodeStatus.Unversioned,
+            }
         ).Lines;
 
         await Assert
@@ -308,7 +344,9 @@ public sealed class RemovalPreviewTests
         RemovalPreview.Of(Status(entries), [At(entries[0].RelPath)], Sensitive);
 
     private static string At(string relPath) =>
-        relPath.Length == 0 ? Root : Path.Combine(Root, relPath.Replace('/', Path.DirectorySeparatorChar));
+        relPath.Length == 0
+            ? Root
+            : Path.Combine(Root, relPath.Replace('/', Path.DirectorySeparatorChar));
 
     private static StatusResponse Status(params WorkingCopyEntry[] entries) =>
         new(
@@ -335,5 +373,8 @@ public sealed class RemovalPreviewTests
         );
 
     private static WorkingCopyEntry Folder(string relPath) =>
-        Clean(relPath) with { Kind = NodeKind.Directory };
+        Clean(relPath) with
+        {
+            Kind = NodeKind.Directory,
+        };
 }
