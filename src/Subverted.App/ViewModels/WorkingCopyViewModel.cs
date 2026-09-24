@@ -13,6 +13,7 @@ namespace Subverted.App.ViewModels;
 /// <param name="clipboard">Takes a line's path, for the context menu.</param>
 /// <param name="commits">Sends the ticked lines, for the commit box.</param>
 /// <param name="reverts">Reverts a confirmed line, for the context menu.</param>
+/// <param name="updates">Brings the opened folder up to date, for the Update button.</param>
 public sealed partial class WorkingCopyViewModel(
     string path,
     IWorkingCopyStatus status,
@@ -21,13 +22,15 @@ public sealed partial class WorkingCopyViewModel(
     IFileRevealer revealer,
     ITextClipboard clipboard,
     IWorkingCopyCommit commits,
-    IWorkingCopyRevert reverts
+    IWorkingCopyRevert reverts,
+    IWorkingCopyUpdate updates
 ) : ObservableObject
 {
     private readonly TickedPaths _ticks = new();
     private IReadOnlySet<string> _shown = new HashSet<string>();
     private CommitComposerViewModel? _composer;
     private RevertPromptViewModel? _revertPrompt;
+    private UpdateViewModel? _updater;
 
     /// <summary>
     /// The record the diff was last asked for. A resync updates a changed line's row in place, and
@@ -111,6 +114,9 @@ public sealed partial class WorkingCopyViewModel(
     public CommitComposerViewModel Composer => _composer ??= new(commits, Untick);
 
     public RevertPromptViewModel RevertPrompt => _revertPrompt ??= new(reverts);
+
+    /// <summary>Updates <see cref="Path"/>, the folder the listing is scoped to, not the whole root.</summary>
+    public UpdateViewModel Updater => _updater ??= new(updates, Path, FolderName.Of(Path));
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(Headline))]

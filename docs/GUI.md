@@ -150,6 +150,18 @@ notice or the revert overlay (headless tests and renders only), and nothing on m
   status poll, and far less often, because every tick is a server round trip. A new request, since
   no warm index can answer what is on the server.
 
+*Status: Update built; resolve, locks and the incoming count not.* An Update button in the title bar
+sends `UpdateRequest` for the opened folder, not the root, the same scope the listing has. It asks
+nothing first, since an update takes no local change away. The result shows as a notice above the
+table and a line in the output log, with SVN's own text. Conflicts or skipped paths make it
+`NeedsAttention`, drawn in the conflict tone, and the notice never reads as a clean update. One
+update runs at a time. The notice's detail scrolls after 120px, so a large update cannot push the
+list off screen. Seen in the real app on a throwaway `subverted-update` fixture, clicked through
+UI Automation: r2 came down, the conflicted file lit up and was pinned at the top, and the log kept
+SVN's text. Not seen: an update refused by SVN, or one under the `svn status` fallback. Known gap: a
+file that goes into conflict keeps the tick it already had, so Commit offers it and SVN refuses it.
+Resolve should settle that.
+
 ### 6. Diff polish — after History, not part of the M2 exit
 
 - Split view, intraline highlighting on paired `-`/`+` lines as a pure function, and the context

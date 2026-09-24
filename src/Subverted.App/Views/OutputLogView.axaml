@@ -18,7 +18,7 @@
 
     <Panel>
       <TextBlock Classes="faint" FontSize="12" Margin="12,10" IsVisible="{Binding IsEmpty}"
-                 Text="Commits and reverts show here, with what SVN said." />
+                 Text="Commits, reverts and updates show here, with what SVN said." />
 
       <ScrollViewer x:Name="Scroller">
         <ItemsControl x:Name="Lines" ItemsSource="{Binding Lines}" Margin="12,8">
