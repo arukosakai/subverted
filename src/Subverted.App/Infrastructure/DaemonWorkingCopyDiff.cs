@@ -1,5 +1,6 @@
 using System.Net.Sockets;
 using Subverted.App.ViewModels;
+using Subverted.Core;
 using Subverted.Frontend;
 using Subverted.Protocol;
 
@@ -8,11 +9,15 @@ namespace Subverted.App.Infrastructure;
 /// <summary>Asks the daemon for a path's local changes, starting it from beside the app if needed.</summary>
 public sealed class DaemonWorkingCopyDiff(DaemonChannel channel) : IWorkingCopyDiff
 {
-    public async Task<DaemonResponse> ReadAsync(string path, CancellationToken cancellationToken)
+    public async Task<DaemonResponse> ReadAsync(
+        string path,
+        DiffContext? context,
+        CancellationToken cancellationToken
+    )
     {
         try
         {
-            return await channel.SendAsync(new DiffRequest(path), cancellationToken);
+            return await channel.SendAsync(new DiffRequest(path, context), cancellationToken);
         }
         catch (Exception exception)
             when (exception

@@ -1,4 +1,5 @@
 using Subverted.App.ViewModels;
+using Subverted.Core;
 using Subverted.Protocol;
 
 namespace Subverted.App.Tests;
@@ -12,6 +13,9 @@ internal sealed class FakeRevisionDiff : IRevisionDiff
     [];
 
     public List<CancellationToken> Tokens { get; } = [];
+
+    /// <summary>The context each question asked for, beside <see cref="Questions"/>.</summary>
+    public List<DiffContext?> Contexts { get; } = [];
 
     public FakeRevisionDiff Answers(DaemonResponse response, Task? heldUntil = null)
     {
@@ -48,10 +52,12 @@ internal sealed class FakeRevisionDiff : IRevisionDiff
         string workingCopyPath,
         string repositoryPath,
         long revision,
+        DiffContext? context,
         CancellationToken cancellationToken
     )
     {
         Questions.Add((workingCopyPath, repositoryPath, revision));
+        Contexts.Add(context);
         Tokens.Add(cancellationToken);
         var answer = _answers.TryDequeue(out var next)
             ? next

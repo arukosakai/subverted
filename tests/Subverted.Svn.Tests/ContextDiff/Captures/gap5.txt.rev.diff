@@ -1,0 +1,13 @@
+Index: gap5.txt
+===================================================================
+--- gap5.txt	(revision 1)
++++ gap5.txt	(revision 2)
+@@ -7,7 +7,7 @@
+ line 7
+ line 8
+ line 9
+-line 10
++line ten
+ line 11
+ line 12
+ line 13

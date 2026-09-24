@@ -1,0 +1,9 @@
+Index: lone-cr.txt
+===================================================================
+--- lone-cr.txt	(revision 1)
++++ lone-cr.txt	(revision 2)
+@@ -1,4 +1,4 @@
+ a-b
++B
+ c
+ d

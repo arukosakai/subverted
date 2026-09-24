@@ -54,6 +54,20 @@ public sealed partial class DiffPaneViewModel(
     [ObservableProperty]
     public partial long? SizeInBytes { get; private set; }
 
+    /// <summary>What the context dropdown offers.</summary>
+    public IReadOnlyList<DiffContextOption> ContextOptions => DiffContextOption.All;
+
+    /// <summary>
+    /// How much context to ask for. Kept across selections and resyncs; changing it asks the
+    /// daemon again for the row on screen, since a diff is never rebuilt from memory.
+    /// </summary>
+    [ObservableProperty]
+    public partial DiffContextOption Context { get; set; } = DiffContextOption.Default;
+
+    /// <summary>More context was asked for and the diff shown is SVN's own three lines instead.</summary>
+    [ObservableProperty]
+    public partial bool ContextUnavailable { get; private set; }
+
     /// <summary>
     /// The person picked a row: it shows as loading at once and is asked about once the selection
     /// has held for <see cref="SelectionDebounce"/>.
@@ -110,6 +124,7 @@ public sealed partial class DiffPaneViewModel(
         Document = null;
         SizeInBytes = null;
         Message = null;
+        ContextUnavailable = false;
         State = DiffPaneState.NothingSelected;
     }
 
@@ -118,6 +133,14 @@ public sealed partial class DiffPaneViewModel(
         _path is { } path ? launcher.OpenAsync(path) : Task.CompletedTask;
 
     private bool CanOpenInApp() => Row is not null;
+
+    partial void OnContextChanged(DiffContextOption value)
+    {
+        if (Row is { } row && _path is { } path)
+        {
+            _ = RefetchAsync(row, path);
+        }
+    }
 
     /// <summary>
     /// <c>svn diff</c> refuses an unversioned path outright (E150000), so it is not asked; nor
@@ -150,7 +173,7 @@ public sealed partial class DiffPaneViewModel(
         DaemonResponse response;
         try
         {
-            response = await diffs.ReadAsync(path, asking);
+            response = await diffs.ReadAsync(path, Context.Asked, asking);
         }
         catch (OperationCanceledException) when (asking.IsCancellationRequested)
         {
@@ -207,6 +230,7 @@ public sealed partial class DiffPaneViewModel(
         SizeInBytes = document.Files.Any(file => file.Content is BinaryChange)
             ? sizes.ReadSize(path)
             : null;
+        ContextUnavailable = Context.WasNotHonouredBy(diff.Context);
         Message = null;
         State = DiffPaneState.Ready;
     }
@@ -214,6 +238,7 @@ public sealed partial class DiffPaneViewModel(
     private void ShowNothing(ChangeRow row)
     {
         Document = null;
+        ContextUnavailable = false;
         SizeInBytes = null;
         Message = EmptyDiffMessage.For(row);
         State = DiffPaneState.NothingToShow;

@@ -1,0 +1,9 @@
+Index: ambiguous.txt
+===================================================================
+--- ambiguous.txt	(revision 1)
++++ ambiguous.txt	(revision 2)
+@@ -4,3 +4,4 @@
+ a
+ b
+ c
++x

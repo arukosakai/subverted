@@ -230,6 +230,63 @@ public sealed class WcDbReader : IDisposable
     }
 
     /// <summary>
+    /// The node at <paramref name="relPath"/> as its diff against BASE needs it: its highest layer,
+    /// both property sets, and the pristine its checksum names.
+    /// </summary>
+    /// <returns><see langword="null"/> when wc.db has no node there.</returns>
+    internal PristineBaseRow? ReadPristineBase(string relPath)
+    {
+        const string sql = """
+            SELECT
+                n.op_depth,
+                n.presence,
+                n.kind,
+                n.revision,
+                n.checksum,
+                n.properties,
+                a.properties,
+                a.conflict_data IS NOT NULL,
+                p.size,
+                p.compression IS NULL
+            FROM nodes n
+            LEFT JOIN actual_node a
+                ON a.wc_id = n.wc_id AND a.local_relpath = n.local_relpath
+            LEFT JOIN pristine p
+                ON p.checksum = n.checksum
+            WHERE n.wc_id = $wcId
+              AND n.local_relpath = $relPath
+              AND n.op_depth = (
+                    SELECT MAX(n2.op_depth) FROM nodes n2
+                    WHERE n2.wc_id = n.wc_id AND n2.local_relpath = n.local_relpath
+              );
+            """;
+
+        using var command = _connection.CreateCommand();
+        command.CommandText = sql;
+        command.Parameters.AddWithValue("$wcId", _wcId);
+        command.Parameters.AddWithValue("$relPath", relPath);
+
+        using var reader = command.ExecuteReader();
+        if (!reader.Read())
+        {
+            return null;
+        }
+
+        return new PristineBaseRow(
+            OpDepth: reader.GetInt32(0),
+            Presence: reader.IsDBNull(1) ? "normal" : reader.GetString(1),
+            Kind: ParseKind(reader.IsDBNull(2) ? null : reader.GetString(2)),
+            Revision: reader.IsDBNull(3) ? null : reader.GetInt64(3),
+            Checksum: reader.IsDBNull(4) ? null : reader.GetString(4),
+            PristineProperties: reader.IsDBNull(5) ? null : reader.GetFieldValue<byte[]>(5),
+            WorkingProperties: reader.IsDBNull(6) ? null : reader.GetFieldValue<byte[]>(6),
+            HasConflict: reader.GetBoolean(7),
+            PristineSize: reader.IsDBNull(8) ? null : reader.GetInt64(8),
+            PristineIsPlain: reader.GetBoolean(9)
+        );
+    }
+
+    /// <summary>
     /// Every versioned directory's ignore globs, keyed by relative path with the root as the empty
     /// string. Directories declaring nothing are included, because the inheritance chain that
     /// <see cref="WorkingCopyIgnoreRules"/> builds needs an unbroken path back to the root.

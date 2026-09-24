@@ -40,4 +40,27 @@ public static class SvnDiffSummary
                 ),
         ];
     }
+
+    /// <returns>What happened to each path, or <see langword="null"/> when the text is not XML.</returns>
+    internal static IReadOnlyList<SummarisedPath>? Changes(string xml)
+    {
+        try
+        {
+            return
+            [
+                .. XElement
+                    .Parse(xml)
+                    .Descendants("path")
+                    .Select(path => new SummarisedPath(
+                        (string?)path.Attribute("item") ?? string.Empty,
+                        (string?)path.Attribute("props") ?? string.Empty,
+                        (string?)path.Attribute("kind") ?? string.Empty
+                    )),
+            ];
+        }
+        catch (XmlException)
+        {
+            return null;
+        }
+    }
 }

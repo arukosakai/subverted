@@ -1,0 +1,10 @@
+Index: gains-no-eol.txt
+===================================================================
+--- gains-no-eol.txt	(revision 2)
++++ gains-no-eol.txt	(working copy)
+@@ -1,3 +1,3 @@
+ one
+ two
+-three
+\ No newline at end of file
++three

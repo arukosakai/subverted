@@ -25,6 +25,30 @@ public sealed class SvnCommand(string executable, ISvnTextSpelling spelling)
         CancellationToken cancellationToken
     )
     {
+        var (exitCode, standardOutput, standardError) = await RunForBytesAsync(
+            workingDirectory,
+            arguments,
+            cancellationToken
+        );
+
+        return new SvnCommandResult(
+            exitCode,
+            SvnOutputText.Decode(standardOutput, spelling.LinesThatAreNotUtf8),
+            SvnOutputText.Decode(standardError, spelling.LinesThatAreNotUtf8)
+        );
+    }
+
+    /// <summary>
+    /// As <see cref="RunAsync"/>, with standard output left as the bytes svn wrote — for
+    /// <c>svn cat</c>, whose output is a file rather than text.
+    /// </summary>
+    /// <exception cref="SvnCommandException">The client could not be started at all.</exception>
+    public async Task<(int ExitCode, byte[] StandardOutput, byte[] StandardError)> RunForBytesAsync(
+        string workingDirectory,
+        IReadOnlyList<string> arguments,
+        CancellationToken cancellationToken
+    )
+    {
         var startInfo = new ProcessStartInfo(executable)
         {
             WorkingDirectory = workingDirectory,
@@ -51,11 +75,7 @@ public sealed class SvnCommand(string executable, ISvnTextSpelling spelling)
         var standardError = ReadAllAsync(process.StandardError.BaseStream, cancellationToken);
         await process.WaitForExitAsync(cancellationToken);
 
-        return new SvnCommandResult(
-            process.ExitCode,
-            SvnOutputText.Decode(await standardOutput, spelling.LinesThatAreNotUtf8),
-            SvnOutputText.Decode(await standardError, spelling.LinesThatAreNotUtf8)
-        );
+        return (process.ExitCode, await standardOutput, await standardError);
     }
 
     private static async Task<byte[]> ReadAllAsync(

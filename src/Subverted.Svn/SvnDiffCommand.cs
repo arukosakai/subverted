@@ -2,8 +2,8 @@ namespace Subverted.Svn;
 
 /// <summary>
 /// A path's local changes as a unified diff, via <c>svn diff</c>. The client's own text is passed
-/// through verbatim — reproducing SVN's diff format, including how it renders property changes and
-/// binary files, is a project of its own that would only produce a second answer to disagree with.
+/// through verbatim; only a wider context than its three lines is written in-process, and only for
+/// a plain text edit (<see cref="WorkingCopyContextDiff"/>, D36).
 /// </summary>
 public sealed class SvnDiffCommand(SvnCommand command)
 {

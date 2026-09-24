@@ -41,6 +41,8 @@
                          Document="{Binding Document}" Subject="{Binding Row.RelPath, FallbackValue={x:Null}}"
                          SizeInBytes="{Binding SizeInBytes}"
                          OldTitle="BASE" NewTitle="Working copy"
+                         ContextOptions="{Binding ContextOptions}" Context="{Binding Context}"
+                         ContextUnavailable="{Binding ContextUnavailable}"
                          OpenInAppCommand="{Binding OpenInAppCommand}" />
 
         <StackPanel Spacing="10" HorizontalAlignment="Center" VerticalAlignment="Center"

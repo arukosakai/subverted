@@ -862,6 +862,87 @@ public sealed class DiffViewRenderTests
         await Assert.That(texts.Contains("art/hero.png")).IsEqualTo(!offered);
     }
 
+    [Test]
+    public async Task The_context_dropdown_lists_every_choice_and_says_quietly_when_a_file_could_not_have_it()
+    {
+        var (items, selected, noteShown) = await RenderAsync(
+            "Dark",
+            () =>
+                new DiffLinesView
+                {
+                    Document = Diffs.Modified,
+                    Subject = "src/game.cs",
+                    ContextOptions = DiffContextOption.All,
+                    Context = DiffContextOption.All[1],
+                    ContextUnavailable = true,
+                },
+            "context-unavailable.png",
+            window =>
+            {
+                var choice = window.GetVisualDescendants().OfType<ComboBox>().Single();
+                var note = window
+                    .GetVisualDescendants()
+                    .OfType<TextBlock>()
+                    .Single(text => text.Text == "Context unavailable for this file");
+                return (choice.ItemCount, choice.SelectedItem, note.IsEffectivelyVisible);
+            }
+        );
+
+        await Assert.That(items).IsEqualTo(4);
+        await Assert.That(selected).IsSameReferenceAs(DiffContextOption.All[1]);
+        await Assert.That(noteShown).IsTrue();
+    }
+
+    [Test]
+    public async Task Without_choices_there_is_no_dropdown_and_without_a_fallback_no_note()
+    {
+        var (dropdownShown, noteShown) = await RenderAsync(
+            "Dark",
+            () => new DiffLinesView { Document = Diffs.Modified, Subject = "src/game.cs" },
+            "context-none.png",
+            window =>
+            {
+                var choice = window.GetVisualDescendants().OfType<ComboBox>().Single();
+                var note = window
+                    .GetVisualDescendants()
+                    .OfType<TextBlock>()
+                    .Single(text => text.Text == "Context unavailable for this file");
+                return (choice.IsEffectivelyVisible, note.IsEffectivelyVisible);
+            }
+        );
+
+        await Assert.That(dropdownShown).IsFalse();
+        await Assert.That(noteShown).IsFalse();
+    }
+
+    /// <summary>Two bindings deep — dropdown to lines view to pane — and the pick must reach the pane.</summary>
+    [Test]
+    public async Task Picking_in_the_dropdown_sets_the_changes_panes_context()
+    {
+        var diffs = new FakeWorkingCopyDiff().Answers(SvnDiffs.EditedText);
+        var clock = new Microsoft.Extensions.Time.Testing.FakeTimeProvider();
+        var pane = DiffPanes.Pane(diffs, clock);
+        var row = ChangeRow.From(Entries.Entry("src/game.cs"));
+        var selecting = pane.SelectAsync(row, "/wc/src/game.cs");
+        clock.Advance(DiffPaneViewModel.SelectionDebounce);
+        await selecting;
+
+        var picked = await RenderAsync(
+            "Dark",
+            () => new DiffPaneView { DataContext = pane },
+            "context-pick.png",
+            window =>
+            {
+                window.GetVisualDescendants().OfType<ComboBox>().Single().SelectedIndex = 3;
+                Dispatcher.UIThread.RunJobs();
+                return pane.Context;
+            }
+        );
+
+        await Assert.That(picked).IsSameReferenceAs(DiffContextOption.All[3]);
+        await Assert.That(diffs.Contexts.Last()).IsEqualTo(DiffContext.WholeFile);
+    }
+
     private static Task<T> RenderAsync<T>(
         string variant,
         Func<Control> content,

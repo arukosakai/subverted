@@ -1,0 +1,21 @@
+Index: plain.txt
+===================================================================
+--- plain.txt	(revision 2)
++++ plain.txt	(working copy)
+@@ -2,7 +2,7 @@
+ line 2
+ line 3
+ line 4
+-line five
++line 5 again
+ line 6
+ line 7
+ line 8
+@@ -35,6 +35,6 @@
+ line 35
+ line 36
+ line 37
+-line 38
++line thirty-eight
+ line 39
+ line 40

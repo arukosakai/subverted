@@ -1,4 +1,5 @@
 using Subverted.App.ViewModels;
+using Subverted.Core;
 using Subverted.Frontend;
 using Subverted.Protocol;
 
@@ -11,11 +12,12 @@ public sealed class DaemonRevisionDiff(DaemonChannel channel) : IRevisionDiff
         string workingCopyPath,
         string repositoryPath,
         long revision,
+        DiffContext? context,
         CancellationToken cancellationToken
     ) =>
         DaemonQuestion.AskAsync(
             channel,
-            new RevisionDiffRequest(workingCopyPath, repositoryPath, revision),
+            new RevisionDiffRequest(workingCopyPath, repositoryPath, revision, context),
             cancellationToken
         );
 }

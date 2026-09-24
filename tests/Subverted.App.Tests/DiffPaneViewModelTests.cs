@@ -565,7 +565,10 @@ public sealed class DiffPaneViewModelTests
 
     private sealed class ThrowingDiff(Exception exception) : IWorkingCopyDiff
     {
-        public Task<DaemonResponse> ReadAsync(string path, CancellationToken cancellationToken) =>
-            Task.FromException<DaemonResponse>(exception);
+        public Task<DaemonResponse> ReadAsync(
+            string path,
+            DiffContext? context,
+            CancellationToken cancellationToken
+        ) => Task.FromException<DaemonResponse>(exception);
     }
 }

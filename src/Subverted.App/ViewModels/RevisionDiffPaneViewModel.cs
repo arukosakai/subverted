@@ -11,13 +11,14 @@ namespace Subverted.App.ViewModels;
 /// <see cref="DiffPaneViewModel"/>.
 /// </summary>
 /// <remarks>
-/// Call it from the UI thread. A committed revision never changes, so there is no refetch here —
-/// only the selection moves.
+/// Call it from the UI thread. A committed revision never changes, so the only refetch here is
+/// for a different amount of context.
 /// </remarks>
 public sealed partial class RevisionDiffPaneViewModel(IRevisionDiff diffs, TimeProvider clock)
     : ObservableObject
 {
     private CancellationTokenSource? _asking;
+    private string? _workingCopyPath;
 
     [ObservableProperty]
     public partial DiffPaneState State { get; private set; } = DiffPaneState.NothingSelected;
@@ -36,6 +37,20 @@ public sealed partial class RevisionDiffPaneViewModel(IRevisionDiff diffs, TimeP
     [ObservableProperty]
     public partial string? Message { get; private set; }
 
+    /// <summary>What the context dropdown offers.</summary>
+    public IReadOnlyList<DiffContextOption> ContextOptions => DiffContextOption.All;
+
+    /// <summary>
+    /// How much context to ask for, kept across selections. Changing it asks the daemon again for
+    /// the path on screen, which stays shown until the answer replaces it.
+    /// </summary>
+    [ObservableProperty]
+    public partial DiffContextOption Context { get; set; } = DiffContextOption.Default;
+
+    /// <summary>More context was asked for and the diff shown is SVN's own three lines instead.</summary>
+    [ObservableProperty]
+    public partial bool ContextUnavailable { get; private set; }
+
     /// <summary>
     /// A path was picked: it shows as loading at once and is asked about once the selection has
     /// held for <see cref="DiffPaneViewModel.SelectionDebounce"/>.
@@ -43,9 +58,8 @@ public sealed partial class RevisionDiffPaneViewModel(IRevisionDiff diffs, TimeP
     /// <returns>Completes when the answer is shown, or when a later call superseded this one.</returns>
     public async Task SelectAsync(string workingCopyPath, long revision, ChangedPathRow path)
     {
-        Cancel();
-        _asking = new CancellationTokenSource();
-        var asking = _asking.Token;
+        var asking = Restart();
+        _workingCopyPath = workingCopyPath;
         Path = path;
         Revision = revision;
         Document = null;
@@ -67,11 +81,28 @@ public sealed partial class RevisionDiffPaneViewModel(IRevisionDiff diffs, TimeP
     public void Clear()
     {
         Cancel();
+        _workingCopyPath = null;
         Path = null;
         Revision = null;
         Document = null;
         Message = null;
+        ContextUnavailable = false;
         State = DiffPaneState.NothingSelected;
+    }
+
+    partial void OnContextChanged(DiffContextOption value)
+    {
+        if (_workingCopyPath is { } workingCopyPath && Revision is { } revision && Path is { } path)
+        {
+            _ = FetchAsync(workingCopyPath, revision, path, Restart());
+        }
+    }
+
+    private CancellationToken Restart()
+    {
+        Cancel();
+        _asking = new CancellationTokenSource();
+        return _asking.Token;
     }
 
     private void Cancel()
@@ -94,7 +125,13 @@ public sealed partial class RevisionDiffPaneViewModel(IRevisionDiff diffs, TimeP
         DaemonResponse response;
         try
         {
-            response = await diffs.ReadAsync(workingCopyPath, path.Path, revision, asking);
+            response = await diffs.ReadAsync(
+                workingCopyPath,
+                path.Path,
+                revision,
+                Context.Asked,
+                asking
+            );
         }
         catch (OperationCanceledException) when (asking.IsCancellationRequested)
         {
@@ -139,11 +176,13 @@ public sealed partial class RevisionDiffPaneViewModel(IRevisionDiff diffs, TimeP
         var document = UnifiedDiffParser.Parse(diff.UnifiedDiff);
         if (document.Files.Count == 0)
         {
+            ContextUnavailable = false;
             Show(DiffPaneState.NothingToShow, RevisionDiffEmptyMessage.For(path));
             return;
         }
 
         Document = document;
+        ContextUnavailable = Context.WasNotHonouredBy(diff.Context);
         State = DiffPaneState.Ready;
     }
 

@@ -20,6 +20,8 @@ public sealed class DaemonRequestHandler(
     ReadRevisionLog readRevisionLog,
     ReadWorkingCopyDiff readWorkingCopyDiff,
     ReadRevisionDiff readRevisionDiff,
+    ReadWorkingCopyContextDiff readWorkingCopyContextDiff,
+    ReadRevisionContextDiff readRevisionContextDiff,
     ReadBaseRevisionRange readBaseRevisionRange,
     ScheduleAddition scheduleAddition,
     RevertChanges revertChanges,
@@ -189,17 +191,50 @@ public sealed class DaemonRequestHandler(
         );
     }
 
-    private Task<DaemonResponse> DiffAsync(
+    /// <remarks>
+    /// <c>svn diff</c> answers unless more context was asked for, and whenever the in-process diff
+    /// declines — so a request without a context is exactly what it was before contexts existed.
+    /// </remarks>
+    private async Task<DaemonResponse> DiffAsync(
         DiffRequest request,
         CancellationToken cancellationToken
-    ) =>
-        ShellingOutAsync(
+    )
+    {
+        if (RefusedContext(request.Context) is { } refusal)
+        {
+            return refusal;
+        }
+
+        return await ShellingOutAsync(
             request.Path,
-            async session => new DiffResponse(
-                await readWorkingCopyDiff(session.Info.RootPath, request.Path, cancellationToken)
-            ),
+            async session =>
+            {
+                var root = session.Info.RootPath;
+                if (
+                    request.Context is { IsWiderThanDefault: true } wider
+                    && await readWorkingCopyContextDiff(root, request.Path, wider, cancellationToken)
+                        is { } written
+                )
+                {
+                    return new DiffResponse(written, wider);
+                }
+
+                return new DiffResponse(
+                    await readWorkingCopyDiff(root, request.Path, cancellationToken),
+                    DiffContext.Default
+                );
+            },
             cancellationToken
         );
+    }
+
+    private static ErrorResponse? RefusedContext(DiffContext? context) =>
+        context is { LinesAround: < 0 } negative
+            ? new ErrorResponse(
+                DaemonErrorKind.RequestRefused,
+                $"{negative.LinesAround} lines of context is not an amount; ask for 0 or more, or the whole file."
+            )
+            : null;
 
     /// <remarks>
     /// Checked before SVN sees it because both mistakes mean something else to SVN: a negative
@@ -227,17 +262,43 @@ public sealed class DaemonRequestHandler(
             );
         }
 
+        if (RefusedContext(request.Context) is { } refusal)
+        {
+            return refusal;
+        }
+
         return await ShellingOutAsync(
             request.WorkingCopyPath,
-            async session => new DiffResponse(
-                await readRevisionDiff(
-                    session.Info.RootPath,
-                    session.Info.RepositoryRoot,
-                    request.RepositoryPath,
-                    request.Revision,
-                    cancellationToken
+            async session =>
+            {
+                var (root, repositoryRoot) = (session.Info.RootPath, session.Info.RepositoryRoot);
+                if (
+                    request.Context is { IsWiderThanDefault: true } wider
+                    && await readRevisionContextDiff(
+                        root,
+                        repositoryRoot,
+                        request.RepositoryPath,
+                        request.Revision,
+                        wider,
+                        cancellationToken
+                    )
+                        is { } written
                 )
-            ),
+                {
+                    return new DiffResponse(written, wider);
+                }
+
+                return new DiffResponse(
+                    await readRevisionDiff(
+                        root,
+                        repositoryRoot,
+                        request.RepositoryPath,
+                        request.Revision,
+                        cancellationToken
+                    ),
+                    DiffContext.Default
+                );
+            },
             cancellationToken
         );
     }

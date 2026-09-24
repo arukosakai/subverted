@@ -1,0 +1,12 @@
+Index: no-eol.txt
+===================================================================
+--- no-eol.txt	(revision 2)
++++ no-eol.txt	(working copy)
+@@ -1,3 +1,4 @@
+ one
+ two
+-THREE
+\ No newline at end of file
++THREE
++four
+\ No newline at end of file

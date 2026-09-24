@@ -1,0 +1,20 @@
+Index: tie-insertion.txt
+===================================================================
+--- tie-insertion.txt	(revision 2)
++++ tie-insertion.txt	(working copy)
+@@ -1,14 +1,13 @@
+ 
+ }
+ a
+-{
+ x0
+ 
+ x3
+ {
+ {
++}
+ 
+-}
+ a
+ 
+ {

@@ -2,5 +2,10 @@
 tests/Subverted.Frontend.Tests/Diff/Captures/*.diff -text
 tests/Subverted.Frontend.Tests/Diff/Captures/*.sh text eol=lf
 
+# Both sides of each file and svn's diff of them, for the in-process diff's equivalence tests.
+tests/Subverted.Svn.Tests/ContextDiff/Captures/* -text
+tests/Subverted.Svn.Tests/ContextDiff/Captures/*.md text
+tests/Subverted.Svn.Tests/ContextDiff/Captures/*.py text eol=lf
+
 # Shell scripts run under bash on every OS, including a Windows checkout with autocrlf on.
 *.sh text eol=lf
