@@ -17,7 +17,8 @@
     <Style Selector="ListBox.diff.split">
       <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled" />
     </Style>
-    <Style Selector="ListBox.diff ListBoxItem">
+    <Style Selector="ListBox.diff ListBoxItem" x:DataType="p:DiffRow">
+      <Setter Property="AutomationProperties.Name" Value="{Binding AutomationName}" />
       <Setter Property="Padding" Value="0" />
       <Setter Property="MinHeight" Value="0" />
       <Setter Property="HorizontalContentAlignment" Value="Stretch" />

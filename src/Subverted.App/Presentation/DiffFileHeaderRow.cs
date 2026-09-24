@@ -5,4 +5,6 @@ namespace Subverted.App.Presentation;
 public sealed record DiffFileHeaderRow(string Path) : DiffRow
 {
     public string Title => Path.Length == 0 ? "This folder" : Path;
+
+    public override string AutomationName => Title;
 }

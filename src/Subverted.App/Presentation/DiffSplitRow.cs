@@ -17,6 +17,12 @@ public sealed record DiffSplitRow(DiffLine? Old, DiffLine? New) : DiffRow
     public string NewSign => New is { Kind: DiffLineKind.Added } ? "+" : string.Empty;
 
     /// <summary>What changed within the removed line against the added one, worked out on each read.</summary>
+    /// <summary>A context line once, as it reads on both sides; a change as its old then its new side.</summary>
+    public override string AutomationName =>
+        IsContext
+            ? Spoken(Old!)
+            : string.Join("; ", new[] { Old, New }.OfType<DiffLine>().Select(Spoken));
+
     public IReadOnlyList<ChangedSpan> OldChanges => Intraline.Old;
 
     /// <summary>What changed within the added line against the removed one, worked out on each read.</summary>

@@ -18,6 +18,8 @@ public sealed record DiffTextRow(DiffLine Line, DiffLine? Counterpart = null) : 
         };
 
     /// <summary>What changed within the line against its counterpart, worked out on each read.</summary>
+    public override string AutomationName => Spoken(Line);
+
     public IReadOnlyList<ChangedSpan> Changes =>
         (Line, Counterpart) switch
         {

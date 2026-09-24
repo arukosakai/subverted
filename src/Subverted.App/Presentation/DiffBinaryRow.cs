@@ -9,4 +9,6 @@ namespace Subverted.App.Presentation;
 public sealed record DiffBinaryRow(string Path, string? MimeType, bool IsOnlyFile) : DiffRow
 {
     public string MimeTypeText => MimeType ?? "No MIME type recorded";
+
+    public override string AutomationName => $"Binary file, {MimeTypeText}";
 }

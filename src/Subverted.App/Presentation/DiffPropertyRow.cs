@@ -7,6 +7,8 @@ public sealed record DiffPropertyRow(string Name, PropertyChangeKind Kind) : Dif
 {
     public string Label => Kind.ToString();
 
+    public override string AutomationName => $"{Name}, {Label}";
+
     public ChangeTone Tone =>
         Kind switch
         {

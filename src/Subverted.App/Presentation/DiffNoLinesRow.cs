@@ -4,4 +4,7 @@ namespace Subverted.App.Presentation;
 /// A text change SVN printed no hunks for — an empty file added or deleted — said in words rather
 /// than left as a blank pane.
 /// </summary>
-public sealed record DiffNoLinesRow(string Path) : DiffRow;
+public sealed record DiffNoLinesRow(string Path) : DiffRow
+{
+    public override string AutomationName => "No lines to show.";
+}
