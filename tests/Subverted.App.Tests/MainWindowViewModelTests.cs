@@ -225,6 +225,92 @@ public sealed class MainWindowViewModelTests
         await Assert.That(status.Reads).IsEqualTo(1);
     }
 
+    /// <summary>
+    /// A slow first open overtaken by a second: the first must not take over the window's poll
+    /// when it lands, or the second copy's poll is left running with nothing to stop it.
+    /// </summary>
+    [Test]
+    public async Task An_open_overtaken_by_another_leaves_only_the_later_copy_polled()
+    {
+        var clock = new FakeTimeProvider();
+        var slow = new HeldWorkingCopyStatus();
+        var fast = new HeldWorkingCopyStatus();
+        await using var window = TwoCopies(clock, slow, fast);
+        await window.ActivatedAsync(None);
+
+        slow.Hold();
+        var first = window.ShowAsync("/slow", None);
+        await window.ShowAsync("/fast", None);
+        slow.Release();
+        await first;
+        clock.Advance(MainWindowViewModel.RefreshInterval);
+        await Settle();
+
+        await Assert.That(window.Current!.Path).IsEqualTo("/fast");
+        await Assert.That(slow.Reads).IsEqualTo(1);
+        await Assert.That(fast.Reads).IsEqualTo(2);
+
+        await window.DeactivatedAsync();
+        clock.Advance(MainWindowViewModel.RefreshInterval * 3);
+        await Settle();
+
+        await Assert.That(fast.Reads).IsEqualTo(2);
+    }
+
+    [Test]
+    public async Task Going_to_the_back_while_coming_forward_is_answered_leaves_nothing_polled()
+    {
+        var clock = new FakeTimeProvider();
+        var status = new HeldWorkingCopyStatus();
+        await using var window = TwoCopies(clock, status, new HeldWorkingCopyStatus());
+        await window.ShowAsync("/slow", None);
+
+        status.Hold();
+        var activating = window.ActivatedAsync(None);
+        await window.DeactivatedAsync();
+        status.Release();
+        await activating;
+        clock.Advance(MainWindowViewModel.RefreshInterval * 3);
+        await Settle();
+
+        await Assert.That(status.Reads).IsEqualTo(2);
+    }
+
+    [Test]
+    public async Task Another_copy_opened_while_coming_forward_is_answered_is_the_only_one_polled()
+    {
+        var clock = new FakeTimeProvider();
+        var slow = new HeldWorkingCopyStatus();
+        var fast = new HeldWorkingCopyStatus();
+        await using var window = TwoCopies(clock, slow, fast);
+        await window.ShowAsync("/slow", None);
+
+        slow.Hold();
+        var activating = window.ActivatedAsync(None);
+        await window.ShowAsync("/fast", None);
+        slow.Release();
+        await activating;
+        clock.Advance(MainWindowViewModel.RefreshInterval);
+        await Settle();
+
+        await Assert.That(slow.Reads).IsEqualTo(2);
+        await Assert.That(fast.Reads).IsEqualTo(2);
+    }
+
+    private static MainWindowViewModel TwoCopies(
+        TimeProvider clock,
+        IWorkingCopyStatus slow,
+        IWorkingCopyStatus fast
+    ) =>
+        new(
+            new FakeRecentStore(),
+            new FakeFolderPicker(null),
+            path => WorkingCopies.View(path == "/slow" ? slow : fast, path: path),
+            clock,
+            StringComparison.Ordinal,
+            Revisions.View()
+        );
+
     private static MainWindowViewModel Window(
         FakeRecentStore store,
         FakeWorkingCopyStatus status,

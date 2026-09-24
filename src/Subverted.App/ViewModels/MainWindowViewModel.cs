@@ -26,6 +26,7 @@ public sealed partial class MainWindowViewModel(
 
     private StatusPolling? _polling;
     private bool _isInFront;
+    private int _opens;
 
     public ObservableCollection<RecentWorkingCopy> Recent { get; } = [];
 
@@ -81,6 +82,7 @@ public sealed partial class MainWindowViewModel(
     /// </summary>
     public async Task ShowAsync(string path, CancellationToken cancellationToken)
     {
+        var opening = ++_opens;
         await StopPollingAsync();
 
         // From the store rather than the sidebar, so opening a copy before the sidebar has loaded
@@ -100,6 +102,12 @@ public sealed partial class MainWindowViewModel(
         Current = shown;
         ShownView = WorkspaceView.Changes;
         await shown.RefreshAsync(cancellationToken);
+        if (opening != _opens)
+        {
+            // Overtaken by a later open while answering; the window's poll is that one's now.
+            return;
+        }
+
         _polling = new StatusPolling(clock, RefreshInterval, shown.RefreshAsync);
         if (_isInFront)
         {
@@ -114,7 +122,10 @@ public sealed partial class MainWindowViewModel(
         if (Current is { } shown && _polling is { IsRunning: false } polling)
         {
             await shown.RefreshAsync(cancellationToken);
-            polling.Start();
+            if (_isInFront && ReferenceEquals(_polling, polling))
+            {
+                polling.Start();
+            }
         }
     }
 
