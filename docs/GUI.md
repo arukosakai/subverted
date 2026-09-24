@@ -153,8 +153,8 @@ notice or the revert overlay (headless tests and renders only), and nothing on m
 daemon with unmodified and ignored nodes included, because the Changes listing leaves out both
 and `svn delete --force` takes both. The overlay lists every node it reaches, what is lost for good
 first. Confirm reads it again and asks again if anything changed (forum #59's rule). The offer and
-the loss rules are pure and live in `Frontend` (`DeletionOffer`, `DeletionLoss`, `DeletionPreview`)
-so `sv rm` can use the same ones. **Measured on 1.8.15 on throwaway repositories:** without
+the loss rules are pure and live in `Frontend` (`DeletionOffer`, `DeletionLoss`, `DeletionPreview`),
+and `sv rm` refuses and warns by the same `DeletionOffer` and `DeletionLoss`. **Measured on 1.8.15 on throwaway repositories:** without
 `--force`, SVN refuses anything with local changes (`E195006`) or unversioned (`E200005`). With it,
 everything is deleted from disk. An add is gone for good, and so is a copy with its edits (an
 edited copied file still reads plain `A  +`). Unversioned and ignored files inside a folder go

@@ -483,8 +483,8 @@ async Task<int?> ConfirmRevertAsync(RevertCommand command, OutputOptions output)
 }
 
 /// <summary>
-/// Takes files out of SVN and off disk. Shows what would go and asks — and counts the ones with no
-/// pristine behind them separately, because those are the only removals nothing can undo.
+/// Takes files out of SVN and off disk. Refuses what the app's Delete refuses, shows what would go
+/// and asks, with what nothing can bring back called out separately.
 /// </summary>
 async Task<int> RemoveAsync(RemoveCommand command, OutputOptions output)
 {
@@ -502,7 +502,7 @@ async Task<int> RemoveAsync(RemoveCommand command, OutputOptions output)
     switch (response)
     {
         case DeleteResponse removed:
-            Emit(RemovalReport.Lines(removed, preview!.Unrecoverable.Count), output);
+            Emit(RemovalReport.Lines(removed, preview!), output);
             return ExitCode.Success;
 
         case ErrorResponse error:
@@ -515,8 +515,7 @@ async Task<int> RemoveAsync(RemoveCommand command, OutputOptions output)
 
 /// <returns>
 /// Either the exit code to return instead of removing anything, or the preview that was confirmed —
-/// never both. Declining is <see cref="ExitCode.Success"/>: nothing was removed, which is what the
-/// person asked for.
+/// never both. What each exit code means is <see cref="RemovalConversation.Confirm"/>'s.
 /// </returns>
 async Task<(int? Instead, RemovalPreview? Confirmed)> ConfirmRemovalAsync(
     RemoveCommand command,
@@ -539,38 +538,15 @@ async Task<(int? Instead, RemovalPreview? Confirmed)> ConfirmRemovalAsync(
     }
 
     var preview = RemovalPreview.Of(status, command.Paths, PathComparison());
-    if (preview.Count == 0)
-    {
-        Console.WriteLine("nothing to remove");
-        return (ExitCode.Success, null);
-    }
-
-    if (command.AlreadyConfirmed)
-    {
-        return (null, preview);
-    }
-
-    Emit(preview.Lines, output);
-
-    // Revert's rule, for the same reason: a pipe cannot answer, and defaulting to yes is how a
-    // script takes a studio's assets off disk.
-    if (Console.IsInputRedirected)
-    {
-        Console.Error.WriteLine(
-            $"sv: {preview.Count} node(s) above would be removed. "
-                + "Re-run with --yes to confirm; there is no terminal here to ask in."
-        );
-        return (ExitCode.UserError, null);
-    }
-
-    Console.Write($"remove {preview.Count} node(s)? [y/N] ");
-    if (Confirmation.IsYes(Console.ReadLine()))
-    {
-        return (null, preview);
-    }
-
-    Console.WriteLine("nothing removed");
-    return (ExitCode.Success, null);
+    var conversation = new RemovalConversation(
+        new ConsolePrompt(),
+        Console.Error,
+        lines => Emit(lines, output)
+    );
+    return conversation.Confirm(preview, command.AlreadyConfirmed, Console.IsInputRedirected)
+        is { } instead
+        ? (instead, null)
+        : (null, preview);
 }
 
 /// <summary>
