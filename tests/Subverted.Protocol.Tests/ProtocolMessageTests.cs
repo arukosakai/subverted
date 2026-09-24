@@ -214,7 +214,11 @@ public sealed class ProtocolMessageTests
     public async Task A_status_request_from_a_front_end_that_predates_held_scans_holds_none()
     {
         var json = Json(new StatusRequest("/wc", false, false));
-        var withoutField = json.Replace(",\"heldScan\":null", string.Empty, StringComparison.Ordinal);
+        var withoutField = json.Replace(
+            ",\"heldScan\":null",
+            string.Empty,
+            StringComparison.Ordinal
+        );
 
         var decoded = (StatusRequest)
             ProtocolMessage.DecodeRequest(Encoding.UTF8.GetBytes(withoutField));

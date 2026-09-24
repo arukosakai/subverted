@@ -16,7 +16,10 @@ public sealed class ListingToggleTests
 
     private static readonly WorkingCopyEntry Edited = Entry("art/hero.png");
     private static readonly WorkingCopyEntry Stray = Entry("build.log", NodeStatus.Unversioned);
-    private static readonly WorkingCopyEntry Untouched = Entry("art/tree.png", NodeStatus.Unmodified);
+    private static readonly WorkingCopyEntry Untouched = Entry(
+        "art/tree.png",
+        NodeStatus.Unmodified
+    );
     private static readonly WorkingCopyEntry UntouchedElsewhere = Entry(
         "src/main.cs",
         NodeStatus.Unmodified
@@ -56,9 +59,7 @@ public sealed class ListingToggleTests
 
         await Assert.That(view.IsListingAll).IsTrue();
         await Assert.That(status.Listings[^1]).IsEqualTo(ListedNodes.All);
-        await Assert
-            .That(Keys(view))
-            .IsEqualTo("art/hero.png,art/tree.png,build.log,src/main.cs");
+        await Assert.That(Keys(view)).IsEqualTo("art/hero.png,art/tree.png,build.log,src/main.cs");
     }
 
     /// <summary>Going back needs nothing from the daemon to be right: the unmodified lines go at once.</summary>
@@ -108,7 +109,9 @@ public sealed class ListingToggleTests
         await Assert
             .That(string.Join(",", byAll.Composer.Selection.RelPaths))
             .IsEqualTo(string.Join(",", byChanges.Composer.Selection.RelPaths));
-        await Assert.That(string.Join(",", byAll.Composer.Selection.RelPaths)).IsEqualTo("art/hero.png");
+        await Assert
+            .That(string.Join(",", byAll.Composer.Selection.RelPaths))
+            .IsEqualTo("art/hero.png");
         await Assert.That(byAll.Ticked).IsEquivalentTo(byChanges.Ticked);
     }
 
@@ -122,7 +125,9 @@ public sealed class ListingToggleTests
         var status = new FakeWorkingCopyStatus()
             .Answers(ChangesOnly())
             .Answers(Everything())
-            .Answers(Listing(UntouchedFolder, Edited, Stray, Entry("art/tree.png"), UntouchedElsewhere));
+            .Answers(
+                Listing(UntouchedFolder, Edited, Stray, Entry("art/tree.png"), UntouchedElsewhere)
+            );
         var view = WorkingCopies.View(status);
         await view.RefreshAsync(None);
         await view.ListAllCommand.ExecuteAsync(null);
@@ -204,7 +209,9 @@ public sealed class ListingToggleTests
         await Assert.That(view.KeepMineCommand.CanExecute(line)).IsFalse();
         await Assert.That(view.LockCommand.CanExecute(line)).IsTrue();
         await Assert.That(view.ShowHistoryCommand.CanExecute(line)).IsTrue();
-        await Assert.That(line.Row!.Badge).IsEqualTo(new ChangeBadge("Unchanged", ChangeTone.Quiet));
+        await Assert
+            .That(line.Row!.Badge)
+            .IsEqualTo(new ChangeBadge("Unchanged", ChangeTone.Quiet));
     }
 
     [Test]
@@ -243,7 +250,9 @@ public sealed class ListingToggleTests
     [Test]
     public async Task A_clean_copy_with_no_files_listing_all_still_says_it_is_clean()
     {
-        var status = new FakeWorkingCopyStatus().Answers(Listing()).Answers(Listing(UntouchedFolder));
+        var status = new FakeWorkingCopyStatus()
+            .Answers(Listing())
+            .Answers(Listing(UntouchedFolder));
         var view = WorkingCopies.View(status);
         await view.RefreshAsync(None);
 

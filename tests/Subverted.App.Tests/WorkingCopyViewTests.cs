@@ -323,7 +323,10 @@ public sealed class WorkingCopyViewTests
                 Click(window, all);
                 var activeAfter = Active(changes, all);
                 var boxes = string.Join(",", VisibleOnLines<CheckBox>(list, view));
-                var icons = string.Join(",", VisibleOnLines<Avalonia.Controls.Shapes.Path>(list, view));
+                var icons = string.Join(
+                    ",",
+                    VisibleOnLines<Avalonia.Controls.Shapes.Path>(list, view)
+                );
                 Focus(list, IndexOf(view, "tree.png"));
                 var (take, _) = LockItems(list);
                 var offered = Enabled(take);
@@ -371,14 +374,15 @@ public sealed class WorkingCopyViewTests
     {
         var status = new FakeWorkingCopyStatus()
             .Answers(Listing(Entry("art/hero.png")))
-            .Answers(
-                Listing(Entry("art/hero.png"), Entry("art/tree.png", NodeStatus.Unmodified))
-            );
+            .Answers(Listing(Entry("art/hero.png"), Entry("art/tree.png", NodeStatus.Unmodified)));
 
         var (ticks, folderIcons) = await OnViewAsync(
             (window, list, view) =>
             {
-                Click(window, list.FindAncestorOfType<WorkingCopyView>()!.FindControl<Button>("ListAll")!);
+                Click(
+                    window,
+                    list.FindAncestorOfType<WorkingCopyView>()!.FindControl<Button>("ListAll")!
+                );
                 view.ShowTreeCommand.Execute(null);
                 Dispatcher.UIThread.RunJobs();
                 return (
@@ -457,9 +461,7 @@ public sealed class WorkingCopyViewTests
     {
         var status = new FakeWorkingCopyStatus()
             .Answers(Listing(Entry("art/hero.png")))
-            .Answers(
-                Listing(Entry("art/hero.png"), Entry("src/main.cs", NodeStatus.Unmodified))
-            );
+            .Answers(Listing(Entry("art/hero.png"), Entry("src/main.cs", NodeStatus.Unmodified)));
 
         var counts = await OnViewAsync(
             (window, list, _) =>
@@ -496,7 +498,8 @@ public sealed class WorkingCopyViewTests
     /// <summary>The keys of the lines whose <typeparamref name="T"/> in the line's leading column is drawn.</summary>
     private static IEnumerable<string> VisibleOnLines<T>(ListBox list, WorkingCopyViewModel view)
         where T : Control =>
-        view.Entries.Where(entry =>
+        view
+            .Entries.Where(entry =>
                 list.ContainerFromItem(entry)!
                     .GetVisualDescendants()
                     .OfType<T>()

@@ -41,7 +41,9 @@ public static class ChangeFolders
         [
             .. folders
                 .Order(TreeOrder.Instance)
-                .Select(folder => LineOf(folder, held[folder], rootName, branches.Contains(folder))),
+                .Select(folder =>
+                    LineOf(folder, held[folder], rootName, branches.Contains(folder))
+                ),
         ];
     }
 

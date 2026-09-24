@@ -30,28 +30,28 @@ public sealed class ChangeFoldersTests
     public async Task An_unmodified_file_puts_its_folders_in_the_tree_but_is_neither_counted_nor_coloured()
     {
         var folders = ChangeFolders.Of(
-            [Row("art/hero.png"), Row("art/tree.png", NodeStatus.Unmodified), Row("src/main.cs", NodeStatus.Unmodified)],
+            [
+                Row("art/hero.png"),
+                Row("art/tree.png", NodeStatus.Unmodified),
+                Row("src/main.cs", NodeStatus.Unmodified),
+            ],
             "game"
         );
 
         await Assert
             .That(folders)
-            .IsEquivalentTo(
-                [
-                    new FolderLine("", "game", 0, 1, ChangeTone.Modified, true),
-                    new FolderLine("art", "art", 1, 1, ChangeTone.Modified, false),
-                    new FolderLine("src", "src", 1, 0, ChangeTone.Quiet, false),
-                ]
-            );
+            .IsEquivalentTo([
+                new FolderLine("", "game", 0, 1, ChangeTone.Modified, true),
+                new FolderLine("art", "art", 1, 1, ChangeTone.Modified, false),
+                new FolderLine("src", "src", 1, 0, ChangeTone.Quiet, false),
+            ]);
     }
 
     /// <summary>The same row with something to report does count: the line is drawn at the change, not the listing.</summary>
     [Test]
     public async Task A_clean_file_that_holds_a_lock_is_counted_where_an_unmodified_one_is_not()
     {
-        var held = ChangeRow.From(
-            Entry("src/held.psd", NodeStatus.Unmodified, hasLockToken: true)
-        );
+        var held = ChangeRow.From(Entry("src/held.psd", NodeStatus.Unmodified, hasLockToken: true));
 
         var folders = ChangeFolders.Of([held], "game");
 
