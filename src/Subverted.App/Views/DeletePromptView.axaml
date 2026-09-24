@@ -1,0 +1,52 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Subverted.App.ViewModels"
+             xmlns:f="using:Subverted.Frontend"
+             x:Class="Subverted.App.Views.DeletePromptView"
+             x:DataType="vm:DeletePromptViewModel"
+             IsVisible="{Binding IsAsking}">
+  <UserControl.Styles>
+    <Style Selector="TextBlock.loses">
+      <Setter Property="Foreground" Value="{DynamicResource Tone.Deleted}" />
+    </Style>
+  </UserControl.Styles>
+
+  <UserControl.KeyBindings>
+    <KeyBinding Gesture="Escape" Command="{Binding CancelCommand}" />
+  </UserControl.KeyBindings>
+
+  <!-- Covers what it sits over, so nothing else can be acted on while the question stands. -->
+  <Panel Background="{DynamicResource WindowFallbackBrush}">
+    <DockPanel Margin="18" MaxWidth="620">
+      <StackPanel DockPanel.Dock="Top" Spacing="6" Margin="0,0,0,12">
+        <TextBlock x:Name="Title" FontSize="16" FontWeight="SemiBold" TextWrapping="Wrap"
+                   Text="{Binding Pending.Title}" />
+        <TextBlock x:Name="Warning" FontWeight="Medium" TextWrapping="Wrap"
+                   Foreground="{DynamicResource Tone.Deleted}" Text="{Binding Pending.Warning}" />
+        <TextBlock x:Name="Changed" FontWeight="Medium" TextWrapping="Wrap" IsVisible="{Binding HasChangedSinceAsked}"
+                   Foreground="{DynamicResource Tone.Conflict}"
+                   Text="The list changed since you were asked. Check it again before deleting." />
+      </StackPanel>
+
+      <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Spacing="10" Margin="0,12,0,0"
+                  HorizontalAlignment="Right">
+        <Button x:Name="CancelButton" Content="Cancel" Command="{Binding CancelCommand}" />
+        <Button x:Name="ConfirmButton" Content="Delete" Command="{Binding ConfirmCommand}"
+                Background="{DynamicResource Tone.Deleted}" Foreground="White" />
+      </StackPanel>
+
+      <!-- A folder's list can run to thousands of lines, so it is a virtualising list, not a stack. -->
+      <ListBox x:Name="Lines" ItemsSource="{Binding Pending.Lines}" Background="Transparent">
+        <ListBox.ItemTemplate>
+          <DataTemplate x:DataType="f:DeletionLine">
+            <StackPanel Margin="0,4">
+              <TextBlock Text="{Binding RelPath}" FontWeight="Medium" TextTrimming="CharacterEllipsis" />
+              <TextBlock Text="{Binding What}" FontSize="12" TextWrapping="Wrap"
+                         Classes.muted="{Binding !LosesWork}" Classes.loses="{Binding LosesWork}" />
+            </StackPanel>
+          </DataTemplate>
+        </ListBox.ItemTemplate>
+      </ListBox>
+    </DockPanel>
+  </Panel>
+</UserControl>

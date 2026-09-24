@@ -168,6 +168,36 @@ public sealed class MainWindowRenderTests
     }
 
     [Test]
+    public async Task The_delete_question_renders_over_the_list()
+    {
+        var props = Entry("art/props", NodeStatus.Unmodified, PropertyStatus.Modified, kind: NodeKind.Directory);
+        var deletions = new FakeWorkingCopyDeletion().Lists(
+            Listing(
+                props,
+                Entry("art/props/crate.png", NodeStatus.Unmodified),
+                Entry("art/props/barrel.png"),
+                Entry("art/props/notes.txt", NodeStatus.Unversioned),
+                Entry("art/props/cache.log", NodeStatus.Ignored),
+                Entry("art/props/vendor", NodeStatus.External, kind: NodeKind.Directory)
+            )
+        );
+        var asking = false;
+        await RenderAsync(
+            "Dark",
+            new FakeWorkingCopyStatus().Answers(Listing(props, Entry("art/props/barrel.png"))),
+            "delete-prompt-dark.png",
+            view =>
+            {
+                view.DeleteCommand.Execute(view.Entries.Single(entry => entry.Key == "art/props"));
+                asking = view.DeletePrompt.IsAsking;
+            },
+            deletions: deletions
+        );
+
+        await Assert.That(asking).IsTrue();
+    }
+
+    [Test]
     public async Task Taking_theirs_renders_its_question_over_the_list()
     {
         var asking = false;
@@ -512,7 +542,8 @@ public sealed class MainWindowRenderTests
         FakeWorkingCopyStatus status,
         string file,
         Action<WorkingCopyViewModel>? arrange = null,
-        FakeWorkingCopyCommit? commits = null
+        FakeWorkingCopyCommit? commits = null,
+        FakeWorkingCopyDeletion? deletions = null
     ) =>
         HeadlessApp.Session.Dispatch(
             async () =>
@@ -521,7 +552,8 @@ public sealed class MainWindowRenderTests
                     variant,
                     new FakeRecentStore("/studio/game", "/studio/tools", "/studio/website"),
                     status,
-                    commits
+                    commits,
+                    deletions: deletions
                 );
                 if (arrange is not null)
                 {
@@ -549,7 +581,8 @@ public sealed class MainWindowRenderTests
         FakeRecentStore store,
         FakeWorkingCopyStatus status,
         FakeWorkingCopyCommit? commits = null,
-        FakeWorkingCopyUpdate? updates = null
+        FakeWorkingCopyUpdate? updates = null,
+        FakeWorkingCopyDeletion? deletions = null
     )
     {
         Application.Current!.RequestedThemeVariant =
@@ -557,7 +590,14 @@ public sealed class MainWindowRenderTests
         var viewModel = new MainWindowViewModel(
             store,
             new FakeFolderPicker(null),
-            path => WorkingCopies.View(status, path: path, commits: commits, updates: updates),
+            path =>
+                WorkingCopies.View(
+                    status,
+                    path: path,
+                    commits: commits,
+                    updates: updates,
+                    deletions: deletions
+                ),
             new FakeTimeProvider(),
             StringComparison.Ordinal,
             Revisions.View()

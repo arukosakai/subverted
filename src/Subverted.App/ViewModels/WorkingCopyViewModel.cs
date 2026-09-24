@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Subverted.App.Presentation;
 using Subverted.Core;
+using Subverted.Frontend;
 using Subverted.Protocol;
 
 namespace Subverted.App.ViewModels;
@@ -14,6 +15,7 @@ namespace Subverted.App.ViewModels;
 /// <param name="clipboard">Takes a line's path, for the context menu.</param>
 /// <param name="commits">Sends the ticked lines, for the commit box.</param>
 /// <param name="reverts">Reverts a confirmed line, for the context menu.</param>
+/// <param name="deletions">Deletes a confirmed line, for the context menu.</param>
 /// <param name="resolves">Settles a line's conflicts, for the context menu.</param>
 /// <param name="locks">Takes and gives back a file's lock, for the context menu.</param>
 /// <param name="updates">Brings the opened folder up to date, for the Update button.</param>
@@ -28,6 +30,7 @@ public sealed partial class WorkingCopyViewModel(
     ITextClipboard clipboard,
     IWorkingCopyCommit commits,
     IWorkingCopyRevert reverts,
+    IWorkingCopyDeletion deletions,
     IWorkingCopyResolve resolves,
     IWorkingCopyLocks locks,
     IWorkingCopyUpdate updates,
@@ -50,6 +53,7 @@ public sealed partial class WorkingCopyViewModel(
     private Guid? _heldScan;
     private CommitComposerViewModel? _composer;
     private RevertPromptViewModel? _revertPrompt;
+    private DeletePromptViewModel? _deletePrompt;
     private ResolveViewModel? _resolver;
     private LockViewModel? _locker;
     private UpdateViewModel? _updater;
@@ -150,6 +154,8 @@ public sealed partial class WorkingCopyViewModel(
     public CommitComposerViewModel Composer => _composer ??= new(commits, Untick, ReviewAsync);
 
     public RevertPromptViewModel RevertPrompt => _revertPrompt ??= new(reverts);
+
+    public DeletePromptViewModel DeletePrompt => _deletePrompt ??= new(deletions);
 
     public ResolveViewModel Resolver => _resolver ??= new(resolves);
 
@@ -581,6 +587,23 @@ public sealed partial class WorkingCopyViewModel(
         entry?.Row is { RenamedFrom: null } row
         && RevertConfirmation.For(row, Changes).Lines.Count > 0;
 
+    [RelayCommand(CanExecute = nameof(CanDelete))]
+    private Task DeleteAsync(ChangeListEntry? entry, CancellationToken cancellationToken) =>
+        DeletePrompt.AskAsync(Location, entry!.Row!.RelPath, cancellationToken);
+
+    /// <summary>
+    /// Only a versioned line SVN deletes cleanly, by <see cref="DeletionOffer"/>: never a rename, a file
+    /// SVN does not track, a conflict or an obstruction, nor a folder heading.
+    /// </summary>
+    private bool CanDelete(ChangeListEntry? entry) =>
+        entry?.Row is { } row
+        && DeletionOffer.RefusalFor(
+            row.Entry,
+            Changes.Select(change => change.Entry),
+            StringComparison.Ordinal
+        )
+            is null;
+
     [RelayCommand(CanExecute = nameof(CanResolve))]
     private Task KeepMineAsync(ChangeListEntry? entry, CancellationToken cancellationToken) =>
         ResolveAsync(entry!, ConflictResolution.Mine, cancellationToken);
@@ -687,6 +710,7 @@ public sealed partial class WorkingCopyViewModel(
         OpenCommand.NotifyCanExecuteChanged();
         ShowHistoryCommand.NotifyCanExecuteChanged();
         RevertCommand.NotifyCanExecuteChanged();
+        DeleteCommand.NotifyCanExecuteChanged();
         KeepMineCommand.NotifyCanExecuteChanged();
         TakeTheirsCommand.NotifyCanExecuteChanged();
         MarkResolvedCommand.NotifyCanExecuteChanged();

@@ -96,6 +96,7 @@ public sealed partial class MainWindowViewModel(
         shown.HistoryRequested += ShowHistoryOfRow;
         shown.Composer.Attempted += Log.Record;
         shown.RevertPrompt.Attempted += Log.Record;
+        shown.DeletePrompt.Attempted += Log.Record;
         shown.Resolver.Attempted += Log.Record;
         shown.Locker.LockAttempted += Log.Record;
         shown.Locker.UnlockAttempted += Log.Record;
