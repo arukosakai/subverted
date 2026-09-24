@@ -156,7 +156,7 @@ public sealed class DiffLayoutTests
     }
 
     [Test]
-    public async Task The_unified_layout_lists_every_line_as_a_row_of_its_own()
+    public async Task The_unified_layout_lists_every_line_as_a_row_of_its_own_paired_with_its_counterpart()
     {
         await Assert
             .That(DiffLayout.Unified.RowsOf(Document(Text("a.txt", OneLineHunk))))
@@ -164,8 +164,14 @@ public sealed class DiffLayoutTests
                 new DiffRow[]
                 {
                     new DiffHunkRow("@@ -40 +41 @@"),
-                    new DiffTextRow(Removed(40, "    const int MaxJumps = 1;")),
-                    new DiffTextRow(Added(41, "    const int MaxJumps = 2;")),
+                    new DiffTextRow(
+                        Removed(40, "    const int MaxJumps = 1;"),
+                        Added(41, "    const int MaxJumps = 2;")
+                    ),
+                    new DiffTextRow(
+                        Added(41, "    const int MaxJumps = 2;"),
+                        Removed(40, "    const int MaxJumps = 1;")
+                    ),
                 },
                 CollectionOrdering.Matching
             );

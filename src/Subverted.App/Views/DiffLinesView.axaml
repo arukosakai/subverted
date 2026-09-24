@@ -53,6 +53,15 @@
     <Style Selector="Grid.line TextBlock">
       <Setter Property="VerticalAlignment" Value="Center" />
     </Style>
+    <Style Selector="Grid.line v|IntralineTextBlock">
+      <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Grid.line.added v|IntralineTextBlock">
+      <Setter Property="ChangeBrush" Value="{DynamicResource Diff.Added.Word}" />
+    </Style>
+    <Style Selector="Grid.line.removed v|IntralineTextBlock">
+      <Setter Property="ChangeBrush" Value="{DynamicResource Diff.Removed.Word}" />
+    </Style>
     <Style Selector="TextBlock.number">
       <Setter Property="Foreground" Value="{DynamicResource FaintBrush}" />
       <Setter Property="HorizontalAlignment" Value="Right" />
@@ -159,7 +168,7 @@
             <TextBlock Grid.Column="1" Classes="number" Text="{Binding Line.NewNumber}" />
             <TextBlock Grid.Column="2" Classes="sign" Text="{Binding Sign}" />
             <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="10" Margin="4,0,16,0">
-              <TextBlock Text="{Binding Line.Text}" />
+              <v:IntralineTextBlock Text="{Binding Line.Text}" Changes="{Binding Changes}" />
               <ContentControl Classes="no-newline" IsVisible="{Binding Line.EndsWithoutNewline}" />
             </StackPanel>
           </Grid>
@@ -177,7 +186,8 @@
               <DockPanel Grid.Column="2" Margin="4,0,10,0">
                 <ContentControl DockPanel.Dock="Right" Classes="no-newline" Margin="8,0,0,0"
                                 IsVisible="{Binding Old.EndsWithoutNewline, FallbackValue=False}" />
-                <TextBlock Text="{Binding Old.Text, FallbackValue={x:Null}}" TextTrimming="CharacterEllipsis" />
+                <v:IntralineTextBlock Text="{Binding Old.Text, FallbackValue={x:Null}}" Changes="{Binding OldChanges}"
+                                        TextTrimming="CharacterEllipsis" />
               </DockPanel>
             </Grid>
             <Border Grid.Column="1" Background="{DynamicResource LineBrush}" />
@@ -190,7 +200,8 @@
               <DockPanel Grid.Column="2" Margin="4,0,10,0">
                 <ContentControl DockPanel.Dock="Right" Classes="no-newline" Margin="8,0,0,0"
                                 IsVisible="{Binding New.EndsWithoutNewline, FallbackValue=False}" />
-                <TextBlock Text="{Binding New.Text, FallbackValue={x:Null}}" TextTrimming="CharacterEllipsis" />
+                <v:IntralineTextBlock Text="{Binding New.Text, FallbackValue={x:Null}}" Changes="{Binding NewChanges}"
+                                        TextTrimming="CharacterEllipsis" />
               </DockPanel>
             </Grid>
           </Grid>

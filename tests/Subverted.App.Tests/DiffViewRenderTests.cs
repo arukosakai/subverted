@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless;
@@ -290,6 +291,136 @@ public sealed class DiffViewRenderTests
         await Assert.That(atTop).IsLessThan(60);
         await Assert.That(atEnd).IsLessThan(60);
         await Assert.That(lastShown).IsTrue();
+    }
+
+    /// <summary>
+    /// Read back from the frame: under the changed digit the wash is stronger than under the
+    /// unchanged space beside it, in the removed line's tone on one side and the added's on the other.
+    /// </summary>
+    [Test]
+    [MatrixDataSource]
+    public async Task The_characters_that_changed_are_painted_stronger_than_the_rest_of_the_line(
+        [Matrix("Dark", "Light")] string variant,
+        [Matrix("Split", "Unified")] string layoutName
+    )
+    {
+        var seen = await RenderAsync(
+            variant,
+            () =>
+                new DiffLinesView
+                {
+                    Document = Diffs.Document(Diffs.Text("src/Player.cs", Diffs.OneLineHunk)),
+                    Layout = Layouts[layoutName],
+                },
+            $"diff-intraline-{layoutName.ToLowerInvariant()}-{variant.ToLowerInvariant()}.png",
+            window =>
+            {
+                using var frame = window.CaptureRenderedFrame()!;
+                return window
+                    .GetVisualDescendants()
+                    .OfType<IntralineTextBlock>()
+                    .Select(block =>
+                    {
+                        var span = block.Changes.Single();
+                        var bounds = block.TextLayout.HitTestTextRange(span.Start, span.Length).Single();
+                        var origin = block.TranslatePoint(bounds.TopLeft, window)!.Value;
+                        var y = origin.Y + bounds.Height - 2;
+                        return (
+                            block.Text,
+                            Span: span,
+                            IsRemovedTone: ReferenceEquals(
+                                block.ChangeBrush,
+                                ToneOf(block, "Diff.Removed.Word")
+                            ),
+                            IsAddedTone: ReferenceEquals(
+                                block.ChangeBrush,
+                                ToneOf(block, "Diff.Added.Word")
+                            ),
+                            Changed: PixelAt(frame, origin.X + bounds.Width / 2, y),
+                            Unchanged: PixelAt(frame, origin.X - bounds.Width / 2, y)
+                        );
+                    })
+                    .ToList();
+            }
+        );
+
+        await Assert.That(seen.Count).IsEqualTo(2);
+        await Assert.That(seen[0].Text).IsEqualTo("    const int MaxJumps = 1;");
+        await Assert.That(seen[0].Span).IsEqualTo(new ChangedSpan(25, 1));
+        await Assert.That((seen[0].IsRemovedTone, seen[0].IsAddedTone)).IsEqualTo((true, false));
+        await Assert.That(seen[1].Text).IsEqualTo("    const int MaxJumps = 2;");
+        await Assert.That(seen[1].Span).IsEqualTo(new ChangedSpan(25, 1));
+        await Assert.That((seen[1].IsRemovedTone, seen[1].IsAddedTone)).IsEqualTo((false, true));
+        await Assert.That(seen[0].Changed).IsNotEqualTo(seen[0].Unchanged);
+        await Assert.That(seen[1].Changed).IsNotEqualTo(seen[1].Unchanged);
+    }
+
+    /// <summary>The spans are painted in the brush given; without one the text block marks nothing.</summary>
+    [Test]
+    [Arguments(true, true)]
+    [Arguments(false, false)]
+    public async Task A_text_block_paints_its_changed_spans_only_when_given_a_brush(
+        bool hasBrush,
+        bool painted
+    )
+    {
+        var seen = await RenderAsync(
+            "Dark",
+            () =>
+                new IntralineTextBlock
+                {
+                    Text = "count = 22",
+                    Changes = [new ChangedSpan(8, 2)],
+                    ChangeBrush = hasBrush ? Brushes.Yellow : null,
+                },
+            $"diff-intraline-block-{(hasBrush ? "brush" : "no-brush")}.png",
+            window =>
+            {
+                using var frame = window.CaptureRenderedFrame()!;
+                var block = window.GetVisualDescendants().OfType<IntralineTextBlock>().Single();
+                var bounds = block.TextLayout.HitTestTextRange(8, 2).Single();
+                var origin = block.TranslatePoint(bounds.TopLeft, window)!.Value;
+                var y = origin.Y + bounds.Height - 2;
+                return (
+                    Changed: PixelAt(frame, origin.X + bounds.Width / 2, y),
+                    Unchanged: PixelAt(frame, origin.X - bounds.Width / 4, y)
+                );
+            }
+        );
+
+        await Assert.That(seen.Changed != seen.Unchanged).IsEqualTo(painted);
+    }
+
+    /// <summary>Only a line with a partner is marked; context has no tone to mark in at all.</summary>
+    [Test]
+    [Arguments("Split")]
+    [Arguments("Unified")]
+    public async Task Only_paired_changed_lines_carry_changed_spans(string layoutName)
+    {
+        var seen = await RenderAsync(
+            "Dark",
+            () => new DiffLinesView { Document = Diffs.Modified, Layout = Layouts[layoutName] },
+            $"diff-intraline-modified-{layoutName.ToLowerInvariant()}.png",
+            window =>
+                window
+                    .GetVisualDescendants()
+                    .OfType<IntralineTextBlock>()
+                    .Where(block => block.Text is not null)
+                    .DistinctBy(block => block.Text)
+                    .ToDictionary(
+                        block => block.Text!,
+                        block => (block.Changes.ToList(), block.ChangeBrush is not null)
+                    )
+        );
+
+        await Assert
+            .That(seen["        position += velocity * delta;"].Item1)
+            .IsEquivalentTo([new ChangedSpan(28, 8)], CollectionOrdering.Matching);
+        await Assert.That(seen["        position += velocity * delta;"].Item2).IsTrue();
+        await Assert.That(seen["        position += velocity;"].Item1).IsEmpty();
+        await Assert.That(seen["        ClampToLevel();"].Item1).IsEmpty();
+        await Assert.That(seen["    {"].Item1).IsEmpty();
+        await Assert.That(seen["    {"].Item2).IsFalse();
     }
 
     [Test]
@@ -673,6 +804,15 @@ public sealed class DiffViewRenderTests
         var panel = new Border { Padding = new Thickness(8), Child = content };
         panel.Classes.Add("panel");
         return panel;
+    }
+
+    private static object? ToneOf(Control control, string key) =>
+        control.TryFindResource(key, control.ActualThemeVariant, out var brush) ? brush : null;
+
+    private static int PixelAt(WriteableBitmap frame, double x, double y)
+    {
+        using var pixels = frame.Lock();
+        return Marshal.ReadInt32(pixels.Address, (int)y * pixels.RowBytes + (int)x * 4);
     }
 
     private static IEnumerable<string> TextsOf(Window window) =>

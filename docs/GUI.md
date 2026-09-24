@@ -212,7 +212,7 @@ from. That needs a way to reach unchanged files, which nothing in M2 builds.
 - Split view, intraline highlighting on paired `-`/`+` lines as a pure function, and the context
   dropdown.
 
-*Status: split view built; intraline highlighting and the context dropdown not.* Split is the
+*Status: split view and intraline highlighting built; the context dropdown not.* Split is the
 default, with a Split / Unified toggle over the lines (operator: "the diff should be two-pane").
 `SplitLines` pairs a hunk's lines: context sits on both sides, and each run of changes between
 context pairs its removals with its additions in order, padding the shorter side with blank filler.
@@ -224,6 +224,24 @@ not scroll sideways — each half is half the viewport and a long line is cut of
 Unified still scrolls. Copying from the split list gives the lines in unified order (a run's old
 lines, then its new ones), so the same selection copies the same text in either layout. Seen only
 in headless renders (dark and the Default Light preset), not in the real app, and nothing on macOS.
+
+Intraline highlighting marks what changed inside each removed/added pair — the pairs `SplitLines`
+makes, and in the unified layout `UnifiedLines` gives each changed line the same partner. The pure
+`IntralineChanges.Between` cuts both lines into tokens (words, whitespace runs, single symbols, never
+splitting a grapheme cluster), trims the shared start and end, and takes the longest common token
+sequence of the rest; changes separated only by whitespace read as one span. Words are compared
+whole, so a rename marks the word rather than the letters that happen to differ. A pair that shares
+no text but whitespace marks nothing — the line's tint already says it all changed. Two caps bound
+the cost: a line over 2,000 characters on either side is not compared, and past 20,000 token pairs
+the whole middle between the shared ends is marked instead of compared. Measured in Release on a dev
+box, 2,000 calls each: a typical code line ~14 µs a call, the worst cases within both caps
+~60–170 µs; a split row computes it twice (once per side), and only realised rows compute it at all.
+`IntralineTextBlock` paints the spans behind plain `Text` in `Diff.Added.Word` / `Diff.Removed.Word`
+(Tokens.axaml, per light/dark, so every preset has them), so copying and trimming are unchanged. A
+long split line's marks past the ellipsis are simply not visible. Headless renders only (dark and
+Default Light, both layouts; a test reads the frame's pixels to confirm the span is painted), not
+the real app, nothing on macOS. The 50k-line headless jump-to-end took ~175–185 ms in Debug with
+highlighting on; no before/after comparison was taken.
 
 ## Not in M2
 

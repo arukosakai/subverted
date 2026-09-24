@@ -15,4 +15,15 @@ public sealed record DiffSplitRow(DiffLine? Old, DiffLine? New) : DiffRow
     public string OldSign => Old is { Kind: DiffLineKind.Removed } ? "−" : string.Empty;
 
     public string NewSign => New is { Kind: DiffLineKind.Added } ? "+" : string.Empty;
+
+    /// <summary>What changed within the removed line against the added one, worked out on each read.</summary>
+    public IReadOnlyList<ChangedSpan> OldChanges => Intraline.Old;
+
+    /// <summary>What changed within the added line against the removed one, worked out on each read.</summary>
+    public IReadOnlyList<ChangedSpan> NewChanges => Intraline.New;
+
+    private IntralineChanges Intraline =>
+        Old is { Kind: DiffLineKind.Removed } removed && New is { Kind: DiffLineKind.Added } added
+            ? IntralineChanges.Between(removed.Text, added.Text)
+            : IntralineChanges.None;
 }

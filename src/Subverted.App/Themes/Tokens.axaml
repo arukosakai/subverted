@@ -23,11 +23,14 @@
       <SolidColorBrush x:Key="Tone.Unversioned.Soft" Color="#1F94A3B8" />
       <SolidColorBrush x:Key="Tone.Quiet.Soft" Color="#1A6E737D" />
 
-      <!-- Diff lines: a wash across the line, a little stronger under the numbers. -->
+      <!-- Diff lines: a wash across the line, a little stronger under the numbers, strongest under
+           the characters that changed. -->
       <SolidColorBrush x:Key="Diff.Added.Line" Color="#1C34D399" />
       <SolidColorBrush x:Key="Diff.Added.Gutter" Color="#2E34D399" />
+      <SolidColorBrush x:Key="Diff.Added.Word" Color="#7034D399" />
       <SolidColorBrush x:Key="Diff.Removed.Line" Color="#1CF87171" />
       <SolidColorBrush x:Key="Diff.Removed.Gutter" Color="#2EF87171" />
+      <SolidColorBrush x:Key="Diff.Removed.Word" Color="#70F87171" />
       <SolidColorBrush x:Key="Diff.Hunk" Color="#0CFFFFFF" />
     </ResourceDictionary>
 
@@ -53,8 +56,10 @@
 
       <SolidColorBrush x:Key="Diff.Added.Line" Color="#1A0F9F6E" />
       <SolidColorBrush x:Key="Diff.Added.Gutter" Color="#2B0F9F6E" />
+      <SolidColorBrush x:Key="Diff.Added.Word" Color="#590F9F6E" />
       <SolidColorBrush x:Key="Diff.Removed.Line" Color="#1ADC2626" />
       <SolidColorBrush x:Key="Diff.Removed.Gutter" Color="#2BDC2626" />
+      <SolidColorBrush x:Key="Diff.Removed.Word" Color="#59DC2626" />
       <SolidColorBrush x:Key="Diff.Hunk" Color="#0A000000" />
     </ResourceDictionary>
   </ResourceDictionary.ThemeDictionaries>

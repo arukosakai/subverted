@@ -45,9 +45,9 @@ public sealed class DiffRowsTests
         DiffRow[] expected =
         [
             new DiffHunkRow("@@ -10,7 +10,8 @@"),
-            .. ModifiedHunk.Lines.Select(line => new DiffTextRow(line)),
+            .. UnifiedLines.Of(ModifiedHunk.Lines),
             new DiffHunkRow("@@ -40 +41 @@"),
-            .. OneLineHunk.Lines.Select(line => new DiffTextRow(line)),
+            .. UnifiedLines.Of(OneLineHunk.Lines),
         ];
 
         await Assert
@@ -64,8 +64,8 @@ public sealed class DiffRowsTests
         [
             new DiffFileHeaderRow("levels/forest.map"),
             new DiffHunkRow("@@ -3 +3 @@"),
-            new DiffTextRow(Removed(3, "trees 40")),
-            new DiffTextRow(Added(3, "trees 55")),
+            new DiffTextRow(Removed(3, "trees 40"), Added(3, "trees 55")),
+            new DiffTextRow(Added(3, "trees 55"), Removed(3, "trees 40")),
             new DiffFileHeaderRow("levels/music.ogg"),
             new DiffBinaryRow("levels/music.ogg", null, IsOnlyFile: false),
             new DiffFileHeaderRow("levels/cave.map"),
@@ -145,8 +145,8 @@ public sealed class DiffRowsTests
             new DiffPropertyRow("svn:eol-style", PropertyChangeKind.Added),
             new DiffTextRow(Added(1, "native")),
             new DiffPropertyRow("svn:keywords", PropertyChangeKind.Modified),
-            new DiffTextRow(Removed(1, "Id")),
-            new DiffTextRow(Added(1, "Id Rev")),
+            new DiffTextRow(Removed(1, "Id"), Added(1, "Id Rev")),
+            new DiffTextRow(Added(1, "Id Rev"), Removed(1, "Id")),
         ];
 
         await Assert
@@ -160,11 +160,11 @@ public sealed class DiffRowsTests
         DiffRow[] expected =
         [
             new DiffHunkRow("@@ -40 +41 @@"),
-            .. OneLineHunk.Lines.Select(line => new DiffTextRow(line)),
+            .. UnifiedLines.Of(OneLineHunk.Lines),
             new DiffPropertySectionRow("src/Player.cs"),
             new DiffPropertyRow("svn:keywords", PropertyChangeKind.Modified),
-            new DiffTextRow(Removed(1, "Id")),
-            new DiffTextRow(Added(1, "Id Rev")),
+            new DiffTextRow(Removed(1, "Id"), Added(1, "Id Rev")),
+            new DiffTextRow(Added(1, "Id Rev"), Removed(1, "Id")),
         ];
 
         await Assert
@@ -189,8 +189,8 @@ public sealed class DiffRowsTests
         [
             new DiffPropertySectionRow("."),
             new DiffPropertyRow("svn:externals", PropertyChangeKind.Modified),
-            new DiffTextRow(Removed(1, "^/lib/a a")),
-            new DiffTextRow(Added(1, "^/lib/a@12 a")),
+            new DiffTextRow(Removed(1, "^/lib/a a"), Added(1, "^/lib/a@12 a")),
+            new DiffTextRow(Added(1, "^/lib/a@12 a"), Removed(1, "^/lib/a a")),
             new DiffHunkRow("## -9,0 +10 ##"),
             new DiffTextRow(Added(10, "^/lib/z z")),
         ];
