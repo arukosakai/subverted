@@ -27,7 +27,9 @@
 
       <Panel>
         <v:DiffLinesView IsVisible="{Binding State, Converter={x:Static v:DiffPaneStateIs.Ready}}"
-                         Document="{Binding Document}" />
+                         Document="{Binding Document}"
+                         OldTitle="{Binding Revision, StringFormat='Before r{0}'}"
+                         NewTitle="{Binding Revision, StringFormat='r{0}'}" />
 
         <StackPanel Spacing="10" HorizontalAlignment="Center" VerticalAlignment="Center"
                     IsVisible="{Binding State, Converter={x:Static v:DiffPaneStateIs.NothingSelected}}">

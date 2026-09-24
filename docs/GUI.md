@@ -155,6 +155,19 @@ notice or the revert overlay (headless tests and renders only), and nothing on m
 - Split view, intraline highlighting on paired `-`/`+` lines as a pure function, and the context
   dropdown.
 
+*Status: split view built; intraline highlighting and the context dropdown not.* Split is the
+default, with a Split / Unified toggle over the lines (operator: "the diff should be two-pane").
+`SplitLines` pairs a hunk's lines: context sits on both sides, and each run of changes between
+context pairs its removals with its additions in order, padding the shorter side with blank filler.
+`DiffLayout.Split` / `.Unified` choose how lines become rows; headers, binary cards, the no-lines row
+and property sections are laid out the same by both, and property values are paired too. Each half
+has its own number gutter; hunk headers span both. Column names read BASE / Working copy in Changes
+and "Before rN" / rN in History, which shares the same `DiffLinesView`. Side by side, the list does
+not scroll sideways — each half is half the viewport and a long line is cut off with an ellipsis;
+Unified still scrolls. Copying from the split list gives the lines in unified order (a run's old
+lines, then its new ones), so the same selection copies the same text in either layout. Seen only
+in headless renders (dark and the Default Light preset), not in the real app, and nothing on macOS.
+
 ## Not in M2
 
 The graph; stash, checkpoints and hunk staging (M3); image diff and other people's locks (M4);
