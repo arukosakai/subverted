@@ -173,7 +173,9 @@ list off screen. Seen in the real app on a throwaway `subverted-update` fixture,
 UI Automation: r2 came down, the conflicted file lit up and was pinned at the top, and the log kept
 SVN's text. Not seen: an update refused by SVN, or one under the `svn status` fallback. A file
 that goes into conflict **holds** the tick it had: its box shows unticked and cannot be changed, it
-is never sent — SVN would refuse the whole commit — and the tick is back once it is resolved.
+is never sent — SVN would refuse the whole commit. **Resolving it ticks it** (operator's call):
+leaving a conflict counts as a new decision and takes the path's default, whatever its tick was
+before, so a file an update left conflicted is offered for commit the moment it is settled.
 
 Resolve is a **Resolve** submenu on a line's menu — Keep mine, Take theirs…, Mark as resolved —
 offered only where the line is conflicted or, for a listed folder, holds a conflict beneath it,

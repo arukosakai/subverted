@@ -12,8 +12,8 @@ public sealed class TickedPaths
 {
     private readonly HashSet<string> _paths = new(StringComparer.Ordinal);
 
-    /// <summary>Every listed path, and whether it was last seen as a rename row.</summary>
-    private readonly Dictionary<string, bool> _seenAsRename = new(StringComparer.Ordinal);
+    /// <summary>Every listed path, and how it was last seen.</summary>
+    private readonly Dictionary<string, Seen> _seen = new(StringComparer.Ordinal);
 
     public IReadOnlySet<string> Paths => _paths;
 
@@ -41,7 +41,8 @@ public sealed class TickedPaths
     /// </summary>
     /// <remarks>
     /// A path that turns into a rename row counts as new: the unversioned half of a rename can be
-    /// listed a scan before its missing half, and then the pair must still start ticked.
+    /// listed a scan before its missing half, and then the pair must still start ticked. So does a
+    /// path leaving a conflict: resolving it says it is ready, a newer decision than any old untick.
     /// </remarks>
     /// <param name="listed">Every row in the fresh listing — not only what the filter shows.</param>
     public void Follow(IEnumerable<ChangeRow> listed)
@@ -49,22 +50,25 @@ public sealed class TickedPaths
         var rows = listed.ToList();
         var paths = rows.Select(row => row.RelPath).ToHashSet(StringComparer.Ordinal);
         _paths.IntersectWith(paths);
-        foreach (var gone in _seenAsRename.Keys.Where(path => !paths.Contains(path)).ToList())
+        foreach (var gone in _seen.Keys.Where(path => !paths.Contains(path)).ToList())
         {
-            _seenAsRename.Remove(gone);
+            _seen.Remove(gone);
         }
 
         foreach (var row in rows)
         {
-            var isRename = row.RenamedFrom is not null;
+            var now = new Seen(row.RenamedFrom is not null, row.Entry.IsConflicted);
             var isNew =
-                !_seenAsRename.TryGetValue(row.RelPath, out var wasRename)
-                || (isRename && !wasRename);
-            _seenAsRename[row.RelPath] = isRename;
+                !_seen.TryGetValue(row.RelPath, out var was)
+                || (now.AsRename && !was.AsRename)
+                || (was.Conflicted && !now.Conflicted);
+            _seen[row.RelPath] = now;
             if (isNew && DefaultTick.For(row))
             {
                 _paths.Add(row.RelPath);
             }
         }
     }
+
+    private readonly record struct Seen(bool AsRename, bool Conflicted);
 }

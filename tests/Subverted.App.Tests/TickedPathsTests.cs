@@ -148,6 +148,58 @@ public sealed class TickedPathsTests
         await Assert.That(ticks.Paths).IsEmpty();
     }
 
+    /// <summary>Resolving a conflict is saying the file is ready, so it comes back ticked (operator's call).</summary>
+    [Test]
+    public async Task A_conflict_that_is_resolved_is_ticked_for_commit()
+    {
+        var ticks = new TickedPaths();
+        ticks.Follow([Row(Conflicted("hero.png"))]);
+        var whileConflicted = ticks.IsTicked("hero.png");
+
+        ticks.Follow([Row(Entry("hero.png"))]);
+
+        await Assert.That(whileConflicted).IsFalse();
+        await Assert.That(ticks.Paths).IsEquivalentTo(new[] { "hero.png" });
+    }
+
+    /// <summary>The resolve overrides an untick made before the conflict, since it is a newer decision.</summary>
+    [Test]
+    public async Task A_resolve_ticks_a_path_even_if_it_was_unticked_before_the_conflict()
+    {
+        var ticks = new TickedPaths();
+        ticks.Follow([Row(Entry("hero.png"))]);
+        ticks.Toggle("hero.png");
+        ticks.Follow([Row(Conflicted("hero.png"))]);
+
+        ticks.Follow([Row(Entry("hero.png"))]);
+
+        await Assert.That(ticks.Paths).IsEquivalentTo(new[] { "hero.png" });
+    }
+
+    /// <summary>Only leaving the conflict counts: a clean edit resynced as itself keeps its untick.</summary>
+    [Test]
+    public async Task A_conflict_still_conflicted_is_not_ticked_by_the_resync()
+    {
+        var ticks = new TickedPaths();
+        ticks.Follow([Row(Conflicted("hero.png"))]);
+
+        ticks.Follow([Row(Conflicted("hero.png"))]);
+
+        await Assert.That(ticks.Paths).IsEmpty();
+    }
+
+    /// <summary>A resolve takes the path's default, not a blanket tick: an unversioned result stays unticked.</summary>
+    [Test]
+    public async Task A_resolve_that_leaves_something_unticked_by_default_does_not_tick_it()
+    {
+        var ticks = new TickedPaths();
+        ticks.Follow([Row(Conflicted("hero.png"))]);
+
+        ticks.Follow([Row(Entry("hero.png", NodeStatus.Unversioned))]);
+
+        await Assert.That(ticks.Paths).IsEmpty();
+    }
+
     [Test]
     public async Task Unticking_after_a_commit_clears_only_what_was_sent_and_it_stays_clear()
     {
@@ -161,4 +213,7 @@ public sealed class TickedPathsTests
     }
 
     private static ChangeRow Row(WorkingCopyEntry entry) => ChangeRow.From(entry);
+
+    private static WorkingCopyEntry Conflicted(string relPath) =>
+        Entry(relPath, NodeStatus.Conflicted, isConflicted: true);
 }

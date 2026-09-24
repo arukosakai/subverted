@@ -376,6 +376,27 @@ public sealed class CommitFlowTests
         await Assert.That(view.Composer.Selection.Sent.Count).IsEqualTo(1);
     }
 
+    /// <summary>What an update usually leaves: a file first seen conflicted, which a resolve makes ready to send.</summary>
+    [Test]
+    public async Task A_line_first_seen_in_conflict_is_ticked_once_it_is_resolved()
+    {
+        var view = View(
+            new FakeWorkingCopyStatus()
+                .Answers(Listing(Entry("a.png", NodeStatus.Conflicted, isConflicted: true)))
+                .Answers(Listing(Entry("a.png")))
+        );
+        await view.RefreshAsync(None);
+        var inConflict = Line(view, "a.png").TickMark;
+
+        await view.RefreshAsync(None);
+
+        await Assert.That(inConflict == false).IsTrue();
+        await Assert.That(Line(view, "a.png").TickMark == true).IsTrue();
+        await Assert
+            .That(view.Composer.Selection.Sent.Select(row => row.RelPath))
+            .IsEquivalentTo(["a.png"]);
+    }
+
     private async Task<WorkingCopyViewModel> ListedAsync(StatusResponse listing)
     {
         var view = View(new FakeWorkingCopyStatus().Answers(listing));
