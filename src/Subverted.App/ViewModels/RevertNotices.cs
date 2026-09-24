@@ -30,6 +30,10 @@ public static class RevertNotices
             ),
         };
 
+    /// <summary>Confirmed after the listing stopped showing anything under the target to revert.</summary>
+    public static Notice NothingLeft(string target) =>
+        new(NoticeKind.NothingWritten, $"Nothing left to revert in {target}", null, null);
+
     public static Notice Unreachable(string message) =>
         new(NoticeKind.Uncertain, "The daemon is not answering", message, PartWay);
 }

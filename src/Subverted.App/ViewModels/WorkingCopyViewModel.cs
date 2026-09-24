@@ -564,8 +564,17 @@ public sealed partial class WorkingCopyViewModel(
     }
 
     [RelayCommand(CanExecute = nameof(CanRevert))]
-    private void Revert(ChangeListEntry? entry) =>
-        RevertPrompt.Ask(RevertConfirmation.For(entry!.Row!, Changes), Location);
+    private void Revert(ChangeListEntry? entry)
+    {
+        var target = entry!.Row!;
+        RevertPrompt.Ask(RevertConfirmation.For(target, Changes), Location, () => Relist(target));
+    }
+
+    /// <summary>The same revert against today's listing; nothing to do once the target is gone from it.</summary>
+    private RevertConfirmation Relist(ChangeRow asked) =>
+        Changes.FirstOrDefault(row => row.RelPath == asked.RelPath) is { } current
+            ? RevertConfirmation.For(current, Changes)
+            : new RevertConfirmation(asked.RelPath, []);
 
     /// <summary>Only where revert would do something: never a rename, an unversioned file or a folder that only holds others.</summary>
     private bool CanRevert(ChangeListEntry? entry) =>
@@ -588,12 +597,21 @@ public sealed partial class WorkingCopyViewModel(
         ChangeListEntry entry,
         ConflictResolution resolution,
         CancellationToken cancellationToken
-    ) =>
-        Resolver.ResolveAsync(
-            ResolveScope.For(entry.Row!, resolution, Changes),
+    )
+    {
+        var target = entry.Row!;
+        return Resolver.ResolveAsync(
+            ResolveScope.For(target, resolution, Changes),
             Location,
+            () => Rescope(target, resolution),
             cancellationToken
         );
+    }
+
+    private ResolveScope Rescope(ChangeRow asked, ConflictResolution resolution) =>
+        Changes.FirstOrDefault(row => row.RelPath == asked.RelPath) is { } current
+            ? ResolveScope.For(current, resolution, Changes)
+            : new ResolveScope(asked.RelPath, resolution, []);
 
     /// <summary>
     /// Whether the picked line has anything to resolve, for the submenu that holds the three: a

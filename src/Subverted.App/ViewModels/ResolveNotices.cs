@@ -40,6 +40,10 @@ public static class ResolveNotices
             ),
         };
 
+    /// <summary>Confirmed after the listing stopped showing a conflict under the target.</summary>
+    public static Notice NothingLeft(string target) =>
+        new(NoticeKind.NothingWritten, $"Nothing left to resolve in {target}", null, null);
+
     public static Notice Unreachable(string message) =>
         new(NoticeKind.Uncertain, "The daemon is not answering", message, PartWay);
 

@@ -12,6 +12,7 @@ namespace Subverted.App.ViewModels;
 public sealed partial class RevertPromptViewModel(IWorkingCopyRevert reverts) : ObservableObject
 {
     private string _root = "";
+    private Func<RevertConfirmation>? _relist;
 
     /// <summary>The question on screen; <c>null</c> when none is being asked.</summary>
     [ObservableProperty]
@@ -20,6 +21,10 @@ public sealed partial class RevertPromptViewModel(IWorkingCopyRevert reverts) : 
     public partial RevertConfirmation? Pending { get; private set; }
 
     public bool IsAsking => Pending is not null;
+
+    /// <summary>The list on screen is not the one first shown: the listing changed under the question.</summary>
+    [ObservableProperty]
+    public partial bool HasChangedSinceAsked { get; private set; }
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(ConfirmCommand), nameof(CancelCommand))]
@@ -31,7 +36,11 @@ public sealed partial class RevertPromptViewModel(IWorkingCopyRevert reverts) : 
 
     /// <summary>Puts the question. Ignored while a revert is running, so its list stays the one sent.</summary>
     /// <param name="root">The working-copy root the confirmation's paths are relative to.</param>
-    public void Ask(RevertConfirmation confirmation, string root)
+    /// <param name="relist">
+    /// The same question against the listing as it stands when confirmed. A revert reaches whatever
+    /// is under its target by then, so a list that differs is shown again rather than sent.
+    /// </param>
+    public void Ask(RevertConfirmation confirmation, string root, Func<RevertConfirmation> relist)
     {
         if (IsReverting)
         {
@@ -39,7 +48,9 @@ public sealed partial class RevertPromptViewModel(IWorkingCopyRevert reverts) : 
         }
 
         _root = root;
+        _relist = relist;
         Notice = null;
+        HasChangedSinceAsked = false;
         Pending = confirmation;
     }
 
@@ -50,6 +61,21 @@ public sealed partial class RevertPromptViewModel(IWorkingCopyRevert reverts) : 
     private async Task ConfirmAsync(CancellationToken cancellationToken)
     {
         var target = Pending!.Target;
+        var current = _relist!();
+        if (current.Lines.Count == 0)
+        {
+            Pending = null;
+            Notice = RevertNotices.NothingLeft(target);
+            return;
+        }
+
+        if (!current.Lines.SequenceEqual(Pending.Lines))
+        {
+            HasChangedSinceAsked = true;
+            Pending = current;
+            return;
+        }
+
         IsReverting = true;
         RevertAttempt attempt;
         try
@@ -71,6 +97,7 @@ public sealed partial class RevertPromptViewModel(IWorkingCopyRevert reverts) : 
         finally
         {
             IsReverting = false;
+            HasChangedSinceAsked = false;
             Pending = null;
         }
 
@@ -81,7 +108,11 @@ public sealed partial class RevertPromptViewModel(IWorkingCopyRevert reverts) : 
     private bool CanConfirm() => Pending is not null && !IsReverting;
 
     [RelayCommand(CanExecute = nameof(CanCancel))]
-    private void Cancel() => Pending = null;
+    private void Cancel()
+    {
+        HasChangedSinceAsked = false;
+        Pending = null;
+    }
 
     private bool CanCancel() => !IsReverting;
 

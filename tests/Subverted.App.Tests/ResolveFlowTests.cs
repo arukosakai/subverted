@@ -235,6 +235,82 @@ public sealed class ResolveFlowTests
             .IsEquivalentTo([("Resolve", "a.png")]);
     }
 
+    /// <summary>A conflict an update left under the folder after the question was put is not replaced unseen.</summary>
+    [Test]
+    public async Task A_conflict_list_that_grew_under_the_question_is_asked_again_rather_than_sent()
+    {
+        var folder = Entry("art", NodeStatus.Modified, kind: NodeKind.Directory);
+        var status = new FakeWorkingCopyStatus()
+            .Answers(Listing(folder, Conflicted("art/a.png")))
+            .Answers(Listing(folder, Conflicted("art/a.png"), Conflicted("art/b.png")));
+        var view = WorkingCopies.View(status, resolves: _resolves);
+        await view.RefreshAsync(None);
+        await view.TakeTheirsCommand.ExecuteAsync(Line(view, "art"));
+        await view.RefreshAsync(None);
+
+        await view.Resolver.ConfirmCommand.ExecuteAsync(null);
+
+        await Assert.That(_resolves.Resolved).IsEmpty();
+        await Assert.That(view.Resolver.HasChangedSinceAsked).IsTrue();
+        await Assert
+            .That(view.Resolver.Pending!.Lines)
+            .IsEquivalentTo(new[] { "art/a.png", "art/b.png" });
+
+        await view.Resolver.ConfirmCommand.ExecuteAsync(null);
+
+        await Assert
+            .That(_resolves.Resolved)
+            .IsEquivalentTo(
+                new[] { (DiffTarget.PathOf(Info.RootPath, "art"), ConflictResolution.Theirs) }
+            );
+        await Assert.That(view.Resolver.HasChangedSinceAsked).IsFalse();
+    }
+
+    [Test]
+    public async Task Conflicts_settled_elsewhere_under_the_question_send_nothing_and_say_so()
+    {
+        var status = new FakeWorkingCopyStatus()
+            .Answers(Listing(Conflicted("a.png")))
+            .Answers(Listing(Entry("a.png")));
+        var view = WorkingCopies.View(status, resolves: _resolves);
+        await view.RefreshAsync(None);
+        await view.TakeTheirsCommand.ExecuteAsync(Line(view, "a.png"));
+        await view.RefreshAsync(None);
+
+        await view.Resolver.ConfirmCommand.ExecuteAsync(null);
+
+        await Assert.That(_resolves.Resolved).IsEmpty();
+        await Assert.That(view.Resolver.IsAsking).IsFalse();
+        await Assert
+            .That(view.Resolver.Notice)
+            .IsEqualTo(
+                new Notice(
+                    NoticeKind.NothingWritten,
+                    "Nothing left to resolve in a.png",
+                    null,
+                    null
+                )
+            );
+    }
+
+    [Test]
+    public async Task Cancelling_a_changed_question_clears_its_warning()
+    {
+        var folder = Entry("art", NodeStatus.Modified, kind: NodeKind.Directory);
+        var status = new FakeWorkingCopyStatus()
+            .Answers(Listing(folder, Conflicted("art/a.png")))
+            .Answers(Listing(folder, Conflicted("art/a.png"), Conflicted("art/b.png")));
+        var view = WorkingCopies.View(status, resolves: _resolves);
+        await view.RefreshAsync(None);
+        await view.TakeTheirsCommand.ExecuteAsync(Line(view, "art"));
+        await view.RefreshAsync(None);
+        await view.Resolver.ConfirmCommand.ExecuteAsync(null);
+
+        view.Resolver.CancelCommand.Execute(null);
+
+        await Assert.That(view.Resolver.HasChangedSinceAsked).IsFalse();
+    }
+
     private async Task<WorkingCopyViewModel> ListedAsync(StatusResponse listing)
     {
         var view = WorkingCopies.View(

@@ -13,6 +13,7 @@ namespace Subverted.App.ViewModels;
 public sealed partial class ResolveViewModel(IWorkingCopyResolve resolves) : ObservableObject
 {
     private string _root = "";
+    private Func<ResolveScope>? _relist;
 
     /// <summary>The question on screen; <c>null</c> when none is being asked.</summary>
     [ObservableProperty]
@@ -21,6 +22,10 @@ public sealed partial class ResolveViewModel(IWorkingCopyResolve resolves) : Obs
     public partial ResolveScope? Pending { get; private set; }
 
     public bool IsAsking => Pending is not null;
+
+    /// <summary>The list on screen is not the one first shown: the listing changed under the question.</summary>
+    [ObservableProperty]
+    public partial bool HasChangedSinceAsked { get; private set; }
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(ConfirmCommand), nameof(CancelCommand))]
@@ -35,7 +40,16 @@ public sealed partial class ResolveViewModel(IWorkingCopyResolve resolves) : Obs
 
     /// <summary>Asks first or sends at once; ignored while a resolve is running.</summary>
     /// <param name="root">The working-copy root the scope's paths are relative to.</param>
-    public Task ResolveAsync(ResolveScope scope, string root, CancellationToken cancellationToken)
+    /// <param name="relist">
+    /// The same scope against the listing as it stands when confirmed; a question whose list has
+    /// changed is shown again rather than sent.
+    /// </param>
+    public Task ResolveAsync(
+        ResolveScope scope,
+        string root,
+        Func<ResolveScope> relist,
+        CancellationToken cancellationToken
+    )
     {
         if (IsResolving)
         {
@@ -46,6 +60,8 @@ public sealed partial class ResolveViewModel(IWorkingCopyResolve resolves) : Obs
         Notice = null;
         if (ResolutionRisk.OverwritesLocalWork(scope.Resolution))
         {
+            _relist = relist;
+            HasChangedSinceAsked = false;
             Pending = scope;
             return Task.CompletedTask;
         }
@@ -54,13 +70,34 @@ public sealed partial class ResolveViewModel(IWorkingCopyResolve resolves) : Obs
     }
 
     [RelayCommand(CanExecute = nameof(CanConfirm))]
-    private Task ConfirmAsync(CancellationToken cancellationToken) =>
-        SendAsync(Pending!, cancellationToken);
+    private Task ConfirmAsync(CancellationToken cancellationToken)
+    {
+        var current = _relist!();
+        if (current.Lines.Count == 0)
+        {
+            Notice = ResolveNotices.NothingLeft(Pending!.Target);
+            Cancel();
+            return Task.CompletedTask;
+        }
+
+        if (!current.Lines.SequenceEqual(Pending!.Lines))
+        {
+            HasChangedSinceAsked = true;
+            Pending = current;
+            return Task.CompletedTask;
+        }
+
+        return SendAsync(current, cancellationToken);
+    }
 
     private bool CanConfirm() => Pending is not null && !IsResolving;
 
     [RelayCommand(CanExecute = nameof(CanCancel))]
-    private void Cancel() => Pending = null;
+    private void Cancel()
+    {
+        HasChangedSinceAsked = false;
+        Pending = null;
+    }
 
     private bool CanCancel() => !IsResolving;
 
@@ -97,6 +134,7 @@ public sealed partial class ResolveViewModel(IWorkingCopyResolve resolves) : Obs
         finally
         {
             IsResolving = false;
+            HasChangedSinceAsked = false;
             Pending = null;
         }
 

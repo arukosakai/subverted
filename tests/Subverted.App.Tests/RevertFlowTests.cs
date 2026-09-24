@@ -156,6 +156,97 @@ public sealed class RevertFlowTests
         await Assert.That(view.RevertPrompt.Notice).IsNull();
     }
 
+    /// <summary>
+    /// Something saved under a folder while its question was open would be reverted without ever
+    /// having been on the list, so the question is put again with the list as it now stands.
+    /// </summary>
+    [Test]
+    public async Task A_list_that_grew_under_the_question_is_asked_again_rather_than_reverted()
+    {
+        var folder = Entry("art", NodeStatus.Modified, kind: NodeKind.Directory);
+        var status = new FakeWorkingCopyStatus()
+            .Answers(Listing(folder, Entry("art/a.png")))
+            .Answers(Listing(folder, Entry("art/a.png"), Entry("art/new.psd")));
+        var view = WorkingCopies.View(status, reverts: _reverts);
+        await view.RefreshAsync(None);
+        view.RevertCommand.Execute(Line(view, "art"));
+        await view.RefreshAsync(None);
+
+        await view.RevertPrompt.ConfirmCommand.ExecuteAsync(null);
+
+        await Assert.That(_reverts.Reverted).IsEmpty();
+        await Assert.That(view.RevertPrompt.HasChangedSinceAsked).IsTrue();
+        await Assert
+            .That(view.RevertPrompt.Pending!.Lines.Select(line => line.RelPath))
+            .IsEquivalentTo(new[] { "art", "art/a.png", "art/new.psd" });
+
+        await view.RevertPrompt.ConfirmCommand.ExecuteAsync(null);
+
+        await Assert
+            .That(_reverts.Reverted)
+            .IsEquivalentTo(new[] { DiffTarget.PathOf(Info.RootPath, "art") });
+        await Assert.That(view.RevertPrompt.HasChangedSinceAsked).IsFalse();
+    }
+
+    [Test]
+    public async Task A_list_unchanged_under_the_question_is_reverted_at_once()
+    {
+        var view = await ListedAsync(Listing(Entry("art/a.png")));
+        view.RevertCommand.Execute(Line(view, "art/a.png"));
+        await view.RefreshAsync(None);
+
+        await view.RevertPrompt.ConfirmCommand.ExecuteAsync(null);
+
+        await Assert.That(_reverts.Reverted).Count().IsEqualTo(1);
+        await Assert.That(view.RevertPrompt.HasChangedSinceAsked).IsFalse();
+    }
+
+    [Test]
+    public async Task A_target_reverted_elsewhere_under_the_question_sends_nothing_and_says_so()
+    {
+        var status = new FakeWorkingCopyStatus()
+            .Answers(Listing(Entry("art/a.png")))
+            .Answers(Listing());
+        var view = WorkingCopies.View(status, reverts: _reverts);
+        await view.RefreshAsync(None);
+        view.RevertCommand.Execute(Line(view, "art/a.png"));
+        await view.RefreshAsync(None);
+
+        await view.RevertPrompt.ConfirmCommand.ExecuteAsync(null);
+
+        await Assert.That(_reverts.Reverted).IsEmpty();
+        await Assert.That(view.RevertPrompt.IsAsking).IsFalse();
+        await Assert
+            .That(view.RevertPrompt.Notice)
+            .IsEqualTo(
+                new Notice(
+                    NoticeKind.NothingWritten,
+                    "Nothing left to revert in art/a.png",
+                    null,
+                    null
+                )
+            );
+    }
+
+    /// <summary>A new question starts clean, whatever the last one ended on.</summary>
+    [Test]
+    public async Task Asking_again_clears_a_changed_list_warning()
+    {
+        var status = new FakeWorkingCopyStatus()
+            .Answers(Listing(Entry("a.png")))
+            .Answers(Listing(Entry("a.png", NodeStatus.Missing)));
+        var view = WorkingCopies.View(status, reverts: _reverts);
+        await view.RefreshAsync(None);
+        view.RevertCommand.Execute(Line(view, "a.png"));
+        await view.RefreshAsync(None);
+        await view.RevertPrompt.ConfirmCommand.ExecuteAsync(null);
+        view.RevertPrompt.CancelCommand.Execute(null);
+
+        view.RevertCommand.Execute(Line(view, "a.png"));
+
+        await Assert.That(view.RevertPrompt.HasChangedSinceAsked).IsFalse();
+    }
+
     private async Task<WorkingCopyViewModel> ListedAsync(StatusResponse listing)
     {
         var view = WorkingCopies.View(
