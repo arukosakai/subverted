@@ -30,8 +30,6 @@
 
         <StackPanel Spacing="10" HorizontalAlignment="Center" VerticalAlignment="Center"
                     IsVisible="{Binding State, Converter={x:Static v:DiffPaneStateIs.NothingSelected}}">
-          <Path Classes="icon" Data="{StaticResource Icon.Diff}" Width="28" Height="28"
-                Stroke="{DynamicResource FaintBrush}" HorizontalAlignment="Center" />
           <TextBlock Classes="faint" HorizontalAlignment="Center" Text="Select a changed path to see what the revision did" />
         </StackPanel>
 
@@ -43,10 +41,6 @@
 
         <StackPanel Spacing="10" HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="400"
                     IsVisible="{Binding State, Converter={x:Static v:DiffPaneStateIs.NothingToShow}}">
-          <Border Width="52" Height="52" CornerRadius="26" HorizontalAlignment="Center"
-                  Background="{DynamicResource Tone.Quiet.Soft}">
-            <Path Classes="icon" Data="{StaticResource Icon.Diff}" Width="22" Height="22" />
-          </Border>
           <TextBlock Classes="empty-title" Text="Nothing to compare" />
           <TextBlock Classes="muted" HorizontalAlignment="Center" TextAlignment="Center"
                      TextWrapping="Wrap" Text="{Binding Message}" />
@@ -54,11 +48,6 @@
 
         <StackPanel Spacing="10" HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="400"
                     IsVisible="{Binding State, Converter={x:Static v:DiffPaneStateIs.Unreachable}}">
-          <Border Width="52" Height="52" CornerRadius="26" HorizontalAlignment="Center"
-                  Background="{DynamicResource Tone.Missing.Soft}">
-            <Path Classes="icon" Data="{StaticResource Icon.Unplugged}" Width="24" Height="24"
-                  Stroke="{DynamicResource Tone.Missing}" StrokeThickness="2" />
-          </Border>
           <TextBlock Classes="empty-title" Text="The daemon is not answering" />
           <TextBlock Classes="muted" HorizontalAlignment="Center" TextAlignment="Center"
                      TextWrapping="Wrap" Text="{Binding Message}" />
@@ -66,11 +55,6 @@
 
         <StackPanel Spacing="10" HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="400"
                     IsVisible="{Binding State, Converter={x:Static v:DiffPaneStateIs.Failed}}">
-          <Border Width="52" Height="52" CornerRadius="26" HorizontalAlignment="Center"
-                  Background="{DynamicResource Tone.Missing.Soft}">
-            <Path Classes="icon" Data="{StaticResource Icon.Alert}" Width="24" Height="24"
-                  Stroke="{DynamicResource Tone.Missing}" StrokeThickness="2" />
-          </Border>
           <TextBlock Classes="empty-title" Text="The diff could not be read" />
           <TextBlock Classes="muted" HorizontalAlignment="Center" TextAlignment="Center"
                      TextWrapping="Wrap" Text="{Binding Message}" />

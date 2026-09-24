@@ -9,8 +9,6 @@ public sealed class StateIs(params WorkingCopyState[] states) : IValueConverter
 {
     public static readonly StateIs Loading = new(WorkingCopyState.Loading);
 
-    public static readonly StateIs Ready = new(WorkingCopyState.Ready);
-
     public object? Convert(
         object? value,
         Type targetType,

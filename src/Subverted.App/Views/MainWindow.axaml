@@ -48,10 +48,6 @@
         </StackPanel>
 
         <StackPanel Grid.Row="2" Spacing="6" HorizontalAlignment="Center" Margin="0,0,0,14">
-          <Button Classes="nav" ToolTip.Tip="Open working copy…" AutomationProperties.Name="Open working copy"
-                  Command="{Binding OpenFolderCommand}">
-            <Path Classes="icon" Data="{StaticResource Icon.FolderPlus}" />
-          </Button>
           <Button x:Name="ThemeButton" Classes="nav" ToolTip.Tip="Theme" AutomationProperties.Name="Theme">
             <Path Classes="icon" Data="{StaticResource Icon.Palette}" />
             <Button.Flyout>
@@ -66,8 +62,8 @@
 
     <Grid Grid.Column="1" RowDefinitions="44,*,Auto,Auto,Auto" Background="{DynamicResource BgBrush}">
 
-      <!-- Title bar: which working copy, where it points, and whether the answer is live. The drag
-           area sits behind the controls, and the right margin leaves the caption buttons their strip. -->
+      <!-- Title bar: which working copy and where it points; a listing gone stale says so over the table.
+           The drag area sits behind the controls, and the right margin leaves the caption buttons their strip. -->
       <Border Grid.Row="0" Classes="line-bottom" Background="Transparent"
               WindowDecorationProperties.ElementRole="TitleBar" />
       <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto" Margin="8,0,150,1">
@@ -120,8 +116,8 @@
                      TextTrimming="CharacterEllipsis" IsHitTestVisible="False"
                      Text="{Binding Current.RepositoryRoot, FallbackValue=''}" />
 
-          <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="14" VerticalAlignment="Center">
-            <Button x:Name="UpdateButton" Classes="flat" IsVisible="{Binding HasWorkingCopy}"
+            <Button Grid.Column="2" x:Name="UpdateButton" Classes="flat" IsVisible="{Binding HasWorkingCopy}"
+                    VerticalAlignment="Center"
                     Command="{Binding Current.Updater.UpdateCommand, FallbackValue={x:Null}}"
                     ToolTip.Tip="Bring in what has been committed since, merging it with your changes"
                     AutomationProperties.Name="Update">
@@ -133,13 +129,6 @@
                            IsVisible="{Binding !Current.Updater.IsUpdating, FallbackValue=True}" />
               </StackPanel>
             </Button>
-            <StackPanel Orientation="Horizontal" Spacing="7" VerticalAlignment="Center"
-                        IsHitTestVisible="False" ToolTip.Tip="Kept current by the daemon while this window is in front"
-                        IsVisible="{Binding Current.State, Converter={x:Static v:StateIs.Ready}, FallbackValue=False}">
-              <Ellipse Classes="live" VerticalAlignment="Center" />
-              <TextBlock Classes="muted" FontSize="12" Text="Live" />
-            </StackPanel>
-          </StackPanel>
       </Grid>
 
       <Panel Grid.Row="1" IsVisible="{Binding HasWorkingCopy}">

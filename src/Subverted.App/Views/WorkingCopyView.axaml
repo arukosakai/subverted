@@ -74,9 +74,9 @@
       </Grid.RowDefinitions>
 
       <DockPanel Grid.Row="0">
-        <!-- The table's own toolbar: the filter, what it hides, and what can be done to the selected row. -->
+        <!-- The filter, and what it hides. Acting on a row is its menu's job. -->
         <Border DockPanel.Dock="Top" Classes="pane-header" Height="40">
-          <Grid ColumnDefinitions="260,Auto,*,Auto">
+          <Grid ColumnDefinitions="260,Auto">
             <TextBox x:Name="FilterBox" Classes="filter" Text="{Binding Filter, Mode=TwoWay}"
                      PlaceholderText="Filter by path" AutomationProperties.Name="Filter changes by path">
               <TextBox.InnerLeftContent>
@@ -88,22 +88,6 @@
               <TextBlock x:Name="HiddenLine" Classes="faint" FontSize="12" VerticalAlignment="Center"
                          Text="{Binding HiddenText}" />
               <Button Classes="link" Content="Show all" VerticalAlignment="Center" Command="{Binding ClearFilterCommand}" />
-            </StackPanel>
-            <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="2">
-              <Button Classes="flat" Command="{Binding OpenCommand}" CommandParameter="{Binding SelectedEntry}"
-                      ToolTip.Tip="Open the file" AutomationProperties.Name="Open">
-                <StackPanel Orientation="Horizontal" Spacing="6">
-                  <Path Classes="icon" Data="{StaticResource Icon.Open}" Width="14" Height="14" />
-                  <TextBlock Text="Open" FontSize="12" />
-                </StackPanel>
-              </Button>
-              <Button Classes="flat" Command="{Binding RevertCommand}" CommandParameter="{Binding SelectedEntry}"
-                      ToolTip.Tip="Revert the selected change, after saying what it loses" AutomationProperties.Name="Revert">
-                <StackPanel Orientation="Horizontal" Spacing="6">
-                  <Path Classes="icon" Data="{StaticResource Icon.Undo}" Width="14" Height="14" />
-                  <TextBlock Text="Revert…" FontSize="12" />
-                </StackPanel>
-              </Button>
             </StackPanel>
           </Grid>
         </Border>

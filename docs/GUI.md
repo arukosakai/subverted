@@ -28,34 +28,37 @@ SmartSVN**, in that look. This replaced the first shell's glass cards on 2026-09
 
 ```
 ┌────┬──────────────────────────────────────────────────────────────────────┐
-│    │ 📁 game ▾   https://svn/game                                  ● Live │
+│    │ 📁 game ▾   https://svn/game                                 ⤓ Update │
 │ ☰  ├──────────────┬───────────────────────────────────────────────────────┤
-│ 🕘 │ FOLDERS      │ 🔍 Filter by path   2 changes hidden · Show all   Open  Revert… │
-│    │ ▾ game    9  │ State      Name              Folder                   │
-│    │   ▸ art   3  │ ☑ ▍Modified hero.png         art                      │
-│    │   ▸ src   2  │ ☑ ▍Missing  old.cs           src                      │
+│ 🕘 │ ▾ game    9  │ 🔍 Filter by path   2 changes hidden · Show all       │
+│    │   ▸ art   3  │ State      Name              Folder                   │
+│    │   ▸ src   2  │ ☑ ▍Modified hero.png         art                      │
+│    │              │ ☑ ▍Missing  old.cs           src                      │
 │    │              ├───────────────────────────────────────────────────────┤
-│    │              │ ± DIFF ▍hero.png art Modified                         │
+│    │              │ ▍hero.png art Modified                                │
 │    │              │ @@ -12,6 +12,7 @@                                     │
 │    │              │  12 12   foo();                                       │
-│ 📁 ├──────────────┴────────────────────────┬──────────────────────────────┤
-│ 🎨 │ COMMIT                                │ OUTPUT                 Clear │
-│    │ Commit message…                       │ 14:02:11 Commit 3 paths · …  │
-│    │ Ctrl+Enter          [Commit 3 files]  │ Committed r1825              │
+│    ├──────────────┴────────────────────────┬──────────────────────────────┤
+│ 🎨 │ Commit message…                       │ OUTPUT                 Clear │
+│    │                                       │ 14:02:11 Commit 3 paths · …  │
+│    │                     [Commit 3 files]  │ Committed r1825              │
 │    ├───────────────────────────────────────┴──────────────────────────────┤
 │    │ C:\studio\game                     ● 3 modified  ● 1 missing  ● 1 added │
 └────┴──────────────────────────────────────────────────────────────────────┘
 ```
 
-- **Rail:** Changes and History, then Open and Theme at the foot.
+- **Rail:** Changes and History, then Theme at the foot. Opening a working copy is the title
+  switcher's job, and acting on a row is its context menu's: the table has no toolbar verbs. Nothing
+  says "Live" — the stale banner over the table is what says it is not.
 - **Directory tree** on by default: every folder holding a change, with its count. Choosing one
   narrows the table exactly as the filter does, so what it hides is neither counted nor sent.
 - **File table** top right, flat, with its diff beneath at full width.
 - **Bottom strip:** the commit box beside an output log that keeps every commit and revert of the
   session with SVN's own text. The log takes its half only once a write is in it; until then, and
   after Clear, the commit box has the whole strip. Panes carry no caption rows — FOLDERS, COMMIT
-  and DIFF labelled what the content already said — and the diff's header shows only with a file. A SmartSVN-style popup review window is an acceptable alternative the
-  operator named; it is not built.
+  and DIFF labelled what the content already said — and the diff's header shows only with a file.
+  Empty states are text, without the icon discs. A SmartSVN-style popup review window is an
+  acceptable alternative the operator named; it is not built.
 - **History** uses the same frame — the revisions table on top with the pinned "Local changes"
   line, and the picked revision's paths beside its diff beneath. The bottom strip is Changes' only.
 

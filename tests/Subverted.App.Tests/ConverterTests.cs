@@ -79,7 +79,7 @@ public sealed class ConverterTests
     public async Task Anything_but_a_state_shows_nothing()
     {
         await Assert
-            .That((bool)StateIs.Ready.Convert("Ready", typeof(bool), null, Culture)!)
+            .That((bool)StateIs.Loading.Convert("Loading", typeof(bool), null, Culture)!)
             .IsFalse();
     }
 
@@ -90,7 +90,7 @@ public sealed class ConverterTests
             .That(() => ToneBrush.Solid.ConvertBack(Brushes.Red, typeof(ChangeTone), null, Culture))
             .Throws<NotSupportedException>();
         await Assert
-            .That(() => StateIs.Ready.ConvertBack(true, typeof(WorkingCopyState), null, Culture))
+            .That(() => StateIs.Loading.ConvertBack(true, typeof(WorkingCopyState), null, Culture))
             .Throws<NotSupportedException>();
     }
 }
