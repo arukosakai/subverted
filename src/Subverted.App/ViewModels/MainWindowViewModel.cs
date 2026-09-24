@@ -27,6 +27,7 @@ public sealed partial class MainWindowViewModel(
     private StatusPolling? _polling;
     private bool _isInFront;
     private int _opens;
+    private bool _historyIsBehind;
 
     public ObservableCollection<RecentWorkingCopy> Recent { get; } = [];
 
@@ -99,6 +100,8 @@ public sealed partial class MainWindowViewModel(
         shown.Locker.LockAttempted += Log.Record;
         shown.Locker.UnlockAttempted += Log.Record;
         shown.Updater.Attempted += Log.Record;
+        shown.Composer.Attempted += _ => HistoryMoved();
+        shown.Updater.Attempted += _ => HistoryMoved();
         Current = shown;
         ShownView = WorkspaceView.Changes;
         await shown.RefreshAsync(cancellationToken);
@@ -155,7 +158,8 @@ public sealed partial class MainWindowViewModel(
 
     /// <summary>
     /// Switches to History for the whole working copy. It is read again only when it was last
-    /// showing something else — another copy, or one file — so switching back and forth is free.
+    /// showing something else — another copy, or one file — or a write here has moved it since,
+    /// so switching back and forth is free.
     /// </summary>
     [RelayCommand]
     private async Task ShowHistoryAsync(CancellationToken cancellationToken)
@@ -166,10 +170,26 @@ public sealed partial class MainWindowViewModel(
         }
 
         ShownView = WorkspaceView.History;
-        if (!string.Equals(History.Path, shown.Location, comparison))
+        if (_historyIsBehind || !string.Equals(History.Path, shown.Location, comparison))
         {
+            _historyIsBehind = false;
             await History.ShowAsync(shown.Location, cancellationToken);
         }
+    }
+
+    /// <summary>
+    /// A commit or update made here moves BASE and the log, so what History read before is wrong:
+    /// read again now if it is on screen, otherwise the next time it is shown.
+    /// </summary>
+    private void HistoryMoved()
+    {
+        if (IsShowingHistory && History.Path is { } path)
+        {
+            _ = History.ShowAsync(path, CancellationToken.None);
+            return;
+        }
+
+        _historyIsBehind = true;
     }
 
     [RelayCommand]

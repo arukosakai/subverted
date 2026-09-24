@@ -50,6 +50,63 @@ public sealed class MainWindowHistoryTests
         await Assert.That(_history.Pages.Count).IsEqualTo(1);
     }
 
+    /// <summary>An update moves BASE and can bring revisions in, so the marker read before it is wrong.</summary>
+    [Test]
+    public async Task An_update_made_here_reads_the_history_again_next_time_it_is_shown()
+    {
+        await using var window = await Opened("/game");
+        await window.ShowHistoryCommand.ExecuteAsync(null);
+        window.ShowChangesCommand.Execute(null);
+
+        await window.Current!.Updater.UpdateCommand.ExecuteAsync(null);
+        await Assert.That(_history.Pages.Count).IsEqualTo(1);
+        await window.ShowHistoryCommand.ExecuteAsync(null);
+
+        await Assert.That(_history.Pages.Count).IsEqualTo(2);
+    }
+
+    [Test]
+    public async Task A_commit_made_here_reads_the_history_again_next_time_it_is_shown()
+    {
+        await using var window = await Opened("/game");
+        await window.ShowHistoryCommand.ExecuteAsync(null);
+        window.ShowChangesCommand.Execute(null);
+        window.Current!.Composer.Message = "Faster player";
+
+        await window.Current.Composer.CommitCommand.ExecuteAsync(null);
+        await window.ShowHistoryCommand.ExecuteAsync(null);
+
+        await Assert.That(_history.Pages.Count).IsEqualTo(2);
+    }
+
+    /// <summary>The Update button stays in the title bar over History, whose list it just made stale.</summary>
+    [Test]
+    public async Task An_update_made_while_history_is_shown_reads_it_again_at_once()
+    {
+        await using var window = await Opened("/game");
+        await window.ShowHistoryCommand.ExecuteAsync(null);
+
+        await window.Current!.Updater.UpdateCommand.ExecuteAsync(null);
+        await Settle();
+
+        await Assert.That(window.IsShowingHistory).IsTrue();
+        await Assert.That(_history.Pages.Count).IsEqualTo(2);
+    }
+
+    /// <summary>Once read again, switching back and forth is free as before.</summary>
+    [Test]
+    public async Task History_read_again_after_an_update_is_not_read_a_third_time()
+    {
+        await using var window = await Opened("/game");
+        await window.Current!.Updater.UpdateCommand.ExecuteAsync(null);
+
+        await window.ShowHistoryCommand.ExecuteAsync(null);
+        window.ShowChangesCommand.Execute(null);
+        await window.ShowHistoryCommand.ExecuteAsync(null);
+
+        await Assert.That(_history.Pages.Count).IsEqualTo(1);
+    }
+
     [Test]
     public async Task Opening_another_copy_returns_to_changes_and_its_history_is_read_fresh()
     {
@@ -154,7 +211,14 @@ public sealed class MainWindowHistoryTests
     }
 
     private static StatusResponse Listing(string root) =>
-        new(new WorkingCopyInfo(root, "file:///repo", "uuid", 31), [], true, 0.1, 0, []);
+        new(
+            new WorkingCopyInfo(root, "file:///repo", "uuid", 31),
+            [Entries.Entry("a.cs")],
+            true,
+            0.1,
+            0,
+            []
+        );
 
     /// <summary>Answers every status with the opened path's root: <c>/game/art</c> is inside <c>/game</c>.</summary>
     private sealed class RootedStatus(string opened) : IWorkingCopyStatus
@@ -168,5 +232,14 @@ public sealed class MainWindowHistoryTests
             Task.FromResult<DaemonResponse>(
                 Listing(opened.StartsWith("/game", StringComparison.Ordinal) ? "/game" : opened)
             );
+    }
+
+    private static async Task Settle()
+    {
+        for (var turn = 0; turn < 10; turn++)
+        {
+            await Task.Yield();
+            await Task.Delay(1);
+        }
     }
 }
