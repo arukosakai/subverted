@@ -407,13 +407,33 @@ Avalonia front-end over the same daemon. Update, commit, diff, log. Nothing clev
   from the stat the scan already made, and a row that differs by one tick is a new row. Tested
   through the daemon's watcher end to end, not yet seen in the app. The `svn status` fallback
   cannot fill it, so under the fallback, and against a daemon older than the field, the gap
-  remains. Known gaps: the root row diffs the whole working copy, since `DiffRequest` has no depth;
-  list rows expose their record's `ToString()` as the automation name, fingerprint included.
+  remains. Known gap: the root row diffs the whole working copy, since `DiffRequest` has no depth.
 - **Changed / All on the Changes table** (GUI.md slice 5, D35). All lists every unmodified file
   too, so an untouched one can be locked from its line; the commit set and every count stay about
   changes. The status request gained an optional held scan so a 100k-file All listing is re-sent
   only when it changed: 3–5 ms a poll unchanged, ~400–700 ms when it did, measured warm on
   `subverted-100k`. Headless tests only; not seen in the real app.
+- **A bug pass over what was built (2026-09-24).** Reviewed across the Changes screen, the diff
+  path and History/shell, then fixed test-first:
+  - A slow open overtaken by a second one, or an activation answered after a deactivate or
+    another open, left a status poll running that nothing could stop.
+  - A daemon the system would not run threw `Win32Exception` past every handler, and the app
+    crashed on the next deactivate. It now reads as unreachable, in `sv` too.
+  - A null entry in the recent list failed every start, and a save another instance was holding
+    failed the open.
+  - A folder revert or Take theirs confirmed after the listing changed under the question sent a
+    list the person never saw. It now asks again with the new list (operator's call, forum #59).
+  - History kept its BASE marker from before an update or commit made in the app.
+  - Split-view copy of two runs picked with a gap interleaved them.
+  - A folder whose diff held one file lost that file's name, and Open in app opened the folder;
+    a folder's own property section had a blank header.
+  - History, theme and recent rows, and every diff line, read their record's `ToString()` to a
+    screen reader.
+
+  Seen in the real app through UI Automation: the History and diff-line names. The rest is
+  covered by headless tests only. Not fixed: a safe resolve sent while a Take theirs question is
+  open would drop that question, but the question's overlay covers the table, so it cannot be
+  reached.
 - Commit, log and update — the next slices, one at a time. Their order and the screens they
   build are in `docs/GUI.md`.
 - **macOS's Liquid Glass is not built.** The styling speaks the same language, but the real material
@@ -528,7 +548,7 @@ These need a human decision and are deliberately not resolved in code:
 ## Status
 
 M0 complete; M1 partly done and M2 begun, see their sections for exactly which parts. Solution builds clean with
-zero warnings, **1853 tests green** across seven test projects, status output diffed against
+zero warnings, **3137 tests green** across seven test projects, status output diffed against
 `svn status --no-ignore` on eight fixture working copies — column 4 included, as of D28 — with only
 the two divergences above.
 
