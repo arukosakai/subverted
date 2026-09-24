@@ -87,7 +87,10 @@ public sealed class LockNoticesTests
     {
         var notice = LockNotices.Locked(
             "art/hero.png",
-            new ErrorResponse(DaemonErrorKind.SvnCommandFailed, "svn: E155010: The node was not found.")
+            new ErrorResponse(
+                DaemonErrorKind.SvnCommandFailed,
+                "svn: E155010: The node was not found."
+            )
         );
 
         await Assert
@@ -172,7 +175,10 @@ public sealed class LockNoticesTests
     {
         var notice = LockNotices.Unlocked(
             "art/hero.png",
-            new ErrorResponse(DaemonErrorKind.SvnCommandFailed, "svn: E195013: not locked in this working copy")
+            new ErrorResponse(
+                DaemonErrorKind.SvnCommandFailed,
+                "svn: E195013: not locked in this working copy"
+            )
         );
 
         await Assert
@@ -204,7 +210,12 @@ public sealed class LockNoticesTests
         await Assert
             .That(LockNotices.Unreachable("gone"))
             .IsEqualTo(
-                new Notice(NoticeKind.Uncertain, "The daemon is not answering", "gone", LookAtTheLine)
+                new Notice(
+                    NoticeKind.Uncertain,
+                    "The daemon is not answering",
+                    "gone",
+                    LookAtTheLine
+                )
             );
     }
 }

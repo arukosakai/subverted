@@ -22,9 +22,7 @@ public sealed class LockAttentionTests
     [Arguments("")]
     public async Task A_lock_with_no_refusal_does_not_need_attention(string notifications)
     {
-        await Assert
-            .That(LockAttention.IsNeeded(new LockResponse(notifications, [])))
-            .IsFalse();
+        await Assert.That(LockAttention.IsNeeded(new LockResponse(notifications, []))).IsFalse();
     }
 
     [Test]

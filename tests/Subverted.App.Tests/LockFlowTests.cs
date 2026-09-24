@@ -189,7 +189,9 @@ public sealed class LockFlowTests
         await running;
 
         await Assert.That(during).IsTrue();
-        await Assert.That(_locks.Locked).IsEquivalentTo([DiffTarget.PathOf(Info.RootPath, "a.png")]);
+        await Assert
+            .That(_locks.Locked)
+            .IsEquivalentTo([DiffTarget.PathOf(Info.RootPath, "a.png")]);
         await Assert.That(_locks.Unlocked).IsEmpty();
         await Assert.That(attempts).IsEqualTo(1);
         await Assert.That(view.Locker.IsWorking).IsFalse();
@@ -248,7 +250,10 @@ public sealed class LockFlowTests
         return view;
     }
 
-    private static string Offers(WorkingCopyViewModel view, IAsyncRelayCommand<ChangeListEntry?> command) =>
+    private static string Offers(
+        WorkingCopyViewModel view,
+        IAsyncRelayCommand<ChangeListEntry?> command
+    ) =>
         string.Join(
             ",",
             view.Entries.Where(entry => command.CanExecute(entry)).Select(entry => entry.Key)

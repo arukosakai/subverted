@@ -28,11 +28,13 @@ public sealed partial class LockViewModel(IWorkingCopyLocks locks) : ObservableO
     /// <remarks>Ignored while a lock or an unlock is running.</remarks>
     public async Task LockAsync(string target, string root, CancellationToken cancellationToken)
     {
-        if (await SendAsync(
+        if (
+            await SendAsync(
                 () => locks.LockAsync(DiffTarget.PathOf(root, target), cancellationToken),
                 response => LockNotices.Locked(target, response)
-            )
-            is { } sent)
+            ) is
+            { } sent
+        )
         {
             LockAttempted?.Invoke(new LockAttempt(target, sent.Notice, sent.Answer));
         }
@@ -42,11 +44,13 @@ public sealed partial class LockViewModel(IWorkingCopyLocks locks) : ObservableO
     /// <remarks>Ignored while a lock or an unlock is running.</remarks>
     public async Task UnlockAsync(string target, string root, CancellationToken cancellationToken)
     {
-        if (await SendAsync(
+        if (
+            await SendAsync(
                 () => locks.UnlockAsync(DiffTarget.PathOf(root, target), cancellationToken),
                 response => LockNotices.Unlocked(target, response)
-            )
-            is { } sent)
+            ) is
+            { } sent
+        )
         {
             UnlockAttempted?.Invoke(new UnlockAttempt(target, sent.Notice, sent.Answer));
         }

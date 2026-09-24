@@ -258,8 +258,7 @@ public sealed class WorkingCopyViewTests
                     {
                         Focus(list, IndexOf(view, key));
                         var (take, give) = LockItems(list);
-                        var result =
-                            $"{key}:{Enabled(take)}/{Enabled(give)}";
+                        var result = $"{key}:{Enabled(take)}/{Enabled(give)}";
                         list.ContextMenu!.Close();
                         return result;
                     })
@@ -267,9 +266,7 @@ public sealed class WorkingCopyViewTests
             status: LockStatus()
         );
 
-        await Assert
-            .That(offered)
-            .IsEqualTo("edited.png:lock/-,held.psd:-/unlock,notes.txt:-/-");
+        await Assert.That(offered).IsEqualTo("edited.png:lock/-,held.psd:-/unlock,notes.txt:-/-");
     }
 
     /// <summary>A refusal is the one answer that must be read, so its SVN text is on screen, not only in the log.</summary>
