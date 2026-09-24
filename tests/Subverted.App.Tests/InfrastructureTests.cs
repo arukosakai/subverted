@@ -76,21 +76,21 @@ public sealed class InfrastructureTests
         await Assert.That(store.Load()).IsEmpty();
     }
 
+    /// <summary>
+    /// The staged file is written but cannot be moved into place. A directory in the way refuses
+    /// the move on every platform; a file held open does so only on Windows.
+    /// </summary>
     [Test]
-    public async Task A_failed_write_leaves_the_kept_list_and_no_staging_file()
+    public async Task A_write_that_cannot_be_moved_into_place_leaves_no_staging_file()
     {
         using var folder = new ScratchFolder();
         var path = Path.Combine(folder.Path, "recent.json");
-        var store = new RecentWorkingCopiesFile(path);
-        store.Save(["/game"]);
+        Directory.CreateDirectory(path);
 
-        using (new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.None))
-        {
-            store.Save(["/tools", "/game"]);
-        }
+        new RecentWorkingCopiesFile(path).Save(["/game"]);
 
-        await Assert.That(string.Join(",", store.Load())).IsEqualTo("/game");
-        await Assert.That(Directory.GetFiles(folder.Path)).IsEquivalentTo(new[] { path });
+        await Assert.That(Directory.GetFiles(folder.Path)).IsEmpty();
+        await Assert.That(Directory.Exists(path)).IsTrue();
     }
 
     /// <summary>
