@@ -16,6 +16,11 @@ public sealed record ChangedPathRow(
     string? CopiedFrom
 )
 {
+    /// <summary>What a screen reader says for the line: name, folder, badge, and a copy's source.</summary>
+    public string AutomationName =>
+        (Folder.Length == 0 ? $"{Name}, {Badge.Label}" : $"{Name} in {Folder}, {Badge.Label}")
+        + (CopiedFrom is null ? string.Empty : $", from {CopiedFrom}");
+
     public static ChangedPathRow From(ChangedPath changed)
     {
         var trimmed = changed.Path.TrimEnd('/');

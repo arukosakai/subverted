@@ -91,5 +91,33 @@ public sealed class ChangedPathRowTests
         await Assert.That(row.CopiedFrom).IsNull();
     }
 
+    [Test]
+    public async Task A_screen_reader_hears_the_name_the_folder_and_the_badge()
+    {
+        var row = ChangedPathRow.From(
+            new ChangedPath("/src/Player.cs", PathChange.Added, null, null)
+        );
+
+        await Assert.That(row.AutomationName).IsEqualTo("Player.cs in /src, Added");
+    }
+
+    [Test]
+    public async Task A_path_under_the_root_says_no_folder_aloud()
+    {
+        var row = ChangedPathRow.From(
+            new ChangedPath("/readme.txt", PathChange.Deleted, null, null)
+        );
+
+        await Assert.That(row.AutomationName).IsEqualTo("readme.txt, Deleted");
+    }
+
+    [Test]
+    public async Task A_copy_says_where_it_came_from_aloud()
+    {
+        var row = ChangedPathRow.From(new ChangedPath("/b.txt", PathChange.Added, "/a.txt", 2));
+
+        await Assert.That(row.AutomationName).IsEqualTo("b.txt, Added, from /a.txt@2");
+    }
+
     private static ChangedPath Changed(string path) => new(path, PathChange.Modified, null, null);
 }

@@ -104,6 +104,11 @@
       <Panel>
         <ListBox x:Name="Revisions" Classes="table" ItemsSource="{Binding Items}"
                  SelectedItem="{Binding SelectedItem, Mode=TwoWay}" IsVisible="{Binding !!Items.Count}">
+          <ListBox.Styles>
+            <Style Selector="ListBoxItem" x:DataType="p:RevisionListItem">
+              <Setter Property="AutomationProperties.Name" Value="{Binding AutomationName}" />
+            </Style>
+          </ListBox.Styles>
           <ListBox.ItemTemplate>
             <DataTemplate x:DataType="p:RevisionListItem">
               <StackPanel>
@@ -211,6 +216,11 @@
             <ListBox x:Name="ChangedPaths" Classes="table" ItemsSource="{Binding SelectedRevision.ChangedPaths}"
                      SelectedItem="{Binding SelectedPath, Mode=TwoWay}"
                      BorderBrush="{DynamicResource LineBrush}" BorderThickness="0,1,0,0">
+              <ListBox.Styles>
+                <Style Selector="ListBoxItem" x:DataType="p:ChangedPathRow">
+                  <Setter Property="AutomationProperties.Name" Value="{Binding AutomationName}" />
+                </Style>
+              </ListBox.Styles>
               <ListBox.ItemTemplate>
                 <DataTemplate x:DataType="p:ChangedPathRow">
                   <Grid ColumnDefinitions="96,*" RowDefinitions="Auto,Auto" Margin="14,6" ToolTip.Tip="{Binding Path}">

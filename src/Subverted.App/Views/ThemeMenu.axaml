@@ -8,6 +8,11 @@
     <TextBlock Classes="section" Text="THEME" Margin="8,4,8,6" />
     <ListBox x:Name="Presets" Classes="table" ItemsSource="{Binding Presets}"
              SelectedItem="{Binding Selected, Mode=TwoWay}" AutomationProperties.Name="Theme presets">
+      <ListBox.Styles>
+        <Style Selector="ListBoxItem" x:DataType="p:ThemePreset">
+          <Setter Property="AutomationProperties.Name" Value="{Binding DisplayName}" />
+        </Style>
+      </ListBox.Styles>
       <ListBox.ItemTemplate>
         <DataTemplate x:DataType="p:ThemePreset">
           <StackPanel Orientation="Horizontal" Spacing="10" Margin="8,6">
