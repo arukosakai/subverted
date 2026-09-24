@@ -2,7 +2,8 @@ namespace Subverted.Svn.Tests;
 
 /// <summary>
 /// The warning lines are the only thing separating a lock that was granted from one that was not —
-/// <c>svn lock</c> and <c>svn unlock</c> exit zero either way — and the only thing naming
+/// <c>svn lock</c> and <c>svn unlock</c> exit zero either way on 1.8 and one either way on 1.14 when
+/// anything was refused — and the only thing naming
 /// <em>which</em> node <c>svn resolve</c> would not resolve. Every blob below is what SVN 1.8.15
 /// actually wrote to stderr under <c>LC_ALL=C</c>, copied verbatim.
 /// </summary>

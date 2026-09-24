@@ -150,10 +150,35 @@ notice or the revert overlay (headless tests and renders only), and nothing on m
   status poll, and far less often, because every tick is a server round trip. A new request, since
   no warm index can answer what is on the server.
 
+*Status: Update built; resolve, locks and the incoming count not.* An Update button in the title bar
+sends `UpdateRequest` for the opened folder, not the root, the same scope the listing has. It asks
+nothing first, since an update takes no local change away. The result shows as a notice above the
+table and a line in the output log, with SVN's own text. Conflicts or skipped paths make it
+`NeedsAttention`, drawn in the conflict tone, and the notice never reads as a clean update. One
+update runs at a time. The notice's detail scrolls after 120px, so a large update cannot push the
+list off screen. Seen in the real app on a throwaway `subverted-update` fixture, clicked through
+UI Automation: r2 came down, the conflicted file lit up and was pinned at the top, and the log kept
+SVN's text. Not seen: an update refused by SVN, or one under the `svn status` fallback. Known gap: a
+file that goes into conflict keeps the tick it already had, so Commit offers it and SVN refuses it.
+Resolve should settle that.
+
 ### 6. Diff polish — after History, not part of the M2 exit
 
 - Split view, intraline highlighting on paired `-`/`+` lines as a pure function, and the context
   dropdown.
+
+*Status: split view built; intraline highlighting and the context dropdown not.* Split is the
+default, with a Split / Unified toggle over the lines (operator: "the diff should be two-pane").
+`SplitLines` pairs a hunk's lines: context sits on both sides, and each run of changes between
+context pairs its removals with its additions in order, padding the shorter side with blank filler.
+`DiffLayout.Split` / `.Unified` choose how lines become rows; headers, binary cards, the no-lines row
+and property sections are laid out the same by both, and property values are paired too. Each half
+has its own number gutter; hunk headers span both. Column names read BASE / Working copy in Changes
+and "Before rN" / rN in History, which shares the same `DiffLinesView`. Side by side, the list does
+not scroll sideways — each half is half the viewport and a long line is cut off with an ellipsis;
+Unified still scrolls. Copying from the split list gives the lines in unified order (a run's old
+lines, then its new ones), so the same selection copies the same text in either layout. Seen only
+in headless renders (dark and the Default Light preset), not in the real app, and nothing on macOS.
 
 ## Not in M2
 

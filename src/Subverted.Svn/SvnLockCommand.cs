@@ -75,7 +75,9 @@ public sealed class SvnLockCommand(SvnCommand command)
         arguments.AddRange(paths.Select(path => SvnTarget.Within(workingCopyRoot, path)));
 
         var result = await command.RunAsync(workingCopyRoot, arguments, cancellationToken);
-        return result.ExitCode == 0
+        var onlyRefused =
+            result.ExitCode == 0 || SvnRefusalSummary.IsAllThatFailed(result.StandardError);
+        return onlyRefused
             ? new LockOutcome(
                 SvnNotification.Spelled(result.StandardOutput, OperatingSystem.IsWindows()),
                 SvnWarnings.From(result.StandardError)

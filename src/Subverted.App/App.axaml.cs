@@ -49,6 +49,7 @@ public sealed partial class App : Application
         var diffs = new DaemonWorkingCopyDiff(channel);
         var commits = new DaemonWorkingCopyCommit(channel);
         var reverts = new DaemonWorkingCopyRevert(channel);
+        var updates = new DaemonWorkingCopyUpdate(channel);
         var sizes = new FileSizeReader();
         var launcher = new SystemFileLauncher(() => desktop.MainWindow);
         var revealer = FileRevealers.For(FileRevealers.ThisPlatform);
@@ -70,7 +71,8 @@ public sealed partial class App : Application
                 revealer,
                 clipboard,
                 commits,
-                reverts
+                reverts,
+                updates
             ),
             TimeProvider.System,
             OperatingSystem.IsWindows()

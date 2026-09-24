@@ -124,6 +124,9 @@
         <v:NoticeView DockPanel.Dock="Top" Margin="8,6,8,0" Notice="{Binding RevertPrompt.Notice}"
                       DismissCommand="{Binding RevertPrompt.DismissNoticeCommand}" />
 
+        <v:NoticeView x:Name="UpdateNotice" DockPanel.Dock="Top" Margin="8,6,8,0" Notice="{Binding Updater.Notice}"
+                      DismissCommand="{Binding Updater.DismissNoticeCommand}" />
+
         <!-- Column heads, on the same widths as the rows below them. -->
         <Border DockPanel.Dock="Top" Classes="line-bottom" Height="26" IsVisible="{Binding !!Entries.Count}">
           <Grid ColumnDefinitions="32,104,2*,3*,72" Margin="8,0,10,0">

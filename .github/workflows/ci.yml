@@ -31,18 +31,24 @@ jobs:
       - run: dotnet csharpier check .
 
   test:
-    name: Test (${{ matrix.os }})
+    name: Test (${{ matrix.os }}, svn ${{ matrix.svn }})
     runs-on: ${{ matrix.os }}
-    # Windows is the only platform the suite has been run on. The others stay advisory until
-    # they have been seen green, rather than turning every run red on day one.
-    continue-on-error: ${{ matrix.os != 'windows-latest' }}
+    # macOS stays advisory until the suite has been seen green there; the rest must pass.
+    continue-on-error: ${{ matrix.os == 'macos-latest' }}
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-latest, ubuntu-latest, macos-latest]
+        include:
+          # 1.8 and 1.14 answer differently in ways the code depends on — D34.
+          - { os: windows-latest, svn: 1.8.15 }
+          - { os: windows-latest, svn: 1.14.5 }
+          - { os: ubuntu-latest, svn: system }
+          - { os: macos-latest, svn: system }
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-toolchain
+        with:
+          svn-version: ${{ matrix.svn }}
       - run: dotnet build Subverted.slnx
       - run: bash tools/run-tests.sh
 
