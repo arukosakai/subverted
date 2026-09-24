@@ -20,21 +20,30 @@ public sealed class DiffConverterTests
     {
         var rows =
             (IReadOnlyList<DiffRow>)
-                FlatDiff.Rows.Convert([Diffs.Modified, layout], typeof(object), null, Culture)!;
+                FlatDiff.Rows.Convert(
+                    [Diffs.Modified, layout, "src/Player.cs"],
+                    typeof(object),
+                    null,
+                    Culture
+                )!;
 
         await Assert
             .That(rows)
-            .IsEquivalentTo(layout.RowsOf(Diffs.Modified), CollectionOrdering.Matching);
+            .IsEquivalentTo(
+                layout.RowsOf(Diffs.Modified, "src/Player.cs"),
+                CollectionOrdering.Matching
+            );
     }
 
     public static IEnumerable<Func<object?[]>> NotADocumentAndALayout() =>
         [
-            () => [null, DiffLayout.Split],
-            () => ["not a document", DiffLayout.Split],
-            () => [Diffs.Modified, null],
-            () => [Diffs.Modified, "not a layout"],
-            () => [Diffs.Modified],
-            () => [Diffs.Modified, DiffLayout.Split, DiffLayout.Unified],
+            () => [null, DiffLayout.Split, "a.txt"],
+            () => ["not a document", DiffLayout.Split, "a.txt"],
+            () => [Diffs.Modified, null, "a.txt"],
+            () => [Diffs.Modified, "not a layout", "a.txt"],
+            () => [Diffs.Modified, DiffLayout.Split, null],
+            () => [Diffs.Modified, DiffLayout.Split],
+            () => [Diffs.Modified, DiffLayout.Split, "a.txt", "a.txt"],
         ];
 
     [Test]

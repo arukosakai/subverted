@@ -38,7 +38,8 @@
 
       <Panel>
         <v:DiffLinesView IsVisible="{Binding State, Converter={x:Static v:DiffPaneStateIs.Ready}}"
-                         Document="{Binding Document}" SizeInBytes="{Binding SizeInBytes}"
+                         Document="{Binding Document}" Subject="{Binding Row.RelPath, FallbackValue={x:Null}}"
+                         SizeInBytes="{Binding SizeInBytes}"
                          OldTitle="BASE" NewTitle="Working copy"
                          OpenInAppCommand="{Binding OpenInAppCommand}" />
 

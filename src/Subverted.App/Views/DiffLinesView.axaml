@@ -150,6 +150,7 @@
         <MultiBinding Converter="{x:Static v:FlatDiff.Rows}">
           <Binding ElementName="Root" Path="Document" />
           <Binding ElementName="Root" Path="Layout" />
+          <Binding ElementName="Root" Path="Subject" />
         </MultiBinding>
       </ListBox.ItemsSource>
       <ListBox.ItemsPanel>
@@ -220,7 +221,7 @@
             <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
               <Path Classes="icon" Data="{StaticResource Icon.File}" Width="13" Height="13" />
               <TextBlock FontFamily="{x:Static FontFamily.Default}" FontSize="13" FontWeight="SemiBold"
-                         Text="{Binding Path}" />
+                         Text="{Binding Title}" />
             </StackPanel>
           </Border>
         </DataTemplate>

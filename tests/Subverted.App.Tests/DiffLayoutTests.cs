@@ -36,7 +36,7 @@ public sealed class DiffLayoutTests
         ];
 
         await Assert
-            .That(DiffLayout.Split.RowsOf(Modified))
+            .That(DiffLayout.Split.RowsOf(Modified, "src/Player.cs"))
             .IsEquivalentTo(expected, CollectionOrdering.Matching);
     }
 
@@ -62,7 +62,7 @@ public sealed class DiffLayoutTests
         ];
 
         await Assert
-            .That(DiffLayout.Split.RowsOf(WholeDirectory))
+            .That(DiffLayout.Split.RowsOf(WholeDirectory, "levels"))
             .IsEquivalentTo(expected, CollectionOrdering.Matching);
     }
 
@@ -70,7 +70,7 @@ public sealed class DiffLayoutTests
     public async Task A_text_change_with_no_hunks_says_there_are_no_lines_in_either_layout()
     {
         await Assert
-            .That(DiffLayout.Split.RowsOf(Document(Text("empty.txt"))))
+            .That(DiffLayout.Split.RowsOf(Document(Text("empty.txt")), "empty.txt"))
             .IsEquivalentTo(
                 new DiffRow[] { new DiffNoLinesRow("empty.txt") },
                 CollectionOrdering.Matching
@@ -105,7 +105,10 @@ public sealed class DiffLayoutTests
             )
         );
 
-        var rows = DiffLayout.Split.RowsOf(document).OfType<DiffSplitRow>().ToList();
+        var rows = DiffLayout
+            .Split.RowsOf(document, "src/Player.cs")
+            .OfType<DiffSplitRow>()
+            .ToList();
 
         await Assert
             .That(rows)
@@ -134,7 +137,7 @@ public sealed class DiffLayoutTests
         ];
 
         await Assert
-            .That(DiffLayout.Split.RowsOf(document))
+            .That(DiffLayout.Split.RowsOf(document, "both.txt"))
             .IsEquivalentTo(expected, CollectionOrdering.Matching);
     }
 
@@ -151,7 +154,7 @@ public sealed class DiffLayoutTests
         ];
 
         await Assert
-            .That(DiffLayout.Split.RowsOf(document))
+            .That(DiffLayout.Split.RowsOf(document, SubjectOf(document)))
             .IsEquivalentTo(expected, CollectionOrdering.Matching);
     }
 
@@ -159,7 +162,7 @@ public sealed class DiffLayoutTests
     public async Task The_unified_layout_lists_every_line_as_a_row_of_its_own_paired_with_its_counterpart()
     {
         await Assert
-            .That(DiffLayout.Unified.RowsOf(Document(Text("a.txt", OneLineHunk))))
+            .That(DiffLayout.Unified.RowsOf(Document(Text("a.txt", OneLineHunk)), "a.txt"))
             .IsEquivalentTo(
                 new DiffRow[]
                 {

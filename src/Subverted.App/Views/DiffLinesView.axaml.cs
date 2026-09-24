@@ -28,6 +28,15 @@ public sealed partial class DiffLinesView : UserControl
     public static readonly StyledProperty<ICommand?> OpenInAppCommandProperty =
         AvaloniaProperty.Register<DiffLinesView, ICommand?>(nameof(OpenInAppCommand));
 
+    /// <summary>
+    /// The path the pane names, as the diff spells its section; a file shown alone gets no header
+    /// and its binary card the row's size. See <see cref="DiffLayout.RowsOf"/>.
+    /// </summary>
+    public static readonly StyledProperty<string?> SubjectProperty = AvaloniaProperty.Register<
+        DiffLinesView,
+        string?
+    >(nameof(Subject));
+
     /// <summary>Old beside new unless someone picks the unified column.</summary>
     public static readonly StyledProperty<DiffLayout> LayoutProperty = AvaloniaProperty.Register<
         DiffLinesView,
@@ -55,6 +64,12 @@ public sealed partial class DiffLinesView : UserControl
     {
         get => GetValue(DocumentProperty);
         set => SetValue(DocumentProperty, value);
+    }
+
+    public string? Subject
+    {
+        get => GetValue(SubjectProperty);
+        set => SetValue(SubjectProperty, value);
     }
 
     public DiffLayout Layout

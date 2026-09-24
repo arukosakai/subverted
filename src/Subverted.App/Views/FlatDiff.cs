@@ -6,8 +6,8 @@ using Subverted.Frontend.Diff;
 namespace Subverted.App.Views;
 
 /// <summary>
-/// A <see cref="DiffDocument"/> and a <see cref="DiffLayout"/>, in that order, as the rows
-/// <see cref="DiffLinesView"/> lists; none unless both are given.
+/// A <see cref="DiffDocument"/>, a <see cref="DiffLayout"/> and the subject the pane names, in that
+/// order, as the rows <see cref="DiffLinesView"/> lists; none unless all three are given.
 /// </summary>
 public sealed class FlatDiff : IMultiValueConverter
 {
@@ -21,7 +21,7 @@ public sealed class FlatDiff : IMultiValueConverter
         object? parameter,
         CultureInfo culture
     ) =>
-        values is [DiffDocument document, DiffLayout layout]
-            ? layout.RowsOf(document)
+        values is [DiffDocument document, DiffLayout layout, string subject]
+            ? layout.RowsOf(document, subject)
             : Array.Empty<DiffRow>();
 }

@@ -24,7 +24,7 @@ public sealed class DiffRowsTests
         );
 
         var marked = DiffLayout
-            .Unified.RowsOf(document)
+            .Unified.RowsOf(document, "src/Player.cs")
             .OfType<DiffTextRow>()
             .Select(row => (row.Line.Text, row.Line.EndsWithoutNewline));
 
@@ -36,7 +36,7 @@ public sealed class DiffRowsTests
     [Test]
     public async Task An_empty_document_has_no_rows()
     {
-        await Assert.That(DiffLayout.Unified.RowsOf(DiffDocument.Empty)).IsEmpty();
+        await Assert.That(DiffLayout.Unified.RowsOf(DiffDocument.Empty, "")).IsEmpty();
     }
 
     [Test]
@@ -51,14 +51,14 @@ public sealed class DiffRowsTests
         ];
 
         await Assert
-            .That(DiffLayout.Unified.RowsOf(Modified))
+            .That(DiffLayout.Unified.RowsOf(Modified, "src/Player.cs"))
             .IsEquivalentTo(expected, CollectionOrdering.Matching);
     }
 
     [Test]
     public async Task Several_files_each_open_with_a_header_naming_them()
     {
-        var rows = DiffLayout.Unified.RowsOf(WholeDirectory);
+        var rows = DiffLayout.Unified.RowsOf(WholeDirectory, "levels");
 
         DiffRow[] expected =
         [
@@ -101,7 +101,7 @@ public sealed class DiffRowsTests
         var hunk = new Hunk(oldStart, oldCount, newStart, newCount, []);
 
         await Assert
-            .That(DiffLayout.Unified.RowsOf(Document(Text("a.txt", hunk))))
+            .That(DiffLayout.Unified.RowsOf(Document(Text("a.txt", hunk)), "a.txt"))
             .IsEquivalentTo(
                 new DiffRow[] { new DiffHunkRow(expected) },
                 CollectionOrdering.Matching
@@ -112,7 +112,7 @@ public sealed class DiffRowsTests
     public async Task A_text_change_with_no_hunks_says_there_are_no_lines()
     {
         await Assert
-            .That(DiffLayout.Unified.RowsOf(Document(Text("empty.txt"))))
+            .That(DiffLayout.Unified.RowsOf(Document(Text("empty.txt")), "empty.txt"))
             .IsEquivalentTo(
                 new DiffRow[] { new DiffNoLinesRow("empty.txt") },
                 CollectionOrdering.Matching
@@ -131,7 +131,7 @@ public sealed class DiffRowsTests
         ];
 
         await Assert
-            .That(DiffLayout.Unified.RowsOf(Binary))
+            .That(DiffLayout.Unified.RowsOf(Binary, "art/hero.png"))
             .IsEquivalentTo(expected, CollectionOrdering.Matching);
     }
 
@@ -150,7 +150,7 @@ public sealed class DiffRowsTests
         ];
 
         await Assert
-            .That(DiffLayout.Unified.RowsOf(PropertiesOnly))
+            .That(DiffLayout.Unified.RowsOf(PropertiesOnly, "src/Player.cs"))
             .IsEquivalentTo(expected, CollectionOrdering.Matching);
     }
 
@@ -168,7 +168,7 @@ public sealed class DiffRowsTests
         ];
 
         await Assert
-            .That(DiffLayout.Unified.RowsOf(ContentAndProperties))
+            .That(DiffLayout.Unified.RowsOf(ContentAndProperties, "src/Player.cs"))
             .IsEquivalentTo(expected, CollectionOrdering.Matching);
     }
 
@@ -196,7 +196,51 @@ public sealed class DiffRowsTests
         ];
 
         await Assert
-            .That(DiffLayout.Unified.RowsOf(Document(new FileDiff(".", null, [externals]))))
+            .That(DiffLayout.Unified.RowsOf(Document(new FileDiff(".", null, [externals])), "."))
             .IsEquivalentTo(expected, CollectionOrdering.Matching);
+    }
+
+    /// <summary>
+    /// An added folder holding one picture: SVN prints a section for the picture only. The card
+    /// must not offer the folder's size or open the folder as if it were the picture.
+    /// </summary>
+    [Test]
+    public async Task A_folder_holding_one_binary_file_names_it_and_describes_only_the_folder()
+    {
+        DiffRow[] expected =
+        [
+            new DiffFileHeaderRow("art/hero.png"),
+            new DiffBinaryRow("art/hero.png", "image/png", IsOnlyFile: false),
+            new DiffPropertySectionRow("art/hero.png"),
+            new DiffPropertyRow("svn:mime-type", PropertyChangeKind.Added),
+            new DiffTextRow(Added(1, "image/png")),
+        ];
+
+        await Assert
+            .That(DiffLayout.Unified.RowsOf(Binary, "art"))
+            .IsEquivalentTo(expected, CollectionOrdering.Matching);
+    }
+
+    [Test]
+    public async Task A_folder_holding_one_text_file_names_it_above_its_lines()
+    {
+        var rows = DiffLayout.Unified.RowsOf(Modified, "src");
+
+        await Assert.That(rows[0]).IsEqualTo(new DiffFileHeaderRow("src/Player.cs"));
+    }
+
+    /// <summary>SVN names the diffed folder's own section <c>.</c>, which reads as nothing at all.</summary>
+    [Test]
+    public async Task The_diffed_folders_own_section_is_headed_as_this_folder()
+    {
+        var header = new DiffFileHeaderRow("");
+
+        await Assert.That(header.Title).IsEqualTo("This folder");
+    }
+
+    [Test]
+    public async Task A_files_header_is_its_path()
+    {
+        await Assert.That(new DiffFileHeaderRow("src/Player.cs").Title).IsEqualTo("src/Player.cs");
     }
 }

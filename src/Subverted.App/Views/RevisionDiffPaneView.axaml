@@ -24,7 +24,7 @@
 
       <Panel>
         <v:DiffLinesView IsVisible="{Binding State, Converter={x:Static v:DiffPaneStateIs.Ready}}"
-                         Document="{Binding Document}"
+                         Document="{Binding Document}" Subject="{Binding Path.Name, FallbackValue={x:Null}}"
                          OldTitle="{Binding Revision, StringFormat='Before r{0}'}"
                          NewTitle="{Binding Revision, StringFormat='r{0}'}" />
 

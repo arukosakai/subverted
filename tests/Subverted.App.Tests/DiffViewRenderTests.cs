@@ -15,6 +15,7 @@ using Avalonia.VisualTree;
 using Subverted.App.Presentation;
 using Subverted.App.ViewModels;
 using Subverted.App.Views;
+using Subverted.Core;
 using Subverted.Frontend.Diff;
 using TUnit.Assertions.Enums;
 
@@ -78,6 +79,7 @@ public sealed class DiffViewRenderTests
                 new DiffLinesView
                 {
                     Document = document,
+                    Subject = Diffs.SubjectOf(document),
                     Layout = layout,
                     SizeInBytes = 5 * 1024 * 1024 + 300 * 1024,
                 },
@@ -89,7 +91,9 @@ public sealed class DiffViewRenderTests
                 )
         );
 
-        await Assert.That(realised).IsEqualTo(layout.RowsOf(document).Count);
+        await Assert
+            .That(realised)
+            .IsEqualTo(layout.RowsOf(document, Diffs.SubjectOf(document)).Count);
         await Assert.That(fallbacks).IsEqualTo(0);
     }
 
@@ -103,6 +107,7 @@ public sealed class DiffViewRenderTests
                 new DiffLinesView
                 {
                     Document = Diffs.Binary,
+                    Subject = Diffs.SubjectOf(Diffs.Binary),
                     SizeInBytes = 5 * 1024 * 1024 + 300 * 1024,
                     OpenInAppCommand = new Counting(() => opened++),
                 },
@@ -134,6 +139,7 @@ public sealed class DiffViewRenderTests
                 new DiffLinesView
                 {
                     Document = Diffs.Binary,
+                    Subject = Diffs.SubjectOf(Diffs.Binary),
                     SizeInBytes = null,
                     OpenInAppCommand = new Counting(() => { }),
                 },
@@ -153,7 +159,13 @@ public sealed class DiffViewRenderTests
     {
         var texts = await RenderAsync(
             "Dark",
-            () => new DiffLinesView { Document = Diffs.Binary, SizeInBytes = null },
+            () =>
+                new DiffLinesView
+                {
+                    Document = Diffs.Binary,
+                    Subject = Diffs.SubjectOf(Diffs.Binary),
+                    SizeInBytes = null,
+                },
             "diff-binary-history.png",
             VisibleTextsOf
         );
@@ -168,7 +180,13 @@ public sealed class DiffViewRenderTests
     {
         var texts = await RenderAsync(
             "Dark",
-            () => new DiffLinesView { Document = Diffs.WholeDirectory, SizeInBytes = 4096 },
+            () =>
+                new DiffLinesView
+                {
+                    Document = Diffs.WholeDirectory,
+                    Subject = Diffs.SubjectOf(Diffs.WholeDirectory),
+                    SizeInBytes = 4096,
+                },
             "diff-directory-binary.png",
             VisibleTextsOf
         );
@@ -212,7 +230,13 @@ public sealed class DiffViewRenderTests
                 : Documents[name];
         var texts = await RenderAsync(
             "Dark",
-            () => new DiffLinesView { Document = document, Layout = Layouts[layoutName] },
+            () =>
+                new DiffLinesView
+                {
+                    Document = document,
+                    Subject = Diffs.SubjectOf(document),
+                    Layout = Layouts[layoutName],
+                },
             $"diff-marker-{name}-{layoutName.ToLowerInvariant()}.png",
             VisibleTextsOf
         );
@@ -225,7 +249,13 @@ public sealed class DiffViewRenderTests
     {
         var (extent, viewport, lineHeights) = await RenderAsync(
             "Dark",
-            () => new DiffLinesView { Document = Diffs.LongLine, Layout = DiffLayout.Unified },
+            () =>
+                new DiffLinesView
+                {
+                    Document = Diffs.LongLine,
+                    Subject = Diffs.SubjectOf(Diffs.LongLine),
+                    Layout = DiffLayout.Unified,
+                },
             "diff-long-line-scroll.png",
             window =>
             {
@@ -258,11 +288,17 @@ public sealed class DiffViewRenderTests
     {
         var document = Diffs.Huge(500);
         var layout = Layouts[layoutName];
-        var rowCount = layout.RowsOf(document).Count;
+        var rowCount = layout.RowsOf(document, Diffs.SubjectOf(document)).Count;
 
         var (atTop, atEnd, lastShown) = await RenderAsync(
             "Dark",
-            () => new DiffLinesView { Document = document, Layout = layout },
+            () =>
+                new DiffLinesView
+                {
+                    Document = document,
+                    Subject = Diffs.SubjectOf(document),
+                    Layout = layout,
+                },
             $"diff-huge-top-{layoutName.ToLowerInvariant()}.png",
             window =>
             {
@@ -310,6 +346,7 @@ public sealed class DiffViewRenderTests
                 new DiffLinesView
                 {
                     Document = Diffs.Document(Diffs.Text("src/Player.cs", Diffs.OneLineHunk)),
+                    Subject = "src/Player.cs",
                     Layout = Layouts[layoutName],
                 },
             $"diff-intraline-{layoutName.ToLowerInvariant()}-{variant.ToLowerInvariant()}.png",
@@ -401,7 +438,13 @@ public sealed class DiffViewRenderTests
     {
         var seen = await RenderAsync(
             "Dark",
-            () => new DiffLinesView { Document = Diffs.Modified, Layout = Layouts[layoutName] },
+            () =>
+                new DiffLinesView
+                {
+                    Document = Diffs.Modified,
+                    Subject = Diffs.SubjectOf(Diffs.Modified),
+                    Layout = Layouts[layoutName],
+                },
             $"diff-intraline-modified-{layoutName.ToLowerInvariant()}.png",
             window =>
                 window
@@ -434,6 +477,7 @@ public sealed class DiffViewRenderTests
                 var view = new DiffLinesView
                 {
                     Document = Diffs.Modified,
+                    Subject = Diffs.SubjectOf(Diffs.Modified),
                     Layout = DiffLayout.Unified,
                 };
                 var window = Show("Dark", view);
@@ -469,7 +513,12 @@ public sealed class DiffViewRenderTests
             {
                 var window = Show(
                     "Dark",
-                    new DiffLinesView { Document = Diffs.Modified, Layout = DiffLayout.Unified }
+                    new DiffLinesView
+                    {
+                        Document = Diffs.Modified,
+                        Subject = Diffs.SubjectOf(Diffs.Modified),
+                        Layout = DiffLayout.Unified,
+                    }
                 );
                 var list = window.GetVisualDescendants().OfType<ListBox>().Single();
                 await window.Clipboard!.SetTextAsync("what was there before");
@@ -492,7 +541,12 @@ public sealed class DiffViewRenderTests
     {
         var layout = await RenderAsync(
             "Dark",
-            () => new DiffLinesView { Document = Diffs.Modified },
+            () =>
+                new DiffLinesView
+                {
+                    Document = Diffs.Modified,
+                    Subject = Diffs.SubjectOf(Diffs.Modified),
+                },
             "diff-default-layout.png",
             window => window.GetVisualDescendants().OfType<DiffLinesView>().Single().Layout
         );
@@ -515,6 +569,7 @@ public sealed class DiffViewRenderTests
                 new DiffLinesView
                 {
                     Document = Diffs.Modified,
+                    Subject = Diffs.SubjectOf(Diffs.Modified),
                     OldTitle = "BASE",
                     NewTitle = "Working copy",
                 },
@@ -596,7 +651,12 @@ public sealed class DiffViewRenderTests
     {
         var (extent, viewport, lineHeights, trimmed) = await RenderAsync(
             "Dark",
-            () => new DiffLinesView { Document = Diffs.LongLine },
+            () =>
+                new DiffLinesView
+                {
+                    Document = Diffs.LongLine,
+                    Subject = Diffs.SubjectOf(Diffs.LongLine),
+                },
             "diff-split-long-line.png",
             window =>
             {
@@ -629,7 +689,12 @@ public sealed class DiffViewRenderTests
     {
         var seen = await RenderAsync(
             "Dark",
-            () => new DiffLinesView { Document = Diffs.Modified },
+            () =>
+                new DiffLinesView
+                {
+                    Document = Diffs.Modified,
+                    Subject = Diffs.SubjectOf(Diffs.Modified),
+                },
             "diff-layout-toggle.png",
             window =>
             {
@@ -671,19 +736,28 @@ public sealed class DiffViewRenderTests
 
         await Assert
             .That(seen.atFirst.Item1)
-            .IsEquivalentTo(DiffLayout.Split.RowsOf(Diffs.Modified), CollectionOrdering.Matching);
+            .IsEquivalentTo(
+                DiffLayout.Split.RowsOf(Diffs.Modified, "src/Player.cs"),
+                CollectionOrdering.Matching
+            );
         await Assert
             .That((seen.atFirst.Item2, seen.atFirst.Item3, seen.atFirst.Item4))
             .IsEqualTo((true, false, true));
         await Assert
             .That(seen.unified.Item1)
-            .IsEquivalentTo(DiffLayout.Unified.RowsOf(Diffs.Modified), CollectionOrdering.Matching);
+            .IsEquivalentTo(
+                DiffLayout.Unified.RowsOf(Diffs.Modified, "src/Player.cs"),
+                CollectionOrdering.Matching
+            );
         await Assert
             .That((seen.unified.Item2, seen.unified.Item3, seen.unified.Item4))
             .IsEqualTo((false, true, false));
         await Assert
             .That(seen.splitAgain.Item1)
-            .IsEquivalentTo(DiffLayout.Split.RowsOf(Diffs.Modified), CollectionOrdering.Matching);
+            .IsEquivalentTo(
+                DiffLayout.Split.RowsOf(Diffs.Modified, "src/Player.cs"),
+                CollectionOrdering.Matching
+            );
         await Assert
             .That((seen.splitAgain.Item2, seen.splitAgain.Item3, seen.splitAgain.Item4))
             .IsEqualTo((true, false, true));
@@ -696,7 +770,14 @@ public sealed class DiffViewRenderTests
         var copied = await HeadlessApp.Session.Dispatch(
             async () =>
             {
-                var window = Show("Dark", new DiffLinesView { Document = Diffs.Modified });
+                var window = Show(
+                    "Dark",
+                    new DiffLinesView
+                    {
+                        Document = Diffs.Modified,
+                        Subject = Diffs.SubjectOf(Diffs.Modified),
+                    }
+                );
                 var list = window.GetVisualDescendants().OfType<ListBox>().Single();
                 list.Selection.Select(5);
                 list.Selection.Select(4);
@@ -741,6 +822,44 @@ public sealed class DiffViewRenderTests
         );
 
         await Assert.That(texts).IsEmpty();
+    }
+
+    /// <summary>
+    /// The pane hands the lines its row's path, so a folder whose diff is one picture shows the
+    /// picture's name and no "Open in app" that would open the folder.
+    /// </summary>
+    [Test]
+    [Arguments("art/hero.png", NodeKind.File, true)]
+    [Arguments("art", NodeKind.Directory, false)]
+    public async Task A_binary_card_offers_the_app_only_when_the_pane_shows_that_file(
+        string relPath,
+        NodeKind kind,
+        bool offered
+    )
+    {
+        var pane = DiffPanes.Pane(
+            new FakeWorkingCopyDiff().Answers(
+                "Index: art/hero.png\r\n"
+                    + "===================================================================\r\n"
+                    + "Cannot display: file marked as a binary type.\r\n"
+                    + "svn:mime-type = image/png\r\n"
+            )
+        );
+        await pane.RefetchAsync(
+            ChangeRow.From(Entries.Entry(relPath, NodeStatus.Added, kind: kind)),
+            "/studio/game/" + relPath
+        );
+
+        var texts = await RenderAsync(
+            "Dark",
+            () => new DiffPaneView { DataContext = pane },
+            $"diff-pane-binary-{kind.ToString().ToLowerInvariant()}.png",
+            VisibleTextsOf,
+            unframed: true
+        );
+
+        await Assert.That(texts.Contains("Open in app")).IsEqualTo(offered);
+        await Assert.That(texts.Contains("art/hero.png")).IsEqualTo(!offered);
     }
 
     private static Task<T> RenderAsync<T>(

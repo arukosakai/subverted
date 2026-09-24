@@ -22,6 +22,10 @@ internal static class Diffs
 
     public static DiffDocument Document(params FileDiff[] files) => new(files);
 
+    /// <summary>What a pane showing this document would name: its one file, or an unrelated folder.</summary>
+    public static string SubjectOf(DiffDocument document) =>
+        document.Files is [var only] ? only.Path : "some/folder";
+
     /// <summary><c>@@ -10,7 +10,8 @@</c>: one line replaced by two, three lines of context either side.</summary>
     public static readonly Hunk ModifiedHunk = new(
         10,

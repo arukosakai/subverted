@@ -9,16 +9,18 @@ namespace Subverted.App.Presentation;
 internal static class DiffRows
 {
     /// <remarks>
-    /// Files get a header only when there is more than one, since the pane already names a single
-    /// file. A property's first hunk has no separator: its name row already opens it.
+    /// Files get a header unless the diff is the subject's alone, since the pane already names it;
+    /// a directory holding one file still names that file. A property's first hunk has no
+    /// separator: its name row already opens it.
     /// </remarks>
     public static IReadOnlyList<DiffRow> Of(
         DiffDocument document,
+        string subject,
         Func<IReadOnlyList<DiffLine>, IEnumerable<DiffRow>> rowsOfLines
     )
     {
         var rows = new List<DiffRow>();
-        var isOnlyFile = document.Files.Count == 1;
+        var isOnlyFile = document.Files is [var only] && only.Path == subject;
         foreach (var file in document.Files)
         {
             if (!isOnlyFile)

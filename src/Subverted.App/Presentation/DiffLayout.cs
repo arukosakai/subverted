@@ -19,6 +19,10 @@ public sealed class DiffLayout
         _rowsOfLines = rowsOfLines;
     }
 
-    public IReadOnlyList<DiffRow> RowsOf(DiffDocument document) =>
-        DiffRows.Of(document, _rowsOfLines);
+    /// <param name="subject">
+    /// The path the pane names, spelled as the diff spells its own section: a file's diff covers
+    /// only it, a directory's names each file inside.
+    /// </param>
+    public IReadOnlyList<DiffRow> RowsOf(DiffDocument document, string subject) =>
+        DiffRows.Of(document, subject, _rowsOfLines);
 }
