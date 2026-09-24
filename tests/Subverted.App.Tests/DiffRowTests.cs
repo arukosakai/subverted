@@ -17,6 +17,35 @@ public sealed class DiffRowTests
         await Assert.That(row.Sign).IsEqualTo(sign);
     }
 
+    public static IEnumerable<Func<(DiffSplitRow, bool, string, string)>> SplitRows() =>
+        [
+            () =>
+                (
+                    new DiffSplitRow(Diffs.Context(1, 1, "x"), Diffs.Context(1, 1, "x")),
+                    true,
+                    "",
+                    ""
+                ),
+            () => (new DiffSplitRow(Diffs.Removed(1, "x"), Diffs.Added(1, "y")), false, "−", "+"),
+            () => (new DiffSplitRow(Diffs.Removed(1, "x"), null), false, "−", ""),
+            () => (new DiffSplitRow(null, Diffs.Added(1, "y")), false, "", "+"),
+        ];
+
+    /// <summary>Each side carries only its own sign; a context row carries neither.</summary>
+    [Test]
+    [MethodDataSource(nameof(SplitRows))]
+    public async Task A_split_row_signs_each_side_for_the_change_it_shows(
+        DiffSplitRow row,
+        bool isContext,
+        string oldSign,
+        string newSign
+    )
+    {
+        await Assert.That(row.IsContext).IsEqualTo(isContext);
+        await Assert.That(row.OldSign).IsEqualTo(oldSign);
+        await Assert.That(row.NewSign).IsEqualTo(newSign);
+    }
+
     [Test]
     [Arguments(PropertyChangeKind.Added, "Added", ChangeTone.Added)]
     [Arguments(PropertyChangeKind.Modified, "Modified", ChangeTone.Modified)]

@@ -4,7 +4,7 @@ namespace Subverted.Frontend.Diff;
 public static class UnifiedDiffParser
 {
     /// <summary>
-    /// Reads the output of <c>svn diff</c> run with <c>LC_ALL=C</c>, as the daemon runs it: one
+    /// Reads the output of <c>svn diff</c> run in an English locale, as the daemon runs it: one
     /// <see cref="FileDiff"/> per <c>Index:</c> section, in the order SVN printed them.
     /// </summary>
     /// <remarks>

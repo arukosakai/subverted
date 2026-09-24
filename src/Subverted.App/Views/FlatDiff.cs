@@ -5,24 +5,23 @@ using Subverted.Frontend.Diff;
 
 namespace Subverted.App.Views;
 
-/// <summary>A <see cref="DiffDocument"/> as the rows <see cref="DiffLinesView"/> lists; none without one.</summary>
-public sealed class FlatDiff : IValueConverter
+/// <summary>
+/// A <see cref="DiffDocument"/> and a <see cref="DiffLayout"/>, in that order, as the rows
+/// <see cref="DiffLinesView"/> lists; none unless both are given.
+/// </summary>
+public sealed class FlatDiff : IMultiValueConverter
 {
     public static readonly FlatDiff Rows = new();
 
     private FlatDiff() { }
 
     public object? Convert(
-        object? value,
+        IList<object?> values,
         Type targetType,
         object? parameter,
         CultureInfo culture
-    ) => value is DiffDocument document ? DiffRows.Of(document) : Array.Empty<DiffRow>();
-
-    public object? ConvertBack(
-        object? value,
-        Type targetType,
-        object? parameter,
-        CultureInfo culture
-    ) => throw new NotSupportedException("Rows do not convert back to a document.");
+    ) =>
+        values is [DiffDocument document, DiffLayout layout]
+            ? layout.RowsOf(document)
+            : Array.Empty<DiffRow>();
 }

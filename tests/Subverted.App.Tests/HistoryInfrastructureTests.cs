@@ -50,7 +50,7 @@ public sealed class HistoryInfrastructureTests
     }
 
     private static DaemonChannel Nobody(ScratchFolder folder) =>
-        new(Path.Combine(folder.Path, "nobody.sock"), Path.Combine(folder.Path, "no-daemon.exe"));
+        new(UnusedSocket.NewPath(), Path.Combine(folder.Path, "no-daemon.exe"));
 
     private sealed class ScratchFolder : IDisposable
     {

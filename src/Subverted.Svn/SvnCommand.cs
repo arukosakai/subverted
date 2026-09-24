@@ -1,6 +1,5 @@
 using System.ComponentModel;
 using System.Diagnostics;
-using System.Text;
 
 namespace Subverted.Svn;
 
@@ -10,9 +9,13 @@ namespace Subverted.Svn;
 /// reviewing it can read.
 /// </summary>
 /// <param name="executable">The client to run. A bare <c>svn</c> resolves against PATH.</param>
-public sealed class SvnCommand(string executable)
+/// <param name="spelling">How that client spells paths in its text; see D34.</param>
+public sealed class SvnCommand(string executable, ISvnTextSpelling spelling)
 {
-    private static readonly UTF8Encoding Utf8 = new(encoderShouldEmitUTF8Identifier: false);
+    public SvnCommand(string executable)
+        : this(executable, SvnTextSpelling.ForThisMachine()) { }
+
+    public ISvnTextSpelling Spelling => spelling;
 
     /// <param name="workingDirectory">An existing directory; SVN resolves relative paths against it.</param>
     /// <exception cref="SvnCommandException">The client could not be started at all.</exception>
@@ -27,8 +30,6 @@ public sealed class SvnCommand(string executable)
             WorkingDirectory = workingDirectory,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
-            StandardOutputEncoding = Utf8,
-            StandardErrorEncoding = Utf8,
             UseShellExecute = false,
         };
 
@@ -37,19 +38,34 @@ public sealed class SvnCommand(string executable)
             startInfo.ArgumentList.Add(argument);
         }
 
-        // svn translates its own output, so without this both the diff headers and every error
-        // message would depend on the language the machine is installed in.
-        startInfo.Environment["LC_ALL"] = "C";
+        startInfo.Environment["LC_ALL"] = SvnLocale.LcAllFor(
+            OperatingSystem.IsWindows(),
+            OperatingSystem.IsMacOS()
+        );
 
         using var process = Start(startInfo);
 
         // Read both pipes before waiting: a command that fills one of them while nobody drains it
         // blocks forever, and `svn diff` on a large asset fills it easily.
-        var standardOutput = process.StandardOutput.ReadToEndAsync(cancellationToken);
-        var standardError = process.StandardError.ReadToEndAsync(cancellationToken);
+        var standardOutput = ReadAllAsync(process.StandardOutput.BaseStream, cancellationToken);
+        var standardError = ReadAllAsync(process.StandardError.BaseStream, cancellationToken);
         await process.WaitForExitAsync(cancellationToken);
 
-        return new SvnCommandResult(process.ExitCode, await standardOutput, await standardError);
+        return new SvnCommandResult(
+            process.ExitCode,
+            SvnOutputText.Decode(await standardOutput, spelling.LinesThatAreNotUtf8),
+            SvnOutputText.Decode(await standardError, spelling.LinesThatAreNotUtf8)
+        );
+    }
+
+    private static async Task<byte[]> ReadAllAsync(
+        Stream stream,
+        CancellationToken cancellationToken
+    )
+    {
+        using var bytes = new MemoryStream();
+        await stream.CopyToAsync(bytes, cancellationToken);
+        return bytes.ToArray();
     }
 
     private Process Start(ProcessStartInfo startInfo)

@@ -15,14 +15,22 @@ public sealed class SvnDiffCommand(SvnCommand command)
         CancellationToken cancellationToken
     )
     {
-        var result = await command.RunAsync(
-            workingCopyRoot,
-            ["diff", "--non-interactive", SvnTarget.WithinForDiff(workingCopyRoot, path)],
-            cancellationToken
-        );
+        string[] arguments =
+        [
+            "diff",
+            "--non-interactive",
+            SvnTarget.WithinForDiff(workingCopyRoot, path),
+        ];
+        var result = await command.RunAsync(workingCopyRoot, arguments, cancellationToken);
 
         return result.ExitCode == 0
-            ? result.StandardOutput
+            ? await SvnDiffNames.RespelledAsync(
+                command,
+                workingCopyRoot,
+                arguments,
+                result.StandardOutput,
+                cancellationToken
+            )
             : throw new SvnCommandException(result.Complaint);
     }
 }

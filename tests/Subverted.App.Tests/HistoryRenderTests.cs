@@ -105,6 +105,7 @@ public sealed class HistoryRenderTests
         await Assert.That(seen.texts).Contains("Rename a.txt to b.txt");
         await Assert.That(seen.texts).Contains("from /a.txt@2");
         await Assert.That(seen.texts).Contains("TWO");
+        await Assert.That(seen.texts).Contains("Before r3");
         await Assert.That(seen.texts).Contains("7 loaded");
     }
 
