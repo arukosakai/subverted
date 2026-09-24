@@ -7,7 +7,9 @@ namespace Subverted.App.Presentation;
 /// What a commit of the ticked rows would send, once D20's directory rules have had their say
 /// (<see cref="DecidedSubtrees"/>, the same copy <c>sv pick</c> obeys).
 /// </summary>
-/// <param name="Sent">The ticked rows that are a choice, ordered by path. A rename is one row.</param>
+/// <param name="Sent">
+/// The ticked rows that are a choice, ordered by path; never a conflict. A rename is one row.
+/// </param>
 /// <param name="DecidedByFolder">
 /// Paths a directory above them has already settled — left out of an added directory that is not
 /// sent, a deletion carried by its deleted directory, or anything beneath a missing directory that
@@ -65,7 +67,12 @@ public sealed record TickedSelection(
             {
                 decided.Add(row.RelPath);
             }
-            else if (ticked.Contains(row.RelPath) && shown.Contains(row.RelPath))
+            // SVN refuses a commit naming a conflict, so a ticked one is held as if it were not.
+            else if (
+                ticked.Contains(row.RelPath)
+                && shown.Contains(row.RelPath)
+                && !row.Entry.IsConflicted
+            )
             {
                 decisions.Sent(row.Entry);
                 if (IsMissingFolder(row.Entry))

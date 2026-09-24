@@ -171,9 +171,9 @@ table and a line in the output log, with SVN's own text. Conflicts or skipped pa
 update runs at a time. The notice's detail scrolls after 120px, so a large update cannot push the
 list off screen. Seen in the real app on a throwaway `subverted-update` fixture, clicked through
 UI Automation: r2 came down, the conflicted file lit up and was pinned at the top, and the log kept
-SVN's text. Not seen: an update refused by SVN, or one under the `svn status` fallback. Known gap: a
-file that goes into conflict keeps the tick it already had, so Commit offers it and SVN refuses it.
-Resolve should settle that.
+SVN's text. Not seen: an update refused by SVN, or one under the `svn status` fallback. A file
+that goes into conflict **holds** the tick it had: its box shows unticked and cannot be changed, it
+is never sent — SVN would refuse the whole commit — and the tick is back once it is resolved.
 
 Resolve is a **Resolve** submenu on a line's menu — Keep mine, Take theirs…, Mark as resolved —
 offered only where the line is conflicted or, for a listed folder, holds a conflict beneath it,

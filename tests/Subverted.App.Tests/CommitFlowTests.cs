@@ -344,6 +344,38 @@ public sealed class CommitFlowTests
         await Assert.That(folder.TickMark == false).IsTrue();
     }
 
+    /// <summary>
+    /// An update can put a ticked file into conflict. Its tick is held rather than dropped, so the
+    /// commit does not offer what SVN would refuse, and it is back once the conflict is resolved.
+    /// </summary>
+    [Test]
+    public async Task A_line_that_goes_into_conflict_holds_its_tick_until_it_is_resolved()
+    {
+        var view = View(
+            new FakeWorkingCopyStatus()
+                .Answers(Listing(Entry("a.png")))
+                .Answers(Listing(Entry("a.png", NodeStatus.Conflicted, isConflicted: true)))
+                .Answers(Listing(Entry("a.png")))
+        );
+        await view.RefreshAsync(None);
+        var before = (Line(view, "a.png").TickMark, view.Composer.Selection.Sent.Count);
+
+        await view.RefreshAsync(None);
+        var line = Line(view, "a.png");
+        var inConflict = (
+            line.TickMark,
+            line.IsTickable,
+            view.ToggleTickCommand.CanExecute(line),
+            view.Composer.Selection.Sent.Count
+        );
+        await view.RefreshAsync(None);
+
+        await Assert.That(before).IsEqualTo(((bool?)true, 1));
+        await Assert.That(inConflict).IsEqualTo(((bool?)false, false, false, 0));
+        await Assert.That(Line(view, "a.png").TickMark == true).IsTrue();
+        await Assert.That(view.Composer.Selection.Sent.Count).IsEqualTo(1);
+    }
+
     private async Task<WorkingCopyViewModel> ListedAsync(StatusResponse listing)
     {
         var view = View(new FakeWorkingCopyStatus().Answers(listing));

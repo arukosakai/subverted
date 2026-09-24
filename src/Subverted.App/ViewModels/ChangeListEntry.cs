@@ -12,7 +12,14 @@ public sealed partial class ChangeListEntry(ChangeListItem content)
         IListSlot<ChangeListItem>
 {
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(Key), nameof(Row), nameof(CanTick), nameof(IsTickable))]
+    [NotifyPropertyChangedFor(
+        nameof(Key),
+        nameof(Row),
+        nameof(CanTick),
+        nameof(IsTickable),
+        nameof(IsHeldByConflict),
+        nameof(TickMark)
+    )]
     public partial ChangeListItem Content { get; set; } = content;
 
     [ObservableProperty]
@@ -27,11 +34,20 @@ public sealed partial class ChangeListEntry(ChangeListItem content)
     [NotifyPropertyChangedFor(nameof(TickMark), nameof(IsTickable))]
     public partial bool IsDecidedByFolder { get; set; }
 
+    /// <summary>
+    /// A conflict, which SVN will not commit: its tick is kept for after the resolve, but until
+    /// then it shows unticked and cannot be changed.
+    /// </summary>
+    public bool IsHeldByConflict => Content.Row?.Entry.IsConflicted == true;
+
     /// <summary>What the tick box shows: the tick, or neither ticked nor unticked when not a choice.</summary>
-    public bool? TickMark => IsDecidedByFolder ? null : IsTicked;
+    public bool? TickMark =>
+        IsDecidedByFolder ? null
+        : IsHeldByConflict ? false
+        : IsTicked;
 
     /// <summary>A change whose tick is the person's to set.</summary>
-    public bool IsTickable => CanTick && !IsDecidedByFolder;
+    public bool IsTickable => CanTick && !IsDecidedByFolder && !IsHeldByConflict;
 
     public string Key => Content.Key;
 

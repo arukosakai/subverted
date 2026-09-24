@@ -247,6 +247,17 @@ public sealed class TickedSelectionTests
         await Assert.That(Paths(selection)).IsEqualTo("art-old.png");
     }
 
+    /// <summary>SVN refuses a commit that names a conflict, so a ticked one waits for its resolve.</summary>
+    [Test]
+    public async Task A_ticked_conflict_is_not_sent_but_the_rest_of_the_ticks_are()
+    {
+        var rows = Rows(Entry("a.png", NodeStatus.Conflicted, isConflicted: true), Entry("b.png"));
+
+        var selection = TickedSelection.Of(rows, Set("a.png", "b.png"), AllOf(rows));
+
+        await Assert.That(Paths(selection)).IsEqualTo("b.png");
+    }
+
     private static List<ChangeRow> Rows(params WorkingCopyEntry[] entries) =>
         [.. entries.Select(ChangeRow.From)];
 
