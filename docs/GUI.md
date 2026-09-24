@@ -176,6 +176,21 @@ obstruction was refused with nothing written. **Seen in the real app** on a thro
 overlay saying its edits go with it, then `D` in `svn status`, the notice and the log line; greyed
 on a `?` line. Not seen there: a folder, the re-ask, a refusal, and nothing on macOS.
 
+**Revert… and Delete… on the folder pane's menu too** (operator's call, forum #63), since an
+untouched folder, or one with changes only beneath it, never gets a line. They start the same
+two prompts as the line's menu, aimed at the folder, so the overlay, the re-ask and one-at-a-time
+are shared, and one menu's question blocks the other's. Delete is offered by `DeletionOffer`
+(`FolderOffer` in the App): the folder's own line if it has one, otherwise a clean versioned folder,
+because the pane only shows a folder that holds something listed. So the root stays refused
+(`E155035`), and so do a folder already `D`, a conflicted one, an obstructed one, an external, and one
+holding a half-updated node. A clean folder is offered, and the fresh read lists its clean and
+ignored contents. Revert asks with the same `RevertConfirmation`, recursive as `--depth infinity`
+is, and is greyed where nothing beneath would change. **It is also greyed above the opened
+folder.** When a subfolder is opened, the root and the folders between are in the pane, but the
+listing does not reach their other children, so the list could not name everything the revert
+would touch. Delete stays offered there, because it reads its target again. Headless tests only:
+not seen in the real app, and nothing on macOS.
+
 ### 4. History
 
 - `LogResponse` already carries changed paths and copy sources; the list and paths pane need

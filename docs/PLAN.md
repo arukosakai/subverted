@@ -431,6 +431,10 @@ Avalonia front-end over the same daemon. Update, commit, diff, log. Nothing clev
   through the shipped `sv` and daemon on a throwaway repository: an obstruction with `--yes` was
   refused and `svn status` still read the copy. A folder holding an add and a `?` listed both as
   lost. A folder holding an edited external listed it, and `--yes` removed it and said so.
+- **Revert… and Delete… on the folder pane's menu** (GUI.md slice 3, forum #63), so a clean
+  folder can be deleted. They use the same prompts and rules as the line's menu. The root is
+  refused, and Revert is greyed above the opened folder, because the listing there cannot name
+  everything it would reach. Headless tests only; not seen in the real app.
 - **A bug pass over what was built (2026-09-24).** Reviewed across the Changes screen, the diff
   path and History/shell, then fixed test-first:
   - A slow open overtaken by a second one, or an activation answered after a deactivate or
