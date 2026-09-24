@@ -5,7 +5,8 @@ namespace Subverted.App.Presentation;
 /// <param name="Name">The last segment; for the root, the working copy's own folder name.</param>
 /// <param name="Depth">How many segments deep: the root is 0.</param>
 /// <param name="Count">Changes this folder holds, at any depth — what choosing it would show.</param>
-public sealed record FolderLine(string RelPath, string Name, int Depth, int Count)
+/// <param name="Tone">The most urgent tone among those changes, which the line is drawn in.</param>
+public sealed record FolderLine(string RelPath, string Name, int Depth, int Count, ChangeTone Tone)
 {
     public bool IsRoot => RelPath.Length == 0;
 

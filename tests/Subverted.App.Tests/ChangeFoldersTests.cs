@@ -17,7 +17,9 @@ public sealed class ChangeFoldersTests
     {
         var folders = ChangeFolders.Of([Row("a.txt"), Row("b.txt")], "game");
 
-        await Assert.That(folders).IsEquivalentTo([new FolderLine("", "game", 0, 2)]);
+        await Assert
+            .That(folders)
+            .IsEquivalentTo([new FolderLine("", "game", 0, 2, ChangeTone.Modified)]);
     }
 
     [Test]
@@ -28,9 +30,9 @@ public sealed class ChangeFoldersTests
         await Assert
             .That(folders)
             .IsEquivalentTo([
-                new FolderLine("", "game", 0, 1),
-                new FolderLine("art", "art", 1, 1),
-                new FolderLine("art/chars", "chars", 2, 1),
+                new FolderLine("", "game", 0, 1, ChangeTone.Modified),
+                new FolderLine("art", "art", 1, 1, ChangeTone.Modified),
+                new FolderLine("art/chars", "chars", 2, 1, ChangeTone.Modified),
             ]);
     }
 
@@ -96,6 +98,58 @@ public sealed class ChangeFoldersTests
             .IsEquivalentTo([("", 1), ("new", 1), ("old", 1)]);
     }
 
+    /// <summary>A conflict deep down colours every folder above it, and none beside it.</summary>
+    [Test]
+    public async Task A_folder_takes_the_most_urgent_tone_below_it_and_not_its_sibling_s()
+    {
+        var folders = ChangeFolders.Of(
+            [
+                Row("art/a.png"),
+                Row("art/chars/hero.png", NodeStatus.Conflicted),
+                Row("src/main.cs", NodeStatus.Deleted),
+            ],
+            "game"
+        );
+
+        await Assert
+            .That(folders.Select(folder => (folder.RelPath, folder.Tone)))
+            .IsEquivalentTo([
+                ("", ChangeTone.Conflict),
+                ("art", ChangeTone.Conflict),
+                ("art/chars", ChangeTone.Conflict),
+                ("src", ChangeTone.Deleted),
+            ]);
+    }
+
+    [Test]
+    public async Task A_folder_holding_only_quiet_rows_is_drawn_quiet()
+    {
+        var folders = ChangeFolders.Of([Row("lib/vendor", NodeStatus.External)], "game");
+
+        await Assert
+            .That(folders.Select(folder => folder.Tone))
+            .IsEquivalentTo([ChangeTone.Quiet, ChangeTone.Quiet]);
+    }
+
+    [Test]
+    public async Task A_rename_colours_both_of_its_folders_as_renamed()
+    {
+        var rename = ChangeRow.Rename(
+            Entry("new/hero.png", NodeStatus.Unversioned),
+            "old/hero.png"
+        );
+
+        var folders = ChangeFolders.Of([rename, Row("old/other.png", NodeStatus.Added)], "game");
+
+        await Assert
+            .That(folders.Select(folder => (folder.RelPath, folder.Tone)))
+            .IsEquivalentTo([
+                ("", ChangeTone.Added),
+                ("new", ChangeTone.Renamed),
+                ("old", ChangeTone.Added),
+            ]);
+    }
+
     [Test]
     [Arguments("", true)]
     [Arguments("art", true)]
@@ -131,7 +185,9 @@ public sealed class ChangeFoldersTests
     [Arguments("art", false)]
     public async Task Only_the_root_is_the_root(string relPath, bool isRoot)
     {
-        await Assert.That(new FolderLine(relPath, relPath, 0, 1).IsRoot).IsEqualTo(isRoot);
+        await Assert
+            .That(new FolderLine(relPath, relPath, 0, 1, ChangeTone.Modified).IsRoot)
+            .IsEqualTo(isRoot);
     }
 
     [Test]
@@ -140,7 +196,9 @@ public sealed class ChangeFoldersTests
     [Arguments(1500, "art, 1,500 changes")]
     public async Task A_screen_reader_hears_the_folder_and_its_count(int count, string said)
     {
-        await Assert.That(new FolderLine("art", "art", 1, count).AutomationName).IsEqualTo(said);
+        await Assert
+            .That(new FolderLine("art", "art", 1, count, ChangeTone.Modified).AutomationName)
+            .IsEqualTo(said);
     }
 
     private static ChangeRow Row(string relPath, NodeStatus status = NodeStatus.Modified) =>

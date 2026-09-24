@@ -2,7 +2,8 @@ namespace Subverted.App.Presentation;
 
 /// <summary>
 /// The directory pane: every folder that holds a change, in tree order, and which changes choosing
-/// one keeps. A rename belongs to the folders of both its names, as the filter finds it by either.
+/// one keeps. Each is drawn in the most urgent tone below it, so a conflict three levels down still
+/// colours the root. A rename belongs to the folders of both its names, as the filter finds it by either.
 /// </summary>
 public static class ChangeFolders
 {
@@ -29,15 +30,20 @@ public static class ChangeFolders
 
         return
         [
-            .. folders
-                .Order(TreeOrder.Instance)
-                .Select(folder => new FolderLine(
-                    folder,
-                    folder.Length == 0 ? rootName : NameOf(folder),
-                    DepthOf(folder),
-                    rows.Count(row => Contains(folder, row))
-                )),
+            .. folders.Order(TreeOrder.Instance).Select(folder => LineOf(folder, rows, rootName)),
         ];
+    }
+
+    private static FolderLine LineOf(string folder, IReadOnlyList<ChangeRow> rows, string rootName)
+    {
+        var held = rows.Where(row => Contains(folder, row)).ToList();
+        return new FolderLine(
+            folder,
+            folder.Length == 0 ? rootName : NameOf(folder),
+            DepthOf(folder),
+            held.Count,
+            ChangeUrgency.MostUrgentOf(held.Select(row => row.Badge.Tone))
+        );
     }
 
     /// <summary>Whether choosing <paramref name="folder"/> keeps the row: the root keeps everything.</summary>

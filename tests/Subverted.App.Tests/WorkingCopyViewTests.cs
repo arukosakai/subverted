@@ -149,6 +149,51 @@ public sealed class WorkingCopyViewTests
     }
 
     [Test]
+    public async Task Each_folder_s_icon_is_drawn_in_the_most_urgent_tone_below_it()
+    {
+        var status = new FakeWorkingCopyStatus().Answers(
+            Listing(
+                Entry("a.png", NodeStatus.Conflicted),
+                Entry("sub/hero.png", NodeStatus.Deleted)
+            )
+        );
+
+        var (strokes, conflict, deleted) = await OnViewAsync(
+            (_, list, _) =>
+            {
+                var application = Application.Current!;
+                application.TryGetResource(
+                    "Tone.Conflict",
+                    application.ActualThemeVariant,
+                    out var conflictBrush
+                );
+                application.TryGetResource(
+                    "Tone.Deleted",
+                    application.ActualThemeVariant,
+                    out var deletedBrush
+                );
+                var icons = list.FindAncestorOfType<WorkingCopyView>()!
+                    .FindControl<ListBox>("Folders")!
+                    .GetVisualDescendants()
+                    .OfType<ListBoxItem>()
+                    .Select(item =>
+                        item.GetVisualDescendants()
+                            .OfType<Avalonia.Controls.Shapes.Path>()
+                            .Single()
+                            .Stroke
+                    )
+                    .ToList();
+                return (icons, conflictBrush, deletedBrush);
+            },
+            status: status
+        );
+
+        await Assert.That(conflict).IsNotSameReferenceAs(deleted);
+        await Assert.That(strokes[0]).IsSameReferenceAs(conflict);
+        await Assert.That(strokes[1]).IsSameReferenceAs(deleted);
+    }
+
+    [Test]
     public async Task A_filter_that_hides_lines_says_how_many()
     {
         var (shown, text, visible) = await OnViewAsync(
@@ -211,12 +256,13 @@ public sealed class WorkingCopyViewTests
 
     private static Task<T> OnViewAsync<T>(
         Func<Window, ListBox, WorkingCopyViewModel, T> act,
-        FakeFileLauncher? launcher = null
+        FakeFileLauncher? launcher = null,
+        FakeWorkingCopyStatus? status = null
     ) =>
         HeadlessApp.Session.Dispatch(
             async () =>
             {
-                var status = new FakeWorkingCopyStatus().Answers(
+                status ??= new FakeWorkingCopyStatus().Answers(
                     // Unversioned, so they start unticked and a key's ticks are its own.
                     Listing(
                         Entry("a.png", NodeStatus.Unversioned),

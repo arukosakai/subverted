@@ -6,18 +6,6 @@ namespace Subverted.App.Presentation;
 /// </summary>
 public static class ChangeSummary
 {
-    private static readonly ChangeTone[] Urgency =
-    [
-        ChangeTone.Conflict,
-        ChangeTone.Missing,
-        ChangeTone.Modified,
-        ChangeTone.Added,
-        ChangeTone.Deleted,
-        ChangeTone.Replaced,
-        ChangeTone.Renamed,
-        ChangeTone.Unversioned,
-    ];
-
     public static IReadOnlyList<ChangeCount> Of(IEnumerable<ChangeRow> rows)
     {
         var counts = rows.GroupBy(row => row.Badge.Tone)
@@ -25,8 +13,8 @@ public static class ChangeSummary
 
         return
         [
-            .. Urgency
-                .Where(counts.ContainsKey)
+            .. ChangeUrgency
+                .Order.Where(counts.ContainsKey)
                 .Select(tone => new ChangeCount(tone, counts[tone], Text(tone, counts[tone]))),
         ];
     }
