@@ -83,6 +83,21 @@ public sealed class OutputLogTests
     }
 
     [Test]
+    public async Task A_delete_is_logged_with_its_target()
+    {
+        var log = new OutputLogViewModel(_clock);
+        var deleted = new Notice(NoticeKind.Succeeded, "Deleted", null, null);
+
+        log.Record(new DeleteAttempt("art/hero.png", deleted, null));
+
+        await Assert
+            .That(log.Lines)
+            .IsEquivalentTo([
+                new OutputLine(_clock.GetLocalNow(), "Delete", "art/hero.png", deleted),
+            ]);
+    }
+
+    [Test]
     public async Task A_lock_and_an_unlock_are_logged_apart_with_their_file()
     {
         var log = new OutputLogViewModel(_clock);
@@ -170,5 +185,28 @@ public sealed class OutputLogTests
         await window.Current.RevertPrompt.ConfirmCommand.ExecuteAsync(null);
 
         await Assert.That(window.Log.Lines.Select(line => line.Subject)).IsEquivalentTo(["a.png"]);
+    }
+
+    [Test]
+    public async Task A_delete_made_in_the_open_copy_reaches_the_windows_log()
+    {
+        var status = new FakeWorkingCopyStatus().Answers(Listing(Entry("a.png")));
+        var deletions = new FakeWorkingCopyDeletion().Lists(Listing(Entry("a.png")));
+        await using var window = new MainWindowViewModel(
+            new FakeRecentStore(),
+            new FakeFolderPicker(null),
+            path => WorkingCopies.View(status, path: path, deletions: deletions),
+            _clock,
+            StringComparison.Ordinal,
+            Revisions.View(new FakeRevisionHistory())
+        );
+        await window.ShowAsync("/studio/game", CancellationToken.None);
+        await window.Current!.DeleteCommand.ExecuteAsync(window.Current.Entries[0]);
+
+        await window.Current.DeletePrompt.ConfirmCommand.ExecuteAsync(null);
+
+        await Assert
+            .That(window.Log.Lines.Select(line => (line.Operation, line.Subject)))
+            .IsEquivalentTo([("Delete", "a.png")]);
     }
 }

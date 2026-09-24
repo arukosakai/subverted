@@ -242,7 +242,7 @@ public sealed class WorkingCopyViewTests
         await Assert
             .That(headers)
             .IsEqualTo(
-                $"Open|{RevealMenuText.For(FileRevealers.ThisPlatform)}|Copy path|Revert…|Resolve|Lock|Unlock|History of this file"
+                $"Open|{RevealMenuText.For(FileRevealers.ThisPlatform)}|Copy path|Revert…|Delete…|Resolve|Lock|Unlock|History of this file"
             );
         await Assert.That(historyEnabled).IsFalse();
         await Assert.That(resolveHeaders).IsEqualTo("Keep mine|Take theirs…|Mark as resolved");

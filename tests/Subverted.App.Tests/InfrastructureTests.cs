@@ -220,6 +220,36 @@ public sealed class InfrastructureTests
     }
 
     [Test]
+    public async Task A_deletion_listing_asked_of_a_daemon_that_is_not_there_reads_as_unreachable()
+    {
+        using var folder = new ScratchFolder();
+        var deletions = new DaemonWorkingCopyDeletion(
+            new DaemonChannel(UnusedSocket.NewPath(), Path.Combine(folder.Path, "no-daemon.exe"))
+        );
+
+        var thrown = await Assert
+            .That(async () => await deletions.ListAsync(folder.Path, CancellationToken.None))
+            .Throws<DaemonUnreachableException>();
+
+        await Assert.That(thrown!.Message).Contains("no-daemon.exe");
+    }
+
+    [Test]
+    public async Task A_delete_sent_to_a_daemon_that_is_not_there_reads_as_unreachable()
+    {
+        using var folder = new ScratchFolder();
+        var deletions = new DaemonWorkingCopyDeletion(
+            new DaemonChannel(UnusedSocket.NewPath(), Path.Combine(folder.Path, "no-daemon.exe"))
+        );
+
+        var thrown = await Assert
+            .That(async () => await deletions.DeleteAsync(folder.Path, CancellationToken.None))
+            .Throws<DaemonUnreachableException>();
+
+        await Assert.That(thrown!.Message).Contains("no-daemon.exe");
+    }
+
+    [Test]
     public async Task An_update_sent_to_a_daemon_that_is_not_there_reads_as_unreachable()
     {
         using var folder = new ScratchFolder();

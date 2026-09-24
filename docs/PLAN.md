@@ -413,6 +413,16 @@ Avalonia front-end over the same daemon. Update, commit, diff, log. Nothing clev
   changes. The status request gained an optional held scan so a 100k-file All listing is re-sent
   only when it changed: 3–5 ms a poll unchanged, ~400–700 ms when it did, measured warm on
   `subverted-100k`. Headless tests only; not seen in the real app.
+- **Delete from a line's menu (GUI.md slice 3), the last verb of that slice.** It asks first, over
+  a fresh listing of the target with clean and ignored nodes in it, and lists what is lost for
+  good first. It asks again if that list changed by the time Confirm is pressed. What is offered
+  was decided by running `svn delete --force` on 1.8.15 against every status a line can have.
+  **An obstruction (`~`) wedges the working copy, and `svn cleanup` cannot undo that.** An external
+  inside a folder is deleted with its edits, and SVN prints nothing for it. The rules are in
+  `Frontend`. Driven through the real view model, adapter and daemon on a throwaway repository;
+  not seen in the real app. **`sv rm` does not use them yet, and disagrees with them in three
+  places:** its preview calls an added file recoverable, which it is not, it says nothing about an
+  external's contents, and it will send an obstruction.
 - **A bug pass over what was built (2026-09-24).** Reviewed across the Changes screen, the diff
   path and History/shell, then fixed test-first:
   - A slow open overtaken by a second one, or an activation answered after a deactivate or
@@ -548,7 +558,7 @@ These need a human decision and are deliberately not resolved in code:
 ## Status
 
 M0 complete; M1 partly done and M2 begun, see their sections for exactly which parts. Solution builds clean with
-zero warnings, **3137 tests green** across seven test projects, status output diffed against
+zero warnings, **3230 tests green** across seven test projects, status output diffed against
 `svn status --no-ignore` on eight fixture working copies — column 4 included, as of D28 — with only
 the two divergences above.
 
