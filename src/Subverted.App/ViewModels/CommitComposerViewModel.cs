@@ -12,10 +12,14 @@ namespace Subverted.App.ViewModels;
 /// <param name="committed">
 /// Told the rows a commit sent once it reached a revision, so their ticks can go.
 /// </param>
+/// <param name="review">
+/// Opens the review window on what would be sent; completes once that window is gone.
+/// </param>
 /// <remarks>Call it from the UI thread: its answers come back on the context that asked.</remarks>
 public sealed partial class CommitComposerViewModel(
     IWorkingCopyCommit commits,
-    Action<IReadOnlyList<string>> committed
+    Action<IReadOnlyList<string>> committed,
+    Func<Task> review
 ) : ObservableObject
 {
     private string _root = "";
@@ -25,7 +29,7 @@ public sealed partial class CommitComposerViewModel(
     public partial string Message { get; set; } = "";
 
     [ObservableProperty]
-    [NotifyCanExecuteChangedFor(nameof(CommitCommand))]
+    [NotifyCanExecuteChangedFor(nameof(CommitCommand), nameof(ReviewCommand))]
     public partial bool IsCommitting { get; private set; }
 
     /// <summary>What the last commit came to; <c>null</c> before the first and once dismissed.</summary>
@@ -34,7 +38,7 @@ public sealed partial class CommitComposerViewModel(
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ButtonText))]
-    [NotifyCanExecuteChangedFor(nameof(CommitCommand))]
+    [NotifyCanExecuteChangedFor(nameof(CommitCommand), nameof(ReviewCommand))]
     public partial TickedSelection Selection { get; private set; } = TickedSelection.Nothing;
 
     public string ButtonText => CommitButtonText.For(Selection.Sent.Count);
@@ -94,6 +98,12 @@ public sealed partial class CommitComposerViewModel(
 
     private bool CanCommit() =>
         !IsCommitting && Selection.Sent.Count > 0 && !string.IsNullOrWhiteSpace(Message);
+
+    /// <summary>Needs no message yet: the review window is somewhere to write it.</summary>
+    [RelayCommand(CanExecute = nameof(CanReview))]
+    private Task ReviewAsync() => review();
+
+    private bool CanReview() => !IsCommitting && Selection.Sent.Count > 0;
 
     [RelayCommand]
     private void DismissNotice() => Notice = null;

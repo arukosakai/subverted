@@ -55,6 +55,7 @@ public sealed partial class App : Application
         var launcher = new SystemFileLauncher(() => desktop.MainWindow);
         var revealer = FileRevealers.For(FileRevealers.ThisPlatform);
         var clipboard = new WindowClipboard(() => desktop.MainWindow);
+        var reviews = new CommitReviewWindowOpener(() => desktop.MainWindow);
         var history = new HistoryViewModel(
             new DaemonRevisionHistory(channel),
             new RevisionDiffPaneViewModel(new DaemonRevisionDiff(channel), TimeProvider.System),
@@ -74,7 +75,9 @@ public sealed partial class App : Application
                 commits,
                 reverts,
                 resolves,
-                updates
+                updates,
+                reviews,
+                () => new DiffPaneViewModel(diffs, sizes, launcher, TimeProvider.System)
             ),
             TimeProvider.System,
             OperatingSystem.IsWindows()

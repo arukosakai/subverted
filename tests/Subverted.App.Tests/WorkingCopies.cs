@@ -15,7 +15,9 @@ internal static class WorkingCopies
         IWorkingCopyCommit? commits = null,
         IWorkingCopyRevert? reverts = null,
         IWorkingCopyUpdate? updates = null,
-        IWorkingCopyResolve? resolves = null
+        IWorkingCopyResolve? resolves = null,
+        ICommitReviewOpener? reviews = null,
+        Func<DiffPaneViewModel>? reviewPanes = null
     ) =>
         new(
             path,
@@ -27,7 +29,9 @@ internal static class WorkingCopies
             commits ?? new FakeWorkingCopyCommit(),
             reverts ?? new FakeWorkingCopyRevert(),
             resolves ?? new FakeWorkingCopyResolve(),
-            updates ?? new FakeWorkingCopyUpdate()
+            updates ?? new FakeWorkingCopyUpdate(),
+            reviews ?? new FakeCommitReviewOpener(),
+            reviewPanes ?? (() => DiffPanes.Pane())
         );
 
     /// <summary>Picks the shown line for a path, as clicking it would.</summary>

@@ -16,6 +16,8 @@ namespace Subverted.App.ViewModels;
 /// <param name="reverts">Reverts a confirmed line, for the context menu.</param>
 /// <param name="resolves">Settles a line's conflicts, for the context menu.</param>
 /// <param name="updates">Brings the opened folder up to date, for the Update button.</param>
+/// <param name="reviews">Shows the commit review window, for the commit box's Review button.</param>
+/// <param name="reviewDiff">A fresh diff pane for each review, apart from <paramref name="diff"/>.</param>
 public sealed partial class WorkingCopyViewModel(
     string path,
     IWorkingCopyStatus status,
@@ -26,8 +28,10 @@ public sealed partial class WorkingCopyViewModel(
     IWorkingCopyCommit commits,
     IWorkingCopyRevert reverts,
     IWorkingCopyResolve resolves,
-    IWorkingCopyUpdate updates
-) : ObservableObject
+    IWorkingCopyUpdate updates,
+    ICommitReviewOpener reviews,
+    Func<DiffPaneViewModel> reviewDiff
+) : ObservableObject, ICommitTicks
 {
     private readonly TickedPaths _ticks = new();
     private readonly CollapsedFolders _collapsed = new();
@@ -117,7 +121,7 @@ public sealed partial class WorkingCopyViewModel(
     public DiffPaneViewModel Diff { get; } = diff;
 
     /// <summary>The message and the button that commit what is ticked and shown.</summary>
-    public CommitComposerViewModel Composer => _composer ??= new(commits, Untick);
+    public CommitComposerViewModel Composer => _composer ??= new(commits, Untick, ReviewAsync);
 
     public RevertPromptViewModel RevertPrompt => _revertPrompt ??= new(reverts);
 
@@ -420,15 +424,27 @@ public sealed partial class WorkingCopyViewModel(
     }
 
     [RelayCommand(CanExecute = nameof(CanTick))]
-    private void ToggleTick(ChangeListEntry? entry)
+    private void ToggleTick(ChangeListEntry? entry) => Toggle(entry!.Row!.RelPath);
+
+    bool ICommitTicks.IsTicked(string relPath) => _ticks.IsTicked(relPath);
+
+    void ICommitTicks.Toggle(string relPath) => Toggle(relPath);
+
+    private void Toggle(string relPath)
     {
-        _ticks.Toggle(entry!.Row!.RelPath);
+        _ticks.Toggle(relPath);
         OnPropertyChanged(nameof(Ticked));
         ShowTicks();
         ToggleTickCommand.NotifyCanExecuteChanged();
     }
 
     private static bool CanTick(ChangeListEntry? entry) => entry?.IsTickable == true;
+
+    private async Task ReviewAsync()
+    {
+        using var review = new CommitReviewViewModel(Composer, reviewDiff(), this, Location);
+        await reviews.OpenAsync(review);
+    }
 
     /// <summary>After a commit reached a revision: what it sent is no longer ticked.</summary>
     private void Untick(IReadOnlyList<string> relPaths)

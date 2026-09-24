@@ -12,6 +12,8 @@
     <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Spacing="10" HorizontalAlignment="Right"
                 Margin="12,0,12,10">
       <ProgressBar Classes="spinner" Width="60" VerticalAlignment="Center" IsVisible="{Binding IsCommitting}" />
+      <Button x:Name="ReviewButton" Classes="flat" Content="Review…" Command="{Binding ReviewCommand}"
+              ToolTip.Tip="Go through each file's diff before committing" />
       <Button x:Name="CommitButton" Classes="accent" Content="{Binding ButtonText}" ToolTip.Tip="Ctrl+Enter"
               Command="{Binding CommitCommand}" AutomationProperties.Name="{Binding ButtonText}" />
     </StackPanel>
