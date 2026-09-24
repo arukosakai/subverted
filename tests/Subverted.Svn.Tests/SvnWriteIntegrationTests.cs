@@ -313,6 +313,75 @@ public sealed class SvnWriteIntegrationTests
     }
 
     /// <summary>
+    /// A commit releases every lock token its walk meets, sent or not. Scoped exactly, the walk is
+    /// the named nodes, so a lock taken before starting survives a commit that names its folder.
+    /// </summary>
+    [Test]
+    public async Task Committed_exactly_a_lock_on_an_unnamed_file_is_kept_even_when_its_folder_is_named()
+    {
+        using var copy = OneCommit();
+        copy.Write("src/b.txt", "two\n");
+        copy.Svn("add", "--quiet", "src/b.txt");
+        copy.Svn("commit", "--quiet", "-m", "second");
+        copy.Svn("update", "--quiet");
+        copy.Svn("lock", "src/b.txt");
+        copy.Write("src/a.txt", "edited\n");
+        copy.Svn("propset", "--quiet", "custom:x", "1", "src");
+
+        await new SvnCommitCommand(Svn).CommitAsync(
+            copy.Root,
+            [copy.Absolute("src"), copy.Absolute("src/a.txt")],
+            "the edit and the folder",
+            CommitScope.ExactlyTheseNodes,
+            None
+        );
+
+        await Assert.That(await HoldsLockAsync(copy, "src/b.txt")).IsTrue();
+    }
+
+    /// <summary>The other half: the same commit as a subtree walks into the file and releases it.</summary>
+    [Test]
+    public async Task Committed_as_a_subtree_a_lock_on_an_unchanged_file_beneath_is_released()
+    {
+        using var copy = OneCommit();
+        copy.Write("src/b.txt", "two\n");
+        copy.Svn("add", "--quiet", "src/b.txt");
+        copy.Svn("commit", "--quiet", "-m", "second");
+        copy.Svn("update", "--quiet");
+        copy.Svn("lock", "src/b.txt");
+        copy.Write("src/a.txt", "edited\n");
+
+        await new SvnCommitCommand(Svn).CommitAsync(
+            copy.Root,
+            [copy.Absolute("src")],
+            "the whole folder",
+            CommitScope.WholeSubtree,
+            None
+        );
+
+        await Assert.That(await HoldsLockAsync(copy, "src/b.txt")).IsFalse();
+    }
+
+    /// <summary>A locked file that is itself committed gives its lock up, as TortoiseSVN's does.</summary>
+    [Test]
+    public async Task Committed_exactly_a_locked_edited_file_that_is_named_releases_its_lock()
+    {
+        using var copy = OneCommit();
+        copy.Svn("lock", "src/a.txt");
+        copy.Write("src/a.txt", "edited\n");
+
+        await new SvnCommitCommand(Svn).CommitAsync(
+            copy.Root,
+            [copy.Absolute("src/a.txt")],
+            "the locked edit",
+            CommitScope.ExactlyTheseNodes,
+            None
+        );
+
+        await Assert.That(await HoldsLockAsync(copy, "src/a.txt")).IsFalse();
+    }
+
+    /// <summary>
     /// A deletion is recorded on the directory, so naming the directory removes the subtree even
     /// scoped exactly — and naming a child alone sends nothing. Either way the children are not a
     /// choice, which is why the picker does not present them as one.
@@ -342,6 +411,12 @@ public sealed class SvnWriteIntegrationTests
         await Assert.That(directory.Revision).IsEqualTo(2L);
         await Assert.That(Directory.Exists(copy.Absolute("src"))).IsFalse();
     }
+
+    private static async Task<bool> HoldsLockAsync(SvnWorkingCopy copy, string relPath) =>
+        (await Svn.RunAsync(copy.Root, ["info", copy.Absolute(relPath)], None)).StandardOutput.Contains(
+            "Lock Token:",
+            StringComparison.Ordinal
+        );
 
     private static SvnWorkingCopy OneCommit()
     {

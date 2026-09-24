@@ -42,10 +42,16 @@ public sealed record ChangeRow(
         RenamedFrom is null ? null : Presentation.RenameCaption.For(RenamedFrom, RelPath);
 
     /// <summary>
-    /// Listed only because everything was asked for: nothing to commit, revert or diff. A clean
-    /// file that holds a lock is not one of these — it is listed either way, as <c>svn status</c> does.
+    /// Nothing to commit, revert or diff: no tick box, and no count anywhere changes are counted. A
+    /// file that only holds a lock is one of these, though it is still <em>listed</em>; see <see cref="IsClean"/>.
     /// </summary>
-    public bool IsUnmodified => CleanNode.Is(Entry);
+    public bool IsUnmodified => UnchangedNode.Is(Entry);
+
+    /// <summary>
+    /// Listed only because everything was asked for, as <c>svn status</c> leaves it out without
+    /// <c>-v</c>. A file holding a lock is not clean, so its line stays in a listing of changes.
+    /// </summary>
+    public bool IsClean => CleanNode.Is(Entry);
 
     /// <summary>
     /// One row for a D27 pair: the new path, badged as a rename. Its <c>svn log</c> lives under the

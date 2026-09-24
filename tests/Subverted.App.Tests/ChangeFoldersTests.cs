@@ -47,15 +47,35 @@ public sealed class ChangeFoldersTests
             ]);
     }
 
-    /// <summary>The same row with something to report does count: the line is drawn at the change, not the listing.</summary>
+    /// <summary>A held lock alone is not a change, so its folders are drawn but count nothing.</summary>
     [Test]
-    public async Task A_clean_file_that_holds_a_lock_is_counted_where_an_unmodified_one_is_not()
+    public async Task A_lock_on_an_untouched_file_puts_its_folders_in_the_tree_without_a_count()
     {
         var held = ChangeRow.From(Entry("src/held.psd", NodeStatus.Unmodified, hasLockToken: true));
 
         var folders = ChangeFolders.Of([held], "game");
 
-        await Assert.That(folders.Select(folder => folder.Count)).IsEquivalentTo(new[] { 1, 1 });
+        await Assert
+            .That(folders)
+            .IsEquivalentTo([
+                new FolderLine("", "game", 0, 0, ChangeTone.Quiet, true),
+                new FolderLine("src", "src", 1, 0, ChangeTone.Quiet, false),
+            ]);
+    }
+
+    [Test]
+    public async Task A_lock_on_an_edited_file_is_counted_as_the_edit()
+    {
+        var worked = ChangeRow.From(Entry("src/worked.psd", hasLockToken: true));
+
+        var folders = ChangeFolders.Of([worked], "game");
+
+        await Assert
+            .That(folders)
+            .IsEquivalentTo([
+                new FolderLine("", "game", 0, 1, ChangeTone.Modified, true),
+                new FolderLine("src", "src", 1, 1, ChangeTone.Modified, false),
+            ]);
     }
 
     [Test]

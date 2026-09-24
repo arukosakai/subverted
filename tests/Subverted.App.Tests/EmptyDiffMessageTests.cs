@@ -50,16 +50,25 @@ public sealed class EmptyDiffMessageTests
         await Assert.That(EmptyDiffMessage.For(row)).IsEqualTo(message);
     }
 
-    /// <summary>Clean content with something else to report is a change, and is not called unchanged.</summary>
+    /// <summary>Unchanged content with changed properties is a change, and is not called unchanged.</summary>
     [Test]
-    public async Task A_clean_file_listed_for_its_lock_or_its_properties_is_not_called_unchanged()
+    public async Task A_file_whose_properties_alone_changed_is_not_called_unchanged()
     {
-        var locked = ChangeRow.From(Entry("a.png", NodeStatus.Unmodified, hasLockToken: true));
         var propsOnly = ChangeRow.From(
             Entry("a.png", NodeStatus.Unmodified, PropertyStatus.Modified)
         );
 
-        await Assert.That(EmptyDiffMessage.For(locked)).IsEqualTo(Otherwise);
         await Assert.That(EmptyDiffMessage.For(propsOnly)).IsEqualTo(Otherwise);
+    }
+
+    /// <summary>A lock changes nothing in the file, so a lock alone still reads as unchanged.</summary>
+    [Test]
+    public async Task A_file_listed_only_for_its_lock_is_said_to_be_unchanged()
+    {
+        var locked = ChangeRow.From(Entry("a.png", NodeStatus.Unmodified, hasLockToken: true));
+
+        await Assert
+            .That(EmptyDiffMessage.For(locked))
+            .IsEqualTo("Unchanged: it matches the revision you last updated to.");
     }
 }

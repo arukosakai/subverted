@@ -184,7 +184,8 @@ public sealed partial class WorkingCopyViewModel(
 
     /// <summary>
     /// No change is listed, and that is an answer rather than the absence of one — never true
-    /// before the daemon has replied. A locked but unchanged file is listed, so it is not clean here.
+    /// before the daemon has replied. A locked but unchanged file is no change, so it leaves the copy
+    /// clean, though it is still listed.
     /// </summary>
     public bool IsClean => State == WorkingCopyState.Ready && Changes.Count == 0;
 

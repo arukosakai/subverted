@@ -80,9 +80,12 @@ public sealed class WorkingCopyViewModelTests
         await Assert.That(view.Headline).IsNull();
     }
 
-    /// <summary>A locked, unchanged file counts for nothing in the summary but is still on screen.</summary>
+    /// <summary>
+    /// A locked, unchanged file is nothing to commit, so the copy is clean — but it is still on
+    /// screen, since that line is where its lock is released from.
+    /// </summary>
     [Test]
-    public async Task A_listing_of_only_quiet_rows_is_not_clean()
+    public async Task A_listing_of_only_locked_untouched_files_is_clean_and_still_shows_them()
     {
         var status = new FakeWorkingCopyStatus().Answers(
             Listing(Entry("a.png", NodeStatus.Unmodified, hasLockToken: true))
@@ -92,7 +95,10 @@ public sealed class WorkingCopyViewModelTests
         await view.RefreshAsync(None);
 
         await Assert.That(view.Summary).IsEmpty();
-        await Assert.That(view.IsClean).IsFalse();
+        await Assert.That(view.IsClean).IsTrue();
+        await Assert.That(view.ShowsCleanMessage).IsFalse();
+        await Assert.That(view.HasLines).IsTrue();
+        await Assert.That(view.Changes).IsEmpty();
     }
 
     [Test]
@@ -205,10 +211,23 @@ public sealed class WorkingCopyViewModelTests
     }
 
     [Test]
-    public async Task A_quiet_locked_row_is_still_a_change_to_show()
+    public async Task A_lock_on_an_untouched_file_is_no_change_to_commit()
     {
         var status = new FakeWorkingCopyStatus().Answers(
             Listing(Entry("a.png", NodeStatus.Unmodified, hasLockToken: true))
+        );
+        var view = View("/studio/game", status);
+
+        await view.RefreshAsync(None);
+
+        await Assert.That(view.HasChanges).IsFalse();
+    }
+
+    [Test]
+    public async Task A_lock_on_an_edited_file_is_still_a_change_to_commit()
+    {
+        var status = new FakeWorkingCopyStatus().Answers(
+            Listing(Entry("a.png", hasLockToken: true))
         );
         var view = View("/studio/game", status);
 

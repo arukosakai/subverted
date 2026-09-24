@@ -1433,6 +1433,23 @@ SVN's own text, and nothing is rolled back — rolling back would be a second wr
 obstructed, ignored, external, incomplete, unknown, half a rename) or a rename route that refused
 before any other write.
 
+**`--depth empty` is also what keeps other people's view of your locks right.** A commit releases
+every lock token its walk meets, whether or not that node is sent, unless `--no-unlock` is given.
+Measured on 1.8.15 on a throwaway repository, with `b.bin` and `sub/c.txt` locked and untouched and
+`e.txt` locked and edited:
+
+- `svn commit --non-interactive --message … --depth empty a.txt e.txt sub .` — naming the root and
+  `sub` for their property changes — committed r2 and left `b.bin` and `sub/c.txt` locked, locally
+  (`K`) and in the repository. `e.txt`, named and sent, gave its lock up.
+- The same working copy committed as `svn commit .` at the default depth released both.
+
+So the GUI's ticked set, always `ExactlyTheseNodes`, never takes the lock off a file an artist
+locked before starting, and a ticked locked file gives its lock up on commit, as TortoiseSVN's
+does. `--no-unlock` would keep that one too, which is not wanted. `SvnWriteIntegrationTests` pins
+both depths. `sv commit PATH` sends `WholeSubtree`, so it releases the locks under `PATH` the way
+`svn commit PATH` was measured to (through `svn`, not driven through `sv`). That is SVN's meaning,
+which plain `sv commit` keeps on purpose.
+
 D20's directory rules moved out of `ChangePicker` into `Frontend.DecidedSubtrees`, so `sv pick` and
 the GUI's tick list obey one copy. On the CLI fallback there are no D27 pairs, so a hand rename
 there commits as delete and add — the same answer `sv st` already gives it on that reader.

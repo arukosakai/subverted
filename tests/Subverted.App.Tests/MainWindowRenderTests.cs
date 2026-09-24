@@ -99,7 +99,8 @@ public sealed class MainWindowRenderTests
             }
         );
 
-        await Assert.That(lines).IsEqualTo(":8,art:4,levels:2,sound:1");
+        // art/ui/button.psd only holds a lock, so it counts in neither.
+        await Assert.That(lines).IsEqualTo(":7,art:3,levels:2,sound:1");
         await Assert.That(chosen).IsEqualTo("art");
         await Assert.That(rows).IsEqualTo(4);
     }

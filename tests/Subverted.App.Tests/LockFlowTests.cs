@@ -1,4 +1,5 @@
 using CommunityToolkit.Mvvm.Input;
+using Subverted.App.Presentation;
 using Subverted.App.ViewModels;
 using Subverted.Core;
 using Subverted.Protocol;
@@ -241,6 +242,62 @@ public sealed class LockFlowTests
         await Assert
             .That(window.Log.Lines.Select(line => (line.Operation, line.Subject)))
             .IsEquivalentTo([("Lock", "a.png"), ("Unlock", "b.png")]);
+    }
+
+    /// <summary>
+    /// Listing changes, a lock taken before starting still has a line to release it from, but
+    /// nothing on it is a change: no tick, no count, nothing sent. The edited one beside it is.
+    /// </summary>
+    [Test]
+    public async Task A_lock_on_an_untouched_file_is_listed_to_release_but_counted_and_sent_nowhere()
+    {
+        var view = await ListedAsync(
+            Listing(
+                Entry("art/held.psd", NodeStatus.Unmodified, hasLockToken: true),
+                Entry("art/worked.psd", hasLockToken: true)
+            )
+        );
+        view.ShowTreeCommand.Execute(null);
+        var held = Line(view, "art/held.psd");
+        var worked = Line(view, "art/worked.psd");
+
+        await Assert.That(view.Listing).IsEqualTo(ListedNodes.Changes);
+        await Assert.That(held.CanTick).IsFalse();
+        await Assert.That(view.ToggleTickCommand.CanExecute(held)).IsFalse();
+        await Assert.That(view.RevertCommand.CanExecute(held)).IsFalse();
+        await Assert.That(view.LockCommand.CanExecute(held)).IsFalse();
+        await Assert.That(view.UnlockCommand.CanExecute(held)).IsTrue();
+        await Assert
+            .That(held.Row!.Badge)
+            .IsEqualTo(new ChangeBadge("Unchanged", ChangeTone.Quiet));
+        await Assert.That(worked.CanTick).IsTrue();
+        await Assert.That(view.Ticked).IsEquivalentTo(["art/worked.psd"]);
+        await Assert.That(view.Composer.ButtonText).IsEqualTo(CommitButtonText.For(1));
+        await Assert.That(string.Join(",", view.Changes.Select(row => row.RelPath))).IsEqualTo("art/worked.psd");
+        await Assert
+            .That(view.Folders.Select(folder => (folder.Content.RelPath, folder.Content.Count)))
+            .IsEquivalentTo([("", 1), ("art", 1)]);
+        await Assert
+            .That(string.Join(",", view.Summary.Select(count => count.Text)))
+            .IsEqualTo("1 modified");
+    }
+
+    /// <summary>Even a tick forced past its disabled box sends nothing: the commit set is changes only.</summary>
+    [Test]
+    public async Task A_tick_on_a_lock_only_line_is_never_sent()
+    {
+        var view = await ListedAsync(
+            Listing(
+                Entry("art/held.psd", NodeStatus.Unmodified, hasLockToken: true),
+                Entry("art/worked.psd", hasLockToken: true)
+            )
+        );
+
+        view.ToggleTickCommand.Execute(Line(view, "art/worked.psd"));
+        view.ToggleTickCommand.Execute(Line(view, "art/held.psd"));
+
+        await Assert.That(view.Ticked).IsEquivalentTo(["art/held.psd"]);
+        await Assert.That(view.Composer.Selection.Sent).IsEmpty();
     }
 
     private async Task<WorkingCopyViewModel> ListedAsync(StatusResponse listing)
