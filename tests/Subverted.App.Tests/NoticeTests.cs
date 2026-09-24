@@ -15,6 +15,7 @@ public sealed class NoticeTests
     [Arguments(NoticeKind.LeftMarked, ChangeTone.Missing)]
     [Arguments(NoticeKind.NothingWritten, ChangeTone.Conflict)]
     [Arguments(NoticeKind.Uncertain, ChangeTone.Modified)]
+    [Arguments(NoticeKind.NeedsAttention, ChangeTone.Conflict)]
     public async Task Each_kind_of_outcome_is_drawn_in_its_own_tone(
         NoticeKind kind,
         ChangeTone tone

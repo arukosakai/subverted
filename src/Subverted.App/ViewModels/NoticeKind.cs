@@ -14,4 +14,7 @@ public enum NoticeKind
 
     /// <summary>It is not known how far it got; the next listing is the answer.</summary>
     Uncertain,
+
+    /// <summary>It finished, and left something only the person can settle: a conflict, a skipped path.</summary>
+    NeedsAttention,
 }

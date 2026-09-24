@@ -6,3 +6,6 @@ StrykerOutput/
 .idea/
 *.user
 artifacts/
+
+# Agent worktrees, each its own checkout
+.claude/worktrees/

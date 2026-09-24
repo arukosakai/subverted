@@ -133,6 +133,54 @@ public sealed class MainWindowRenderTests
         await Assert.That(asking).IsTrue();
     }
 
+    [Test]
+    public async Task An_update_that_left_conflicts_renders_its_notice_above_the_list()
+    {
+        var updates = new FakeWorkingCopyUpdate().Answers(
+            new UpdateResponse(
+                1826,
+                1,
+                0,
+                "U    levels/forest.map\nC    art/characters/villain.png\nUpdated to revision 1826."
+            )
+        );
+        var shown = await HeadlessApp.Session.Dispatch(
+            async () =>
+            {
+                var window = await ShowAsync(
+                    "Dark",
+                    new FakeRecentStore("/studio/game"),
+                    Studio(),
+                    updates: updates
+                );
+                var button = window
+                    .GetVisualDescendants()
+                    .OfType<Button>()
+                    .Single(control => control.Name == "UpdateButton");
+                button.Command!.Execute(null);
+                for (var turn = 0; turn < 5; turn++)
+                {
+                    Dispatcher.UIThread.RunJobs();
+                    await Task.Yield();
+                }
+
+                Save(window, "update-conflicts-dark.png");
+                var card = window
+                    .GetVisualDescendants()
+                    .OfType<NoticeView>()
+                    .Single(control => control.Name == "UpdateNotice")
+                    .FindControl<Border>("Card")!;
+                var result = (button.IsEffectivelyVisible, card.IsEffectivelyVisible);
+                window.Close();
+                return result;
+            },
+            CancellationToken.None
+        );
+
+        await Assert.That(updates.Updated).IsEquivalentTo(new[] { "/studio/game" });
+        await Assert.That(shown).IsEqualTo((true, true));
+    }
+
     private static FakeWorkingCopyStatus Studio() =>
         new FakeWorkingCopyStatus().Answers(
             Listing(
@@ -237,7 +285,8 @@ public sealed class MainWindowRenderTests
         string variant,
         FakeRecentStore store,
         FakeWorkingCopyStatus status,
-        FakeWorkingCopyCommit? commits = null
+        FakeWorkingCopyCommit? commits = null,
+        FakeWorkingCopyUpdate? updates = null
     )
     {
         Application.Current!.RequestedThemeVariant =
@@ -245,7 +294,7 @@ public sealed class MainWindowRenderTests
         var viewModel = new MainWindowViewModel(
             store,
             new FakeFolderPicker(null),
-            path => WorkingCopies.View(status, path: path, commits: commits),
+            path => WorkingCopies.View(status, path: path, commits: commits, updates: updates),
             new FakeTimeProvider(),
             StringComparison.Ordinal,
             Revisions.View()

@@ -86,26 +86,27 @@ public sealed class SvnCleanupIntegrationTests
     }
 
     /// <summary>
-    /// The other wedged state, and the worse one: queued work makes <c>svn status</c> itself fail
-    /// with <c>E155037</c>, so the person cannot see anything at all until cleanup runs.
+    /// The other wedged state, and the worse one: queued work makes every write fail with
+    /// <c>E155037</c> until cleanup runs. On 1.8 <c>svn status</c> fails too; 1.14 lets reads through
+    /// and shows nothing wrong, so an update — a write on both, and a no-op here — is what shows it.
     /// </summary>
     [Test]
-    public async Task Queued_work_stops_svn_reading_the_copy_and_cleanup_finishes_it()
+    public async Task Queued_work_stops_svn_writing_to_the_copy_and_cleanup_finishes_it()
     {
         using var copy = Committed();
         QueueInterruptedWork(copy);
 
-        var blind = await Svn.RunAsync(copy.Root, ["status"], None);
-        await Assert.That(blind.ExitCode).IsNotEqualTo(0);
-        await Assert.That(blind.StandardError).Contains("E155037");
+        var wedged = await Svn.RunAsync(copy.Root, ["update", "--non-interactive"], None);
+        await Assert.That(wedged.ExitCode).IsNotEqualTo(0);
+        await Assert.That(wedged.StandardError).Contains("E155037");
 
         var outcome = await CleanUp(copy);
 
         await Assert.That(outcome.FinishedOperations).IsEqualTo(1);
         await Assert.That(outcome.FoundNothingToDo).IsFalse();
 
-        var seeing = await Svn.RunAsync(copy.Root, ["status"], None);
-        await Assert.That(seeing.ExitCode).IsEqualTo(0);
+        var unwedged = await Svn.RunAsync(copy.Root, ["update", "--non-interactive"], None);
+        await Assert.That(unwedged.ExitCode).IsEqualTo(0);
     }
 
     /// <summary>
@@ -251,12 +252,30 @@ public sealed class SvnCleanupIntegrationTests
     /// before the hook runs, so this leaves exactly what a crash leaves and does not race the
     /// commit's own speed.
     /// </summary>
+    /// <summary>svn runs <c>name.bat</c> on Windows and an executable <c>name</c> elsewhere.</summary>
+    private static void WriteHookThatNeverReturns(string repositoryPath, string name)
+    {
+        var hooks = Path.Combine(repositoryPath, "hooks");
+        if (OperatingSystem.IsWindows())
+        {
+            File.WriteAllText(
+                Path.Combine(hooks, $"{name}.bat"),
+                "@echo off\r\nping -n 120 127.0.0.1 > nul\r\nexit 0\r\n"
+            );
+            return;
+        }
+
+        var hook = Path.Combine(hooks, name);
+        File.WriteAllText(hook, "#!/bin/sh\nsleep 120\nexit 0\n");
+        File.SetUnixFileMode(
+            hook,
+            UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute
+        );
+    }
+
     private static void KillAClientMidCommit(SvnWorkingCopy copy)
     {
-        File.WriteAllText(
-            Path.Combine(copy.RepositoryPath, "hooks", "pre-commit.bat"),
-            "@echo off\r\nping -n 120 127.0.0.1 > nul\r\nexit 0\r\n"
-        );
+        WriteHookThatNeverReturns(copy.RepositoryPath, "pre-commit");
         copy.Write("src/b.txt", "two\n");
         copy.Svn("add", "--quiet", "src/b.txt");
 

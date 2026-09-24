@@ -140,16 +140,22 @@ public sealed class SvnCommandIntegrationTests
         await Assert.That(diff).IsEmpty();
     }
 
+    /// <summary>
+    /// The wording is svn's and changed between versions — E150000 "is not under version control"
+    /// on 1.8, E155010 "was not found" on 1.14 — but either way it is an error naming the path.
+    /// </summary>
     [Test]
     public async Task A_path_svn_refuses_fails_with_what_svn_said_about_it()
     {
         using var copy = ThreeCommits();
         var missing = copy.Absolute("src/never-added.txt");
 
-        await Assert
+        var refusal = await Assert
             .That(async () => await new SvnDiffCommand(Svn).ReadAsync(copy.Root, missing, None))
-            .Throws<SvnCommandException>()
-            .WithMessageContaining("is not under version control");
+            .Throws<SvnCommandException>();
+
+        await Assert.That(refusal!.Message).StartsWith("svn: E");
+        await Assert.That(refusal.Message).Contains("never-added.txt");
     }
 
     [Test]
