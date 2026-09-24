@@ -13,7 +13,8 @@ internal static class WorkingCopies
         IFileRevealer? revealer = null,
         ITextClipboard? clipboard = null,
         IWorkingCopyCommit? commits = null,
-        IWorkingCopyRevert? reverts = null
+        IWorkingCopyRevert? reverts = null,
+        IWorkingCopyUpdate? updates = null
     ) =>
         new(
             path,
@@ -23,7 +24,8 @@ internal static class WorkingCopies
             revealer ?? new FakeFileRevealer(),
             clipboard ?? new FakeTextClipboard(),
             commits ?? new FakeWorkingCopyCommit(),
-            reverts ?? new FakeWorkingCopyRevert()
+            reverts ?? new FakeWorkingCopyRevert(),
+            updates ?? new FakeWorkingCopyUpdate()
         );
 
     /// <summary>Picks the shown line for a path, as clicking it would.</summary>

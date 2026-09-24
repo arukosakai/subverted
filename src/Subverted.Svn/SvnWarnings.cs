@@ -8,7 +8,8 @@ namespace Subverted.Svn;
 /// <remarks>
 /// A warning is how SVN reports a path it would not do, and what that costs a caller differs by
 /// command — <c>lock</c> and <c>unlock</c> exit <em>zero</em> after refusing every path they were
-/// given, while <c>resolve</c> exits one. Either way the exit code alone cannot say which paths,
+/// given on 1.8 and one on 1.14 (see <see cref="SvnRefusalSummary"/>), while <c>resolve</c> exits
+/// one. Either way the exit code alone cannot say which paths,
 /// so each command documents what a warning of its own means and they all read them the same way.
 /// </remarks>
 public static class SvnWarnings

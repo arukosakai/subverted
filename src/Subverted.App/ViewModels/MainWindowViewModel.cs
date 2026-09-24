@@ -93,6 +93,7 @@ public sealed partial class MainWindowViewModel(
         shown.HistoryRequested += ShowHistoryOfRow;
         shown.Composer.Attempted += Log.Record;
         shown.RevertPrompt.Attempted += Log.Record;
+        shown.Updater.Attempted += Log.Record;
         Current = shown;
         ShownView = WorkspaceView.Changes;
         await shown.RefreshAsync(cancellationToken);

@@ -22,9 +22,13 @@
         <TextBlock x:Name="Headline" FontWeight="SemiBold" TextWrapping="Wrap"
                    Foreground="{Binding Notice.Tone, Converter={x:Static v:ToneBrush.Solid}}"
                    Text="{Binding Notice.Headline}" />
-        <SelectableTextBlock x:Name="Detail" FontSize="12" TextWrapping="Wrap" FontFamily="{StaticResource MonoFont}"
-                             IsVisible="{Binding Notice.Detail, Converter={x:Static ObjectConverters.IsNotNull}}"
-                             Text="{Binding Notice.Detail}" />
+        <!-- An update that brought in hundreds of files would otherwise push the list off screen;
+             the output log keeps the whole text. -->
+        <ScrollViewer MaxHeight="120" HorizontalScrollBarVisibility="Disabled"
+                      IsVisible="{Binding Notice.Detail, Converter={x:Static ObjectConverters.IsNotNull}}">
+          <SelectableTextBlock x:Name="Detail" FontSize="12" TextWrapping="Wrap" FontFamily="{StaticResource MonoFont}"
+                               Text="{Binding Notice.Detail}" />
+        </ScrollViewer>
         <TextBlock x:Name="Hint" Classes="muted" FontSize="12" TextWrapping="Wrap"
                    IsVisible="{Binding Notice.Hint, Converter={x:Static ObjectConverters.IsNotNull}}"
                    Text="{Binding Notice.Hint}" />

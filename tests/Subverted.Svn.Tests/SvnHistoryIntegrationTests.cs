@@ -126,12 +126,14 @@ public sealed class SvnHistoryIntegrationTests
     public async Task A_name_that_needs_escaping_in_a_url_diffs_as_itself(string name)
     {
         using var copy = SvnWorkingCopy.Create();
-        copy.Write(name, "one\n");
-        copy.Svn("add", "--quiet", name + "@");
+        // Added through its folder: most Windows builds read arguments in the ANSI code page too,
+        // so a name it cannot hold could not be named on the command line (D34).
+        copy.Write($"odd/{name}", "one\n");
+        copy.Svn("add", "--quiet", "odd");
         copy.Svn("commit", "--quiet", "-m", "odd name");
         copy.Svn("update", "--quiet");
 
-        var diff = await RevisionDiff(copy, "/" + name, 1);
+        var diff = await RevisionDiff(copy, $"/odd/{name}", 1);
 
         await Assert.That(diff).Contains($"Index: {name}");
         await Assert.That(diff).Contains("+one");

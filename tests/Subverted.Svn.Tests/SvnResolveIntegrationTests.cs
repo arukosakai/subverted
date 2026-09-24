@@ -110,8 +110,9 @@ public sealed class SvnResolveIntegrationTests
     }
 
     /// <summary>
-    /// A tree conflict takes only the working version. Asked for anything else SVN refuses it and
-    /// leaves the node exactly as conflicted as it was — so this must not read as done.
+    /// A tree conflict takes only the working version. Asked for anything else SVN refuses it —
+    /// W155027 on 1.8, W195024 on 1.14 — and leaves the node as conflicted as it was, so this must
+    /// not read as done.
     /// </summary>
     [Test]
     [Arguments(ConflictResolution.Theirs)]
@@ -128,7 +129,8 @@ public sealed class SvnResolveIntegrationTests
 
         await Assert.That(outcome.ResolvedPaths).IsEmpty();
         await Assert.That(outcome.Refusals.Count).IsEqualTo(1);
-        await Assert.That(outcome.Refusals[0]).Contains("W155027");
+        await Assert.That(outcome.Refusals[0]).Matches("W155027|W195024");
+        await Assert.That(outcome.Refusals[0]).Contains("a.txt");
     }
 
     [Test]
@@ -146,7 +148,8 @@ public sealed class SvnResolveIntegrationTests
     /// <summary>
     /// Unlike <c>svn unlock</c>, which validates every target first and releases none of them if
     /// one is wrong, resolve is per-path: it settles the good targets and reports the bad one. A
-    /// caller that treated the refusal as "nothing happened" would be wrong about both.
+    /// caller that treated the refusal as "nothing happened" would be wrong about both. The bad
+    /// target is outside the copy because 1.14, unlike 1.8, says nothing at all about a missing one.
     /// </summary>
     [Test]
     public async Task A_bad_target_is_refused_and_the_other_targets_are_still_resolved()
@@ -156,14 +159,14 @@ public sealed class SvnResolveIntegrationTests
 
         var outcome = await new SvnResolveCommand(Svn).ResolveAsync(
             copy.Root,
-            [copy.Absolute("src/a.txt"), copy.Absolute("src/nosuch.txt")],
+            [copy.Absolute("src/a.txt"), copy.RepositoryPath],
             ConflictResolution.Mine,
             None
         );
 
         await Assert.That(outcome.ResolvedPaths).IsEquivalentTo(new[] { "src/a.txt" });
         await Assert.That(outcome.Refusals.Count).IsEqualTo(1);
-        await Assert.That(outcome.Refusals[0]).Contains("W155010");
+        await Assert.That(outcome.Refusals[0]).Contains("W155007");
         await Assert.That(File.ReadAllText(copy.Absolute("src/a.txt"))).IsEqualTo("mine\n");
     }
 
@@ -190,8 +193,8 @@ public sealed class SvnResolveIntegrationTests
     }
 
     /// <summary>
-    /// A property conflict reports itself resolved in exactly the same words as a text one, which
-    /// is what lets a single parser cover all three kinds.
+    /// A property conflict reports itself resolved in 1.8's words on both versions, while 1.14 has
+    /// wordings of its own for text and tree conflicts.
     /// </summary>
     [Test]
     public async Task A_property_conflict_resolves_and_says_so_the_same_way()
@@ -244,13 +247,12 @@ public sealed class SvnResolveIntegrationTests
     }
 
     /// <summary>
-    /// The case a studio hits by accident: the artist still has the asset open in the application
-    /// that owns it, so SVN cannot write over it. It is a refusal rather than a thrown error — and
-    /// it leaves the working copy needing <c>svn cleanup</c>, which is why SVN's own wording is
-    /// passed through instead of being re-worded into something that does not say so.
+    /// The asset is still open in the application that owns it, so SVN cannot write over it. It is
+    /// a refusal naming the file rather than a thrown error — W155009 on 1.8, the underlying
+    /// W720005 on 1.14 — and on both it leaves the copy refusing writes until <c>svn cleanup</c>.
     /// </summary>
     [Test]
-    public async Task A_file_another_process_holds_open_is_refused_and_says_to_run_cleanup()
+    public async Task A_file_another_process_holds_open_is_refused_and_leaves_the_copy_needing_cleanup()
     {
         if (!OperatingSystem.IsWindows())
         {
@@ -277,9 +279,11 @@ public sealed class SvnResolveIntegrationTests
 
         await Assert.That(outcome.ResolvedPaths).IsEmpty();
         await Assert.That(outcome.Refusals.Count).IsEqualTo(1);
-        await Assert.That(outcome.Refusals[0]).Contains("W155009");
+        await Assert.That(outcome.Refusals[0]).StartsWith("svn: warning:");
+        await Assert.That(outcome.Refusals[0]).Contains("a.txt");
 
-        // Left wedged: every later command in this working copy fails until cleanup runs.
+        var wedged = await Svn.RunAsync(copy.Root, ["update", "--non-interactive"], None);
+        await Assert.That(wedged.StandardError).Contains("E155037");
         copy.Svn("cleanup");
     }
 
