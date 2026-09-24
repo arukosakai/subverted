@@ -1,20 +1,26 @@
 using Subverted.Core;
+using Subverted.Frontend;
 using Subverted.Protocol;
 
 namespace Subverted.Cli;
 
 /// <summary>
-/// What a removal would take, split by whether anything could bring it back. Pure, and the split is
-/// the point: a versioned file comes back with <c>sv revert</c> until it is committed, and an
-/// unversioned one has no pristine behind it and is simply gone.
+/// What a removal would take, and whether it may be sent at all. Pure, and every rule in it is the
+/// app's: <see cref="DeletionOffer"/> decides what is refused and <see cref="DeletionLoss"/> what is
+/// lost for good, so <c>sv rm</c> and the Delete menu cannot tell a person two different things.
 /// </summary>
-/// <param name="Recoverable">Versioned nodes, restorable until the delete is committed.</param>
+/// <param name="Refusals">
+/// Why a named target may not be deleted, one sentence each. Any at all means nothing is sent.
+/// </param>
+/// <param name="Recoverable">Nodes SVN still has, which Revert or a copy's source brings back.</param>
 /// <param name="Unrecoverable">
-/// Unversioned and ignored files. <c>svn delete --force</c> unlinks these and says nothing about it.
+/// Nodes that take something only this working copy had: an edit, an add, a file SVN does not
+/// track, an external's contents.
 /// </param>
 public sealed record RemovalPreview(
-    IReadOnlyList<WorkingCopyEntry> Recoverable,
-    IReadOnlyList<WorkingCopyEntry> Unrecoverable
+    IReadOnlyList<string> Refusals,
+    IReadOnlyList<RemovedNode> Recoverable,
+    IReadOnlyList<RemovedNode> Unrecoverable
 )
 {
     /// <summary>
@@ -36,28 +42,47 @@ public sealed record RemovalPreview(
     /// How this platform compares paths. Taken as an argument so both answers are covered by tests
     /// on either operating system.
     /// </param>
-    /// <remarks>
-    /// An external is in neither list. It is a working copy of its own, and removing it is a change
-    /// to the <c>svn:externals</c> property of the one it sits in rather than a delete.
-    /// </remarks>
+    /// <remarks>A target the listing does not hold is neither refused nor reached.</remarks>
     public static RemovalPreview Of(
         StatusResponse status,
         IReadOnlyList<string> paths,
         StringComparison comparison
-    ) =>
-        new(
-            AffectedNodes.Under(status, paths, comparison, IsVersioned),
-            AffectedNodes.Under(status, paths, comparison, HasNoPristine)
+    )
+    {
+        var refusals = paths
+            .Select(path => TargetCoverage.RelativeTo(status.Info.RootPath, path))
+            .Select(target =>
+                status.Entries.FirstOrDefault(entry => entry.RelPath.Equals(target, comparison))
+            )
+            .OfType<WorkingCopyEntry>()
+            .Select(target => DeletionOffer.RefusalFor(target, status.Entries, comparison))
+            .OfType<string>()
+            .ToList();
+
+        var reached = AffectedNodes
+            .Under(status, paths, comparison, _ => true)
+            .Select(entry => DeletionLoss.For(entry) is { } loss ? new RemovedNode(entry, loss) : null)
+            .OfType<RemovedNode>()
+            .ToList();
+
+        return new(
+            refusals,
+            [.. reached.Where(node => !node.Loss.LosesWork)],
+            [.. reached.Where(node => node.Loss.LosesWork)]
         );
+    }
 
     public int Count => Recoverable.Count + Unrecoverable.Count;
 
-    /// <summary>The nodes in <c>sv st</c>'s own layout, with the unrecoverable ones called out below.</summary>
+    /// <summary>
+    /// The nodes in <c>sv st</c>'s own layout, with the unrecoverable ones called out below and each
+    /// saying what it loses.
+    /// </summary>
     public IReadOnlyList<string> Lines
     {
         get
         {
-            var lines = new List<string>(Recoverable.Select(StatusLine.Compact));
+            var lines = new List<string>(Recoverable.Select(node => StatusLine.Compact(node.Entry)));
             if (Unrecoverable.Count == 0)
             {
                 return lines;
@@ -69,16 +94,14 @@ public sealed record RemovalPreview(
             }
 
             lines.Add(
-                $"{Unrecoverable.Count} of these are not in SVN, so nothing can bring them back:"
+                Unrecoverable.Count == 1
+                    ? "1 of these loses work that cannot be brought back:"
+                    : $"{Unrecoverable.Count} of these lose work that cannot be brought back:"
             );
-            lines.AddRange(Unrecoverable.Select(StatusLine.Compact));
+            lines.AddRange(
+                Unrecoverable.Select(node => $"{StatusLine.Compact(node.Entry)}: {node.Loss.What}")
+            );
             return lines;
         }
     }
-
-    private static bool IsVersioned(WorkingCopyEntry entry) =>
-        entry.Status is not (NodeStatus.Unversioned or NodeStatus.Ignored or NodeStatus.External);
-
-    private static bool HasNoPristine(WorkingCopyEntry entry) =>
-        entry.Status is NodeStatus.Unversioned or NodeStatus.Ignored;
 }
