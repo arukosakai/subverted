@@ -54,7 +54,8 @@ sv st
 
 The daemon answers from memory in the common case. Filtering happens daemon-side so that a clean
 hundred-thousand-file checkout answers with an empty list rather than serialising a hundred
-thousand nodes nobody asked about.
+thousand nodes nobody asked about. The one request that does ask for all of them — the GUI's All listing —
+names the scan it already holds, and is told "unchanged" instead of sent them again (D35).
 
 `sv log` and `sv d` take the same route as far as the session and then leave it:
 
@@ -1581,6 +1582,53 @@ changed. Supporting both is a decision taken 2026-09-23; CI runs the suite again
 
 *Status: the Svn and Daemon suites green against the Win32SVN-style 1.8.15 and SlikSVN 1.14.5 on
 Windows, and against apt's 1.14.3 in an Ubuntu container. macOS and the US code page are CI's.*
+
+### D35 — Listing everything is one field that existed, and one that stops it being re-sent
+
+The GUI's Changed / All toggle exists so an untouched file has a line to lock from. **The listing
+needed no new field**: `StatusRequest.IncludeUnmodified` is what `sv st -v` already sends, and
+both readers already hold every node — wc.db directly, and the fallback because `SvnStatusCommand`
+always runs `svn status --verbose` (D14). The rule for "nothing to report" moved from the daemon's
+`StatusFilter` to `Core.CleanNode`, because the App now needs it too to tell the changes in an All
+listing from the rest; it is pure, which is the test for Core rather than Frontend (as with
+`TargetCoverage`).
+
+**What All costs was measured before anything was built on it.** Release daemon and a Release
+harness over the real `WorkingCopyViewModel` and `DaemonWorkingCopyStatus`, no view, on
+`subverted-100k/wc` (101,001 nodes, 29-byte files) with the index warm, so no file is read and the
+file cache does not enter into it; five runs each, twice over, on a dev box:
+
+| one request, warm | wall | inside the daemon |
+|---|---|---|
+| Changed (1 entry) | 11–38 ms | 7–29 ms |
+| All (101,001 entries) | 250–830 ms | 7–43 ms |
+| a poll through the view model, Changed | 9–16 ms | |
+| a poll through the view model, All | 400–700 ms | |
+| a poll, All, naming the held scan | 3–5 ms | |
+
+Filtering is not the cost — the daemon is as quick either way. Serialising, moving and reading a
+hundred thousand entries is, and the view model's diffing of them after. Once a second, that is
+half of every second. **So a poll names the scan its listing came from** (`StatusRequest.HeldScan`,
+from `StatusResponse.ScanId`), and while the daemon would answer from that same scan it sends
+`StatusUnchangedResponse` instead. The id is a fresh `Guid` per reading, not the generation: an
+unwatched session rescans at the same generation every time, and a restarted daemon counts from
+zero. The front-end forgets it on any failure and on every toggle, since the id says nothing about
+a different request.
+
+**Compatibility follows the protocol's rule that absence means the old behaviour.** `HeldScan` and
+`ScanId` are optional and default to null; a daemon that predates them ignores the one and never
+sends the other, so the App sends null and always gets the entries. `StatusUnchangedResponse` is only
+ever sent to a request that named a scan, so a front-end that never names one never sees it.
+
+**What it does not fix.** A listing that did change is still the full ~400–700 ms, once per change.
+An unwatched session (`WatcherState.Unavailable`) rescans for every request, so every answer is a
+new scan and All pays the full price each poll. Under the fallback, `svn status` reports no node
+kind, so All lists folders as lines and Lock — which needs a file — is offered on none of them.
+Not measured: Avalonia realising the rows (the list is virtualised) and whether the entries are read
+off the UI thread in the real app.
+
+*Status: implemented. All seven test binaries green; the new presentation rules and `CleanNode` at
+100% line and branch. The toggle is seen in headless view tests only, not in the real app.*
 
 ### D3 — The working copy is authoritative
 

@@ -20,11 +20,17 @@ namespace Subverted.Protocol;
 /// an unrelated missing node and unversioned file, which is all SVN can see of it — committing in
 /// that state ends the file's history at its old name. Empty from a reader that cannot detect them.
 /// </param>
+/// <param name="ScanId">
+/// Which reading of the working copy this answer was filtered from: two answers to the same request
+/// with the same id carry the same entries. Unique across daemons and restarts, not only within one.
+/// Null from a daemon that predates it, which cannot be asked <see cref="StatusRequest.HeldScan"/>.
+/// </param>
 public sealed record StatusResponse(
     WorkingCopyInfo Info,
     IReadOnlyList<WorkingCopyEntry> Entries,
     bool ServedFromWarmIndex,
     double ServerElapsedMilliseconds,
     int UnfinishedOperations,
-    IReadOnlyList<UnrecordedMove> UnrecordedMoves
+    IReadOnlyList<UnrecordedMove> UnrecordedMoves,
+    Guid? ScanId = null
 ) : DaemonResponse;

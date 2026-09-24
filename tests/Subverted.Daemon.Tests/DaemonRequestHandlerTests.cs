@@ -137,6 +137,95 @@ public sealed class DaemonRequestHandlerTests
         await Assert.That(second.ServedFromWarmIndex).IsTrue();
     }
 
+    /// <summary>Both are read from one scan, so both name it — which is what makes it worth holding.</summary>
+    [Test]
+    public async Task Two_listings_read_from_one_scan_name_the_same_scan()
+    {
+        var handler = Handler(_ => new WorkingCopySession(
+            new FakeWorkingCopyScan(),
+            new FakeChangeNotifier()
+        ));
+
+        var first = (StatusResponse)await handler.HandleAsync(Status("/wc"), None);
+        var second = (StatusResponse)await handler.HandleAsync(Status("/wc"), None);
+
+        await Assert.That(first.ScanId).IsNotNull();
+        await Assert.That(second.ScanId).IsEqualTo(first.ScanId);
+    }
+
+    /// <summary>
+    /// The once-a-second poll of an everything-listing: a hundred thousand entries that have not
+    /// moved are not serialised again, and the caller learns its copy is still the current one.
+    /// </summary>
+    [Test]
+    public async Task A_request_holding_the_current_scan_is_told_nothing_changed_instead_of_sent_it_again()
+    {
+        var handler = Handler(_ => new WorkingCopySession(
+            new FakeWorkingCopyScan { Entries = [Modified("art/hero.png")] },
+            new FakeChangeNotifier()
+        ));
+        var held = (StatusResponse)await handler.HandleAsync(Status("/wc"), None);
+
+        var response = await handler.HandleAsync(
+            Status("/wc") with
+            {
+                HeldScan = held.ScanId,
+            },
+            None
+        );
+
+        await Assert.That(response).IsTypeOf<StatusUnchangedResponse>();
+        await Assert.That(((StatusUnchangedResponse)response).ScanId).IsEqualTo(held.ScanId!.Value);
+    }
+
+    [Test]
+    public async Task A_request_holding_a_scan_from_before_a_change_is_sent_the_new_listing()
+    {
+        var scan = new FakeWorkingCopyScan { Entries = [Modified("art/hero.png")] };
+        var notifier = new FakeChangeNotifier();
+        var handler = Handler(_ => new WorkingCopySession(scan, notifier));
+        var held = (StatusResponse)await handler.HandleAsync(Status("/wc"), None);
+
+        scan.Entries = [Modified("art/hero.png"), Modified("art/villain.png")];
+        notifier.RaiseChanged();
+        var response = await handler.HandleAsync(
+            Status("/wc") with
+            {
+                HeldScan = held.ScanId,
+            },
+            None
+        );
+
+        await Assert.That(response).IsTypeOf<StatusResponse>();
+        var fresh = (StatusResponse)response;
+        await Assert.That(fresh.Entries.Count).IsEqualTo(2);
+        await Assert.That(fresh.ScanId).IsNotEqualTo(held.ScanId);
+    }
+
+    /// <summary>
+    /// A scan id this daemon never issued — one from before a restart — is not the current scan,
+    /// so it gets the listing rather than a claim that the caller's copy is still right.
+    /// </summary>
+    [Test]
+    public async Task A_request_holding_a_scan_this_daemon_never_issued_is_sent_the_listing()
+    {
+        var handler = Handler(_ => new WorkingCopySession(
+            new FakeWorkingCopyScan(),
+            new FakeChangeNotifier()
+        ));
+        await handler.HandleAsync(Status("/wc"), None);
+
+        var response = await handler.HandleAsync(
+            Status("/wc") with
+            {
+                HeldScan = Guid.NewGuid(),
+            },
+            None
+        );
+
+        await Assert.That(response).IsTypeOf<StatusResponse>();
+    }
+
     [Test]
     [Arguments(WcDbFailure.NotAWorkingCopy, DaemonErrorKind.NotAWorkingCopy)]
     [Arguments(WcDbFailure.Unreadable, DaemonErrorKind.WorkingCopyUnreadable)]

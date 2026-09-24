@@ -39,6 +39,15 @@ public sealed partial class WorkingCopyViewModel(
     private readonly CollapsedFolders _collapsed = new();
     private IReadOnlyList<FolderLine> _tree = [];
     private IReadOnlySet<string> _shown = new HashSet<string>();
+
+    /// <summary>Every row of the last listing, unmodified ones included when it was asked for all.</summary>
+    private IReadOnlyList<ChangeRow> _rows = [];
+
+    /// <summary>What the table and the tree are drawn from: <see cref="_rows"/> as <see cref="Listing"/> keeps them.</summary>
+    private IReadOnlyList<ChangeRow> _lines = [];
+
+    /// <summary>The scan the listing on screen came from, so an unchanged working copy is not sent again.</summary>
+    private Guid? _heldScan;
     private CommitComposerViewModel? _composer;
     private RevertPromptViewModel? _revertPrompt;
     private ResolveViewModel? _resolver;
@@ -59,16 +68,30 @@ public sealed partial class WorkingCopyViewModel(
     public string Path { get; } = path;
 
     /// <summary>
-    /// Everything the daemon listed, pinned rows first (see <see cref="ChangeOrder"/>) — what the
-    /// header counts, whatever the filter is hiding.
+    /// Every change the daemon listed, pinned rows first (see <see cref="ChangeOrder"/>) — what the
+    /// header counts and a commit chooses from, whatever the filter is hiding and whatever
+    /// <see cref="Listing"/> says: an unmodified file is never one of them.
     /// </summary>
     public ObservableCollection<ChangeRow> Changes { get; } = [];
 
-    /// <summary>What the list shows: <see cref="Changes"/> through the filter, flat or as a tree.</summary>
+    /// <summary>
+    /// What the list shows: the changes — and in <see cref="ListedNodes.All"/> every unmodified file
+    /// too — through the filter, flat or as a tree.
+    /// </summary>
     public ObservableCollection<ChangeListEntry> Entries { get; } = [];
 
-    /// <summary>The directory pane: every folder holding a change, the root first, less what is collapsed.</summary>
+    /// <summary>The directory pane: every folder holding a listed file, the root first, less what is collapsed.</summary>
     public ObservableCollection<FolderEntry> Folders { get; } = [];
+
+    /// <summary>
+    /// Changes only, or every versioned file as well. Changes is the default; All is where a file
+    /// nobody has touched yet can be locked from.
+    /// </summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsListingAll))]
+    public partial ListedNodes Listing { get; private set; } = ListedNodes.Changes;
+
+    public bool IsListingAll => Listing == ListedNodes.All;
 
     /// <summary>
     /// The folder the table is narrowed to; the root, or nothing chosen, shows every change. It
@@ -160,28 +183,40 @@ public sealed partial class WorkingCopyViewModel(
     public partial IReadOnlyList<ChangeCount> Summary { get; private set; } = [];
 
     /// <summary>
-    /// Nothing is listed, and that is an answer rather than the absence of one — never true before
-    /// the daemon has replied. A locked but unchanged file is listed, so it is not clean here.
+    /// No change is listed, and that is an answer rather than the absence of one — never true
+    /// before the daemon has replied. A locked but unchanged file is listed, so it is not clean here.
     /// </summary>
     public bool IsClean => State == WorkingCopyState.Ready && Changes.Count == 0;
 
     /// <summary>
-    /// There is a row to act on — a stale listing still counts. Until there is, the tree, the diff
-    /// and the composer have nothing to say, and the view shows only why.
+    /// Clean, with nothing else to list either: the view says so and nothing more. Listing all,
+    /// a clean copy shows its files instead, since that is where one is locked from.
+    /// </summary>
+    public bool ShowsCleanMessage => IsClean && _lines.Count == 0;
+
+    /// <summary>
+    /// There is a change to commit — a stale listing still counts. Until there is, the composer has
+    /// nothing to say.
     /// </summary>
     public bool HasChanges => Changes.Count > 0;
+
+    /// <summary>
+    /// There is a line to act on — a change, or an unmodified file listing all. Until there is, the
+    /// tree and the diff have nothing to say, and the view shows only why.
+    /// </summary>
+    public bool HasLines => _lines.Count > 0;
 
     /// <summary>
     /// Something is wrong and there is no earlier listing to fall back on, so the view says what
     /// is wrong instead.
     /// </summary>
-    public bool IsBlocked => Headline is not null && Changes.Count == 0;
+    public bool IsBlocked => Headline is not null && _lines.Count == 0;
 
     /// <summary>
     /// Something is wrong but an earlier listing is on screen. It stays, marked as possibly out of
     /// date, rather than making someone's changes vanish for the second a daemon takes to restart.
     /// </summary>
-    public bool IsStale => Headline is not null && Changes.Count > 0;
+    public bool IsStale => Headline is not null && _lines.Count > 0;
 
     /// <summary>What the view says in large type when it cannot show a listing.</summary>
     public string? Headline =>
@@ -195,10 +230,11 @@ public sealed partial class WorkingCopyViewModel(
 
     public async Task RefreshAsync(CancellationToken cancellationToken)
     {
+        var asked = Listing;
         DaemonResponse response;
         try
         {
-            response = await status.ReadAsync(Path, cancellationToken);
+            response = await status.ReadAsync(Path, asked, _heldScan, cancellationToken);
         }
         catch (DaemonUnreachableException unreachable)
         {
@@ -206,10 +242,20 @@ public sealed partial class WorkingCopyViewModel(
             return;
         }
 
+        // The toggle moved while this was asked; the refresh it started answers for what it shows.
+        if (asked != Listing)
+        {
+            return;
+        }
+
         switch (response)
         {
             case StatusResponse listing:
                 ShowListing(listing);
+                break;
+
+            // What is on screen is what would have been sent: nothing to redo, nothing to raise.
+            case StatusUnchangedResponse:
                 break;
 
             case ErrorResponse { Kind: DaemonErrorKind.NotAWorkingCopy } error:
@@ -231,20 +277,58 @@ public sealed partial class WorkingCopyViewModel(
 
     private void ShowListing(StatusResponse listing)
     {
-        var rows = ChangeOrder.Of(ChangeRows.From(listing.Entries, listing.UnrecordedMoves));
+        _rows = ChangeOrder.Of(ChangeRows.From(listing.Entries, listing.UnrecordedMoves));
+        _heldScan = listing.ScanId;
+        var changes = _rows.Where(row => !row.IsUnmodified).ToList();
 
         RootPath = listing.Info.RootPath;
-        ChangeListSynchronizer.Apply(Changes, rows);
-        _ticks.Follow(rows);
+        ChangeListSynchronizer.Apply(Changes, changes);
+
+        // Only changes are followed, so a file first seen unmodified still takes its default tick
+        // the moment it changes — the same commit whichever way the table is listed.
+        _ticks.Follow(changes);
         OnPropertyChanged(nameof(Ticked));
-        ShowFolders(rows, FolderName.Of(listing.Info.RootPath));
-        LayOut();
+        ShowLines();
         RepositoryRoot = listing.Info.RepositoryRoot;
         Name = FolderName.Of(listing.Info.RootPath);
-        Summary = ChangeSummary.Of(rows);
+        Summary = ChangeSummary.Of(changes);
         Message = null;
         State = WorkingCopyState.Ready;
         RaiseDerived();
+    }
+
+    /// <summary>Draws the tree and the table from the last listing, as <see cref="Listing"/> keeps it.</summary>
+    private void ShowLines()
+    {
+        _lines = ListedLines.Of(_rows, Listing);
+        ShowFolders(_lines, FolderName.Of(Location));
+        LayOut();
+    }
+
+    [RelayCommand]
+    private Task ListAllAsync(CancellationToken cancellationToken) =>
+        ListAsync(ListedNodes.All, cancellationToken);
+
+    [RelayCommand]
+    private Task ListChangesAsync(CancellationToken cancellationToken) =>
+        ListAsync(ListedNodes.Changes, cancellationToken);
+
+    /// <summary>
+    /// Redraws from what is already held at once — going back to changes needs nothing new — then
+    /// asks for the listing afresh, since a scan held for the other listing says nothing about this one.
+    /// </summary>
+    private async Task ListAsync(ListedNodes listed, CancellationToken cancellationToken)
+    {
+        if (Listing == listed)
+        {
+            return;
+        }
+
+        Listing = listed;
+        _heldScan = null;
+        ShowLines();
+        RaiseDerived();
+        await RefreshAsync(cancellationToken);
     }
 
     partial void OnFilterChanged(string value) => LayOut();
@@ -384,7 +468,7 @@ public sealed partial class WorkingCopyViewModel(
         var shownFor = _followed;
         var folder = SelectedFolder?.Content.RelPath ?? "";
         var kept = ChangeFilter.Apply(
-            Changes.Where(row => ChangeFolders.Contains(folder, row)),
+            _lines.Where(row => ChangeFolders.Contains(folder, row)),
             Filter
         );
         var items = IsTree ? ChangeTree.Of(kept) : FlatChangeList.Of(kept);
@@ -403,7 +487,7 @@ public sealed partial class WorkingCopyViewModel(
             _isRelayingOut = false;
         }
 
-        HiddenText = HiddenChanges.Text(Changes.Count, kept.Count);
+        HiddenText = HiddenChanges.Text(Changes.Count, kept.Count(row => !row.IsUnmodified));
         RaiseLineCommands();
         Refollow(shownFor, SelectedEntry?.Row);
     }
@@ -584,9 +668,13 @@ public sealed partial class WorkingCopyViewModel(
         UnlockCommand.NotifyCanExecuteChanged();
     }
 
-    /// <summary>A failure leaves <see cref="Changes"/> as it was; see <see cref="IsStale"/>.</summary>
+    /// <summary>
+    /// A failure leaves <see cref="Changes"/> as it was; see <see cref="IsStale"/>. The next answer
+    /// is a whole listing, since only a listing puts <see cref="State"/> back.
+    /// </summary>
     private void Show(WorkingCopyState state, string message)
     {
+        _heldScan = null;
         Message = message;
         State = state;
         RaiseDerived();
@@ -595,8 +683,10 @@ public sealed partial class WorkingCopyViewModel(
     private void RaiseDerived()
     {
         OnPropertyChanged(nameof(IsClean));
+        OnPropertyChanged(nameof(ShowsCleanMessage));
         OnPropertyChanged(nameof(IsBlocked));
         OnPropertyChanged(nameof(IsStale));
         OnPropertyChanged(nameof(HasChanges));
+        OnPropertyChanged(nameof(HasLines));
     }
 }

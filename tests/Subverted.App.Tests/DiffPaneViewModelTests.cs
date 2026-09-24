@@ -289,6 +289,35 @@ public sealed class DiffPaneViewModelTests
         await Assert.That(pane.Message).IsEqualTo(EmptyDiffMessage.For(Stray));
     }
 
+    /// <summary>Listing all, an unmodified file's diff is known to be empty, so it costs no request.</summary>
+    [Test]
+    public async Task An_unmodified_row_is_never_asked_about_and_says_it_is_unchanged()
+    {
+        var untouched = ChangeRow.From(Entry("art/tree.png", NodeStatus.Unmodified));
+        var pane = Pane();
+
+        await pane.SelectAsync(untouched, "/wc/art/tree.png");
+        _clock.Advance(Debounce);
+
+        await Assert.That(_diffs.Paths).IsEmpty();
+        await Assert.That(pane.State).IsEqualTo(DiffPaneState.NothingToShow);
+        await Assert
+            .That(pane.Message)
+            .IsEqualTo("Unchanged: it matches the revision you last updated to.");
+    }
+
+    /// <summary>A clean file listed for its lock is still asked about: it is a change row, not an unmodified one.</summary>
+    [Test]
+    public async Task A_clean_row_listed_for_its_lock_is_still_asked_about()
+    {
+        var held = ChangeRow.From(Entry("art/held.psd", NodeStatus.Unmodified, hasLockToken: true));
+        var pane = Pane();
+
+        await SelectAndWait(pane, held, "/wc/art/held.psd");
+
+        await Assert.That(_diffs.Paths).IsEquivalentTo(new[] { "/wc/art/held.psd" });
+    }
+
     [Test]
     public async Task A_refusal_from_the_daemon_with_nothing_shown_is_a_failure_with_its_reason()
     {

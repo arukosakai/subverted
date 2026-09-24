@@ -409,6 +409,11 @@ Avalonia front-end over the same daemon. Update, commit, diff, log. Nothing clev
   cannot fill it, so under the fallback, and against a daemon older than the field, the gap
   remains. Known gaps: the root row diffs the whole working copy, since `DiffRequest` has no depth;
   list rows expose their record's `ToString()` as the automation name, fingerprint included.
+- **Changed / All on the Changes table** (GUI.md slice 5, D35). All lists every unmodified file
+  too, so an untouched one can be locked from its line; the commit set and every count stay about
+  changes. The status request gained an optional held scan so a 100k-file All listing is re-sent
+  only when it changed: 3–5 ms a poll unchanged, ~400–700 ms when it did, measured warm on
+  `subverted-100k`. Headless tests only; not seen in the real app.
 - Commit, log and update — the next slices, one at a time. Their order and the screens they
   build are in `docs/GUI.md`.
 - **macOS's Liquid Glass is not built.** The styling speaks the same language, but the real material

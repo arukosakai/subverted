@@ -119,8 +119,12 @@ public sealed partial class DiffPaneViewModel(
 
     private bool CanOpenInApp() => Row is not null;
 
-    /// <summary><c>svn diff</c> refuses an unversioned path outright (E150000), so it is not asked.</summary>
-    private static bool SvnHasNoDiffFor(ChangeRow row) => row.Badge.Tone == ChangeTone.Unversioned;
+    /// <summary>
+    /// <c>svn diff</c> refuses an unversioned path outright (E150000), so it is not asked; nor
+    /// about a file listed as unmodified, whose answer is already known to be nothing.
+    /// </summary>
+    private static bool SvnHasNoDiffFor(ChangeRow row) =>
+        row.Badge.Tone == ChangeTone.Unversioned || row.IsUnmodified;
 
     private CancellationToken Restart(ChangeRow row, string path)
     {

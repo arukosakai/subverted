@@ -1,3 +1,4 @@
+using Subverted.App.Presentation;
 using Subverted.App.ViewModels;
 using Subverted.Protocol;
 
@@ -12,6 +13,12 @@ internal sealed class FakeWorkingCopyStatus : IWorkingCopyStatus
     public int Reads { get; private set; }
 
     public List<string> Paths { get; } = [];
+
+    /// <summary>Which nodes each question asked for, in order.</summary>
+    public List<ListedNodes> Listings { get; } = [];
+
+    /// <summary>The scan each question said it already held, in order.</summary>
+    public List<Guid?> HeldScans { get; } = [];
 
     public FakeWorkingCopyStatus Answers(DaemonResponse response)
     {
@@ -29,11 +36,15 @@ internal sealed class FakeWorkingCopyStatus : IWorkingCopyStatus
 
     public Task<DaemonResponse> ReadAsync(
         string workingCopyPath,
+        ListedNodes listed,
+        Guid? heldScan,
         CancellationToken cancellationToken
     )
     {
         Reads++;
         Paths.Add(workingCopyPath);
+        Listings.Add(listed);
+        HeldScans.Add(heldScan);
         if (_answers.TryDequeue(out var next))
         {
             _last = next;

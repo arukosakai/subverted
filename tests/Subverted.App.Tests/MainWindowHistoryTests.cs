@@ -161,6 +161,8 @@ public sealed class MainWindowHistoryTests
     {
         public Task<DaemonResponse> ReadAsync(
             string workingCopyPath,
+            ListedNodes listed,
+            Guid? heldScan,
             CancellationToken cancellationToken
         ) =>
             Task.FromResult<DaemonResponse>(

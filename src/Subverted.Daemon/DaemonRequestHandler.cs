@@ -122,6 +122,13 @@ public sealed class DaemonRequestHandler(
                 .Scope?.Select(target => TargetCoverage.RelativeTo(session.Info.RootPath, target))
                 .ToList();
             var current = await session.CurrentAsync(cancellationToken);
+            if (request.HeldScan == current.ScanId)
+            {
+                return new StatusUnchangedResponse(
+                    current.ScanId,
+                    clock.GetElapsedTime(startedAt).TotalMilliseconds
+                );
+            }
 
             return new StatusResponse(
                 session.Info,
@@ -133,7 +140,8 @@ public sealed class DaemonRequestHandler(
                 current.ServedFromWarmIndex,
                 clock.GetElapsedTime(startedAt).TotalMilliseconds,
                 current.UnfinishedOperations,
-                StatusFilter.MovesWithin(current.UnrecordedMoves, scope, comparison)
+                StatusFilter.MovesWithin(current.UnrecordedMoves, scope, comparison),
+                current.ScanId
             );
         }
         catch (WcDbException ex)

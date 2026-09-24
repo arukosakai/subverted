@@ -1,10 +1,16 @@
+using System.Net.Sockets;
 using Subverted.App.Infrastructure;
+using Subverted.App.Presentation;
 using Subverted.App.ViewModels;
 using Subverted.Frontend;
+using Subverted.Protocol;
 
 namespace Subverted.App.Tests;
 
-/// <summary>The adapters, against the real filesystem and a daemon that is not there.</summary>
+/// <summary>
+/// The adapters, against the real filesystem and a daemon that is not there — or, for what a
+/// request carries, a bare listener that reads it off the socket.
+/// </summary>
 public sealed class InfrastructureTests
 {
     [Test]
@@ -54,10 +60,70 @@ public sealed class InfrastructureTests
         );
 
         var thrown = await Assert
-            .That(async () => await status.ReadAsync(folder.Path, CancellationToken.None))
+            .That(async () =>
+                await status.ReadAsync(
+                    folder.Path,
+                    ListedNodes.Changes,
+                    heldScan: null,
+                    CancellationToken.None
+                )
+            )
             .Throws<DaemonUnreachableException>();
 
         await Assert.That(thrown!.Message).Contains("no-daemon.exe");
+    }
+
+    /// <summary>
+    /// What reaches the daemon, read off a real socket: All is <c>svn status -v</c>'s switch and
+    /// nothing else, the listing stays scoped to the opened folder, and the held scan goes with it.
+    /// </summary>
+    [Test]
+    [Arguments(ListedNodes.Changes, false)]
+    [Arguments(ListedNodes.All, true)]
+    public async Task The_status_asked_of_the_daemon_carries_the_listing_and_the_held_scan(
+        ListedNodes listed,
+        bool includeUnmodified
+    )
+    {
+        var socketPath = UnusedSocket.NewPath();
+        using var listener = new Socket(
+            AddressFamily.Unix,
+            SocketType.Stream,
+            ProtocolType.Unspecified
+        );
+        listener.Bind(new UnixDomainSocketEndPoint(socketPath));
+        listener.Listen(backlog: 1);
+        var serving = Task.Run(async () =>
+        {
+            await using var connection = new DaemonConnection(
+                new NetworkStream(await listener.AcceptAsync(), ownsSocket: true),
+                MessageFramer.Default
+            );
+            var request = await connection.ReceiveRequestAsync(CancellationToken.None);
+            await connection.SendAsync(
+                new ErrorResponse(DaemonErrorKind.Internal, "x"),
+                CancellationToken.None
+            );
+            return (StatusRequest)request!;
+        });
+        var held = Guid.NewGuid();
+        var status = new DaemonWorkingCopyStatus(new DaemonChannel(socketPath, "no-daemon.exe"));
+
+        try
+        {
+            await status.ReadAsync("/studio/game/art", listed, held, CancellationToken.None);
+            var asked = await serving;
+
+            await Assert.That(asked.IncludeUnmodified).IsEqualTo(includeUnmodified);
+            await Assert.That(asked.IncludeIgnored).IsFalse();
+            await Assert.That(asked.Scope).IsEquivalentTo(new[] { "/studio/game/art" });
+            await Assert.That(asked.HeldScan).IsEqualTo(held);
+        }
+        finally
+        {
+            listener.Dispose();
+            File.Delete(socketPath);
+        }
     }
 
     [Test]

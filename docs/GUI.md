@@ -30,7 +30,7 @@ SmartSVN**, in that look. This replaced the first shell's glass cards on 2026-09
 ┌────┬──────────────────────────────────────────────────────────────────────┐
 │    │ 📁 game ▾   https://svn/game                                 ⤓ Update │
 │ ☰  ├──────────────┬───────────────────────────────────────────────────────┤
-│ 🕘 │ ▾ game    9  │ 🔍 Filter by path   2 changes hidden · Show all       │
+│ 🕘 │ ▾ game    9  │ 🔍 Filter by path  [Changed] All  2 hidden · Clear    │
 │    │   ▸ art   3  │ State      Name              Folder                   │
 │    │   ▸ src   2  │ ☑ ▍Modified hero.png         art                      │
 │    │              │ ☑ ▍Missing  old.cs           src                      │
@@ -52,6 +52,12 @@ SmartSVN**, in that look. This replaced the first shell's glass cards on 2026-09
   says "Live" — the stale banner over the table is what says it is not.
 - **Directory tree** on by default: every folder holding a change, with its count. Choosing one
   narrows the table exactly as the filter does, so what it hides is neither counted nor sent.
+  Listing All, the folders of untouched files are in it too, drawn without a count.
+- **Changed / All** beside the filter (operator's call). Changed is the default and what `svn
+  status` prints; All adds every unmodified versioned file, so an untouched one has a line to lock
+  from. Only the lines change: the commit set, the status line, the folder counts and "N changes
+  hidden" are about changes in both. The hidden line's link reads "Clear filter", since "Show all"
+  beside an All button would say the wrong thing.
 - **File table** top right, flat, with its diff beneath at full width — **only once a row is
   picked** (operator's call). Until then the table has the whole height; picking a row opens the
   diff and scrolls the row back into view if the smaller table would hide it.
@@ -203,9 +209,25 @@ own text: a refusal is `NeedsAttention` and shows the warning as it came, which 
 person is `LockAttention` in `Frontend`, which `sv lock`'s exit code now reads too. No comment is
 sent, and stealing or breaking somebody else's lock is not offered (M4). **Seen in headless tests
 only** — the menu's offers, a click that sends, and a refusal's text on screen — not in the real
-app, and nothing on macOS. **What it cannot do yet:** Changes lists only what changed or is locked,
-so a file nobody has touched — the one an artist locks *before* starting — has no line to lock
-from. That needs a way to reach unchanged files, which nothing in M2 builds.
+app, and nothing on macOS. A file nobody has touched — the one an artist locks *before* starting —
+is reached through **All** (below).
+
+**Changed / All.** All asks the daemon for `IncludeUnmodified`, the field `sv st -v` already sent,
+so the daemon needed no new listing. An unmodified line (`CleanNode` in Core, the same rule the
+daemon's filter uses) has no tick box, reads "Unchanged" in the quiet tone, and its diff pane says
+it matches the revision last updated to without asking `svn diff`. Unmodified folders are not
+lines; the tree already shows them through their files. Lock is on the line's menu as for any file
+the repository has; Revert, Resolve and ticking are not. A clean working copy's message offers "List
+every file", and listing all shows its files instead of the message; a copy with no files at all
+still says it is clean. Switching back to Changed drops the unmodified lines at once, before the
+daemon answers, and a poll answered for the side the toggle has left is dropped rather than drawn.
+**Cost, and what keeps it bounded:** a 100k-file All listing is ~400–700 ms a poll end to end, so
+each poll says which scan it holds and an unchanged answer costs 3–5 ms (ARCHITECTURE, D35). Under
+the `svn status` fallback All lists every node, folders included since `svn status` reports no kind,
+and Lock is offered on none of them for the same reason. That is the fallback's existing gap, not a
+new one. **Seen in headless tests only** (the toggle's buttons, an untouched line with no tick box
+and Lock enabled, the clean copy's offer, the folder pane without a zero count), not in the real
+app, and nothing on macOS.
 
 ### 6. Diff polish — after History, not part of the M2 exit
 

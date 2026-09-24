@@ -12,9 +12,14 @@ namespace Subverted.Daemon;
 /// Renames made outside SVN, paired against the entries they were found in and standing as long as
 /// those do. Empty from a reader that cannot pair them, which is not a claim that none were made.
 /// </param>
+/// <param name="ScanId">
+/// New for every reading, the same for every answer served from one: equal ids mean equal entries,
+/// moves and unfinished operations.
+/// </param>
 public sealed record CurrentScan(
     IReadOnlyList<WorkingCopyEntry> Entries,
     bool ServedFromWarmIndex,
     int UnfinishedOperations,
-    IReadOnlyList<UnrecordedMove> UnrecordedMoves
+    IReadOnlyList<UnrecordedMove> UnrecordedMoves,
+    Guid ScanId
 );
