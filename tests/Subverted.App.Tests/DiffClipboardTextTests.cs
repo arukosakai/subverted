@@ -63,6 +63,35 @@ public sealed class DiffClipboardTextTests
             );
     }
 
+    /// <summary>
+    /// Two runs picked with the context between them left out: each run is still whole, as the
+    /// same pick in the unified layout copies it.
+    /// </summary>
+    [Test]
+    public async Task Runs_picked_with_a_gap_between_them_keep_each_runs_lines_together()
+    {
+        DiffRow[] rows =
+        [
+            new DiffSplitRow(Context(1, 1, "a"), Context(1, 1, "a")),
+            new DiffSplitRow(Removed(2, "b"), Added(2, "B")),
+            new DiffSplitRow(Context(3, 3, "c"), Context(3, 3, "c")),
+            new DiffSplitRow(Removed(4, "d"), Added(4, "D")),
+        ];
+
+        await Assert
+            .That(DiffClipboardText.Of(rows, [3, 1]))
+            .IsEqualTo(string.Join(Environment.NewLine, "b", "B", "d", "D"));
+    }
+
+    /// <summary>Rows next to each other in one run are one run, however they were picked.</summary>
+    [Test]
+    public async Task Adjacent_rows_of_one_run_stay_one_run()
+    {
+        await Assert
+            .That(DiffClipboardText.Of(SplitRows, [2, 3]))
+            .IsEqualTo(string.Join(Environment.NewLine, "second", "third", "second, changed"));
+    }
+
     /// <summary>A hunk header closes a run as context does, so one hunk's new lines never trail the next's.</summary>
     [Test]
     public async Task A_header_between_two_runs_keeps_each_runs_lines_together()

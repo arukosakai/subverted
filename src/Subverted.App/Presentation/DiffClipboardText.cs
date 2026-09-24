@@ -12,8 +12,18 @@ public static class DiffClipboardText
     {
         var copied = new List<string>();
         var newSideOfRun = new List<string>();
-        foreach (var row in selectedIndexes.Order().Select(index => rows[index]))
+        var previous = -1;
+        foreach (var index in selectedIndexes.Order())
         {
+            // A gap in the selection ends a run as surely as a context row between them would.
+            if (index != previous + 1)
+            {
+                copied.AddRange(newSideOfRun);
+                newSideOfRun.Clear();
+            }
+
+            previous = index;
+            var row = rows[index];
             if (row is DiffSplitRow { IsContext: false } change)
             {
                 AddText(copied, change.Old?.Text);
