@@ -16,6 +16,7 @@ internal static class WorkingCopies
         IWorkingCopyRevert? reverts = null,
         IWorkingCopyUpdate? updates = null,
         IWorkingCopyResolve? resolves = null,
+        IWorkingCopyLocks? locks = null,
         ICommitReviewOpener? reviews = null,
         Func<DiffPaneViewModel>? reviewPanes = null
     ) =>
@@ -29,6 +30,7 @@ internal static class WorkingCopies
             commits ?? new FakeWorkingCopyCommit(),
             reverts ?? new FakeWorkingCopyRevert(),
             resolves ?? new FakeWorkingCopyResolve(),
+            locks ?? new FakeWorkingCopyLocks(),
             updates ?? new FakeWorkingCopyUpdate(),
             reviews ?? new FakeCommitReviewOpener(),
             reviewPanes ?? (() => DiffPanes.Pane())
