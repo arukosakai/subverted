@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Net.Sockets;
 using Subverted.Protocol;
@@ -23,6 +24,7 @@ public sealed class DaemonChannel(string socketPath, string daemonPath)
         Path.Combine(directory, isWindows ? "subverted-daemon.exe" : "subverted-daemon");
 
     /// <exception cref="TimeoutException">A daemon was started and never began listening.</exception>
+    /// <exception cref="IOException">No daemon was listening and none could be started.</exception>
     public async Task<DaemonResponse> SendAsync(
         DaemonRequest request,
         CancellationToken cancellationToken
@@ -90,6 +92,7 @@ public sealed class DaemonChannel(string socketPath, string daemonPath)
     }
 
     /// <exception cref="FileNotFoundException">The daemon is not installed next to this binary.</exception>
+    /// <exception cref="IOException">It is there but the system would not run it.</exception>
     private void Start()
     {
         if (!File.Exists(daemonPath))
@@ -104,6 +107,21 @@ public sealed class DaemonChannel(string socketPath, string daemonPath)
         // of our console, and the redirection below stops it being handed ours as its own.
         StandardHandleInheritance.Disable();
 
+        try
+        {
+            Spawn();
+        }
+        catch (Win32Exception exception)
+        {
+            throw new IOException(
+                $"Could not start the daemon '{daemonPath}': {exception.Message}",
+                exception
+            );
+        }
+    }
+
+    private void Spawn()
+    {
         using var started = Process.Start(
             new ProcessStartInfo(daemonPath, ["--detached"])
             {
