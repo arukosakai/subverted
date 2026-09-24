@@ -2,7 +2,7 @@ using Subverted.App.Presentation;
 
 namespace Subverted.App.ViewModels;
 
-/// <summary>What the view says after a commit, a revert or an update.</summary>
+/// <summary>What the view says after a write: a commit, a revert, an update, a resolve or a lock.</summary>
 /// <param name="Headline">One line: what happened.</param>
 /// <param name="Detail">SVN's or the daemon's own text, shown as it came; <c>null</c> when there is none.</param>
 /// <param name="Hint">What that means for the working copy and what to do next; <c>null</c> when nothing.</param>

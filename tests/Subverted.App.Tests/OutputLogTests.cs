@@ -83,6 +83,25 @@ public sealed class OutputLogTests
     }
 
     [Test]
+    public async Task A_lock_and_an_unlock_are_logged_apart_with_their_file()
+    {
+        var log = new OutputLogViewModel(_clock);
+        var locked = new Notice(NoticeKind.Succeeded, "Locked art/hero.png", null, null);
+        var unlocked = new Notice(NoticeKind.Succeeded, "Unlocked art/hero.png", null, null);
+
+        log.Record(new LockAttempt("art/hero.png", locked, null));
+        log.Record(new UnlockAttempt("art/hero.png", unlocked, null));
+
+        await Assert
+            .That(log.Lines)
+            .IsEquivalentTo([
+                new OutputLine(_clock.GetLocalNow(), "Lock", "art/hero.png", locked),
+                new OutputLine(_clock.GetLocalNow(), "Unlock", "art/hero.png", unlocked),
+            ]);
+        await Assert.That(log.IsEmpty).IsFalse();
+    }
+
+    [Test]
     public async Task Lines_are_kept_oldest_first()
     {
         var log = new OutputLogViewModel(_clock);

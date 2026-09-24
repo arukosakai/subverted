@@ -15,6 +15,7 @@ namespace Subverted.App.ViewModels;
 /// <param name="commits">Sends the ticked lines, for the commit box.</param>
 /// <param name="reverts">Reverts a confirmed line, for the context menu.</param>
 /// <param name="resolves">Settles a line's conflicts, for the context menu.</param>
+/// <param name="locks">Takes and gives back a file's lock, for the context menu.</param>
 /// <param name="updates">Brings the opened folder up to date, for the Update button.</param>
 /// <param name="reviews">Shows the commit review window, for the commit box's Review button.</param>
 /// <param name="reviewDiff">A fresh diff pane for each review, apart from <paramref name="diff"/>.</param>
@@ -28,6 +29,7 @@ public sealed partial class WorkingCopyViewModel(
     IWorkingCopyCommit commits,
     IWorkingCopyRevert reverts,
     IWorkingCopyResolve resolves,
+    IWorkingCopyLocks locks,
     IWorkingCopyUpdate updates,
     ICommitReviewOpener reviews,
     Func<DiffPaneViewModel> reviewDiff
@@ -40,6 +42,7 @@ public sealed partial class WorkingCopyViewModel(
     private CommitComposerViewModel? _composer;
     private RevertPromptViewModel? _revertPrompt;
     private ResolveViewModel? _resolver;
+    private LockViewModel? _locker;
     private UpdateViewModel? _updater;
 
     /// <summary>
@@ -126,6 +129,8 @@ public sealed partial class WorkingCopyViewModel(
     public RevertPromptViewModel RevertPrompt => _revertPrompt ??= new(reverts);
 
     public ResolveViewModel Resolver => _resolver ??= new(resolves);
+
+    public LockViewModel Locker => _locker ??= new(locks);
 
     /// <summary>Updates <see cref="Path"/>, the folder the listing is scoped to, not the whole root.</summary>
     public UpdateViewModel Updater => _updater ??= new(updates, Path, FolderName.Of(Path));
@@ -509,6 +514,21 @@ public sealed partial class WorkingCopyViewModel(
         entry?.Row is { } row
         && ResolveScope.For(row, ConflictResolution.Working, Changes).Lines.Count > 0;
 
+    [RelayCommand(CanExecute = nameof(CanLock))]
+    private Task LockAsync(ChangeListEntry? entry, CancellationToken cancellationToken) =>
+        Locker.LockAsync(entry!.Row!.RelPath, Location, cancellationToken);
+
+    /// <summary>Only a file the repository has at that path, and not one whose lock is already held here.</summary>
+    private static bool CanLock(ChangeListEntry? entry) =>
+        entry?.Row is { } row && LockOffer.CanLock(row);
+
+    [RelayCommand(CanExecute = nameof(CanUnlock))]
+    private Task UnlockAsync(ChangeListEntry? entry, CancellationToken cancellationToken) =>
+        Locker.UnlockAsync(entry!.Row!.RelPath, Location, cancellationToken);
+
+    private static bool CanUnlock(ChangeListEntry? entry) =>
+        entry?.Row is { } row && LockOffer.CanUnlock(row);
+
     [RelayCommand(CanExecute = nameof(CanOpen))]
     private Task OpenAsync(ChangeListEntry? entry) =>
         launcher.OpenAsync(PathOf(entry!.Content.RelPath));
@@ -560,6 +580,8 @@ public sealed partial class WorkingCopyViewModel(
         KeepMineCommand.NotifyCanExecuteChanged();
         TakeTheirsCommand.NotifyCanExecuteChanged();
         MarkResolvedCommand.NotifyCanExecuteChanged();
+        LockCommand.NotifyCanExecuteChanged();
+        UnlockCommand.NotifyCanExecuteChanged();
     }
 
     /// <summary>A failure leaves <see cref="Changes"/> as it was; see <see cref="IsStale"/>.</summary>

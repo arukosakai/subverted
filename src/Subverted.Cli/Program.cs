@@ -194,7 +194,7 @@ async Task<int> LockAsync(LockCommand command, OutputOptions output)
     {
         case LockResponse locked:
             Emit(LockReport.Locked(locked), output);
-            return locked.Refusals.Count > 0 ? ExitCode.NeedsAttention : ExitCode.Success;
+            return LockAttention.IsNeeded(locked) ? ExitCode.NeedsAttention : ExitCode.Success;
 
         case ErrorResponse error:
             return Complain(error);
@@ -219,7 +219,7 @@ async Task<int> UnlockAsync(UnlockCommand command, OutputOptions output)
     {
         case UnlockResponse unlocked:
             Emit(LockReport.Unlocked(unlocked), output);
-            return unlocked.Refusals.Count > 0 ? ExitCode.NeedsAttention : ExitCode.Success;
+            return LockAttention.IsNeeded(unlocked) ? ExitCode.NeedsAttention : ExitCode.Success;
 
         case ErrorResponse error:
             return Complain(error);

@@ -51,6 +51,9 @@
       <v:NoticeView x:Name="ResolveNotice" Margin="8" Notice="{Binding Resolver.Notice}"
                     IsVisible="{Binding Resolver.Notice, Converter={x:Static ObjectConverters.IsNotNull}}"
                     DismissCommand="{Binding Resolver.DismissNoticeCommand}" />
+      <v:NoticeView x:Name="LockNotice" Margin="8" Notice="{Binding Locker.Notice}"
+                    IsVisible="{Binding Locker.Notice, Converter={x:Static ObjectConverters.IsNotNull}}"
+                    DismissCommand="{Binding Locker.DismissNoticeCommand}" />
       <v:NoticeView x:Name="UpdateNotice" Margin="8" Notice="{Binding Updater.Notice}"
                     IsVisible="{Binding Updater.Notice, Converter={x:Static ObjectConverters.IsNotNull}}"
                     DismissCommand="{Binding Updater.DismissNoticeCommand}" />
@@ -193,6 +196,11 @@
                       <MenuItem Header="Mark as resolved"
                                 Command="{Binding MarkResolvedCommand}" CommandParameter="{Binding SelectedEntry}" />
                     </MenuItem>
+                    <Separator />
+                    <MenuItem Header="Lock"
+                              Command="{Binding LockCommand}" CommandParameter="{Binding SelectedEntry}" />
+                    <MenuItem Header="Unlock"
+                              Command="{Binding UnlockCommand}" CommandParameter="{Binding SelectedEntry}" />
                     <Separator />
                     <MenuItem Header="History of this file"
                               Command="{Binding ShowHistoryCommand}" CommandParameter="{Binding SelectedEntry}" />

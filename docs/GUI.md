@@ -163,7 +163,7 @@ notice or the revert overlay (headless tests and renders only), and nothing on m
   status poll, and far less often, because every tick is a server round trip. A new request, since
   no warm index can answer what is on the server.
 
-*Status: Update and resolve built; locks and the incoming count not.* An Update button in the title bar
+*Status: Update, resolve and locks built; the incoming count not.* An Update button in the title bar
 sends `UpdateRequest` for the opened folder, not the root, the same scope the listing has. It asks
 nothing first, since an update takes no local change away. The result shows as a notice above the
 table and a line in the output log, with SVN's own text. Conflicts or skipped paths make it
@@ -188,6 +188,24 @@ is not "resolved", and Mark as resolved says to look for `<<<<<<<`. Seen in the 
 its own line and no markers; Take theirs asked first, and once confirmed `asset.bin` matched
 `.r4` byte for byte. SVN removed the `.mine`/`.rN` files both times, and the conflicted rows
 showed their held, unticked boxes. Not seen: Mark as resolved, a refusal, a folder target, macOS.
+
+Lock and Unlock are on a line's menu, not a toolbar — the table has none (Layout). Both are sent at
+once for the one file, since neither takes anything away; one runs at a time. **Lock is offered
+where 1.8.15 was seen to grant one**: a file the repository has at that path — edited, unchanged,
+missing, scheduled for deletion, replaced, obstructed or conflicted — and not where it failed with
+`E155010`: added, copied (`A +`, and an edited file inside a copied folder) and unversioned, which
+also rules out a rename row. Never a folder, and not a file whose lock is already held here.
+**Unlock is offered exactly where the line carries the lock**, which the listing already had:
+`WorkingCopyEntry.HasLockToken` (`K`) draws the lock icon, and the daemon lists a locked file even
+while it is unchanged. The outcome is a notice above the tree and an output-log line, with SVN's
+own text: a refusal is `NeedsAttention` and shows the warning as it came, which names the holder
+(D22), and never reads as success; an unlock whose lock had gone says so. Whether an answer needs a
+person is `LockAttention` in `Frontend`, which `sv lock`'s exit code now reads too. No comment is
+sent, and stealing or breaking somebody else's lock is not offered (M4). **Seen in headless tests
+only** — the menu's offers, a click that sends, and a refusal's text on screen — not in the real
+app, and nothing on macOS. **What it cannot do yet:** Changes lists only what changed or is locked,
+so a file nobody has touched — the one an artist locks *before* starting — has no line to lock
+from. That needs a way to reach unchanged files, which nothing in M2 builds.
 
 ### 6. Diff polish — after History, not part of the M2 exit
 

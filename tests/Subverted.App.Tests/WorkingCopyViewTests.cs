@@ -241,11 +241,99 @@ public sealed class WorkingCopyViewTests
         await Assert
             .That(headers)
             .IsEqualTo(
-                $"Open|{RevealMenuText.For(FileRevealers.ThisPlatform)}|Copy path|Revert…|Resolve|History of this file"
+                $"Open|{RevealMenuText.For(FileRevealers.ThisPlatform)}|Copy path|Revert…|Resolve|Lock|Unlock|History of this file"
             );
         await Assert.That(historyEnabled).IsFalse();
         await Assert.That(resolveHeaders).IsEqualTo("Keep mine|Take theirs…|Mark as resolved");
     }
+
+    [Test]
+    public async Task The_menu_offers_lock_and_unlock_by_what_the_picked_line_is()
+    {
+        var offered = await OnViewAsync(
+            (_, list, view) =>
+                string.Join(
+                    ",",
+                    new[] { "edited.png", "held.psd", "notes.txt" }.Select(key =>
+                    {
+                        Focus(list, IndexOf(view, key));
+                        var (take, give) = LockItems(list);
+                        var result =
+                            $"{key}:{Enabled(take)}/{Enabled(give)}";
+                        list.ContextMenu!.Close();
+                        return result;
+                    })
+                ),
+            status: LockStatus()
+        );
+
+        await Assert
+            .That(offered)
+            .IsEqualTo("edited.png:lock/-,held.psd:-/unlock,notes.txt:-/-");
+    }
+
+    /// <summary>A refusal is the one answer that must be read, so its SVN text is on screen, not only in the log.</summary>
+    [Test]
+    public async Task Clicking_lock_sends_the_file_and_a_refusal_shows_svn_s_text_above_the_list()
+    {
+        const string heldByRena =
+            "svn: warning: W160035: Path '/edited.png' is already locked by user 'rena' in filesystem '/repo/db'";
+        var locks = new FakeWorkingCopyLocks().Answers(
+            new Subverted.Protocol.LockResponse("", [heldByRena])
+        );
+
+        var (cardShown, detail) = await OnViewAsync(
+            (_, list, view) =>
+            {
+                Focus(list, IndexOf(view, "edited.png"));
+                var (take, _) = LockItems(list);
+                take.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(MenuItem.ClickEvent));
+                Dispatcher.UIThread.RunJobs();
+                var notice = list.FindAncestorOfType<WorkingCopyView>()!
+                    .FindControl<NoticeView>("LockNotice")!;
+                return (
+                    notice.FindControl<Border>("Card")!.IsEffectivelyVisible,
+                    notice.FindControl<SelectableTextBlock>("Detail")!.Text
+                );
+            },
+            status: LockStatus(),
+            locks: locks
+        );
+
+        await Assert
+            .That(locks.Locked)
+            .IsEquivalentTo([DiffTarget.PathOf(Info.RootPath, "edited.png")]);
+        await Assert.That(cardShown).IsTrue();
+        await Assert.That(detail).IsEqualTo(heldByRena);
+    }
+
+    private static FakeWorkingCopyStatus LockStatus() =>
+        new FakeWorkingCopyStatus().Answers(
+            Listing(
+                Entry("edited.png"),
+                Entry("held.psd", NodeStatus.Unmodified, hasLockToken: true),
+                Entry("notes.txt", NodeStatus.Unversioned)
+            )
+        );
+
+    private static int IndexOf(WorkingCopyViewModel view, string key) =>
+        view.Entries.IndexOf(view.Entries.Single(entry => entry.Key == key));
+
+    /// <summary>Opens the list's menu and hands back its Lock and Unlock items.</summary>
+    private static (MenuItem Lock, MenuItem Unlock) LockItems(ListBox list)
+    {
+        var menu = list.ContextMenu!;
+        menu.Open(list);
+        Dispatcher.UIThread.RunJobs();
+        var items = menu.Items.OfType<MenuItem>().ToList();
+        return (
+            items.Single(item => Equals(item.Header, "Lock")),
+            items.Single(item => Equals(item.Header, "Unlock"))
+        );
+    }
+
+    private static string Enabled(MenuItem item) =>
+        item.IsEffectivelyEnabled ? ((string)item.Header!).ToLowerInvariant() : "-";
 
     [Test]
     public async Task Clicking_a_chevron_collapses_its_folder_and_leaves_the_chosen_one_chosen()
@@ -463,7 +551,8 @@ public sealed class WorkingCopyViewTests
     private static Task<T> OnViewAsync<T>(
         Func<Window, ListBox, WorkingCopyViewModel, T> act,
         FakeFileLauncher? launcher = null,
-        FakeWorkingCopyStatus? status = null
+        FakeWorkingCopyStatus? status = null,
+        FakeWorkingCopyLocks? locks = null
     ) =>
         HeadlessApp.Session.Dispatch(
             async () =>
@@ -476,7 +565,7 @@ public sealed class WorkingCopyViewTests
                         Entry("sub/hero.png", NodeStatus.Unversioned)
                     )
                 );
-                var view = WorkingCopies.View(status, launcher: launcher);
+                var view = WorkingCopies.View(status, launcher: launcher, locks: locks);
                 await view.RefreshAsync(CancellationToken.None);
                 var control = new WorkingCopyView { DataContext = view };
                 var window = new Window

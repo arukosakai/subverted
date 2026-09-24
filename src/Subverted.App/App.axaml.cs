@@ -50,6 +50,7 @@ public sealed partial class App : Application
         var commits = new DaemonWorkingCopyCommit(channel);
         var reverts = new DaemonWorkingCopyRevert(channel);
         var resolves = new DaemonWorkingCopyResolve(channel);
+        var locks = new DaemonWorkingCopyLocks(channel);
         var updates = new DaemonWorkingCopyUpdate(channel);
         var sizes = new FileSizeReader();
         var launcher = new SystemFileLauncher(() => desktop.MainWindow);
@@ -75,6 +76,7 @@ public sealed partial class App : Application
                 commits,
                 reverts,
                 resolves,
+                locks,
                 updates,
                 reviews,
                 () => new DiffPaneViewModel(diffs, sizes, launcher, TimeProvider.System)

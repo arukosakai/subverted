@@ -123,6 +123,36 @@ public sealed class InfrastructureTests
     }
 
     [Test]
+    public async Task A_lock_sent_to_a_daemon_that_is_not_there_reads_as_unreachable()
+    {
+        using var folder = new ScratchFolder();
+        var locks = new DaemonWorkingCopyLocks(
+            new DaemonChannel(UnusedSocket.NewPath(), Path.Combine(folder.Path, "no-daemon.exe"))
+        );
+
+        var thrown = await Assert
+            .That(async () => await locks.LockAsync(folder.Path, CancellationToken.None))
+            .Throws<DaemonUnreachableException>();
+
+        await Assert.That(thrown!.Message).Contains("no-daemon.exe");
+    }
+
+    [Test]
+    public async Task An_unlock_sent_to_a_daemon_that_is_not_there_reads_as_unreachable()
+    {
+        using var folder = new ScratchFolder();
+        var locks = new DaemonWorkingCopyLocks(
+            new DaemonChannel(UnusedSocket.NewPath(), Path.Combine(folder.Path, "no-daemon.exe"))
+        );
+
+        var thrown = await Assert
+            .That(async () => await locks.UnlockAsync(folder.Path, CancellationToken.None))
+            .Throws<DaemonUnreachableException>();
+
+        await Assert.That(thrown!.Message).Contains("no-daemon.exe");
+    }
+
+    [Test]
     public async Task A_files_size_is_its_length_on_disk()
     {
         using var folder = new ScratchFolder();
