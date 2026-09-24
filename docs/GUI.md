@@ -57,7 +57,11 @@ SmartSVN**, in that look. This replaced the first shell's glass cards on 2026-09
   session with SVN's own text. The log takes its half only once a write is in it; until then, and
   after Clear, the commit box has the whole strip. Panes carry no caption rows — FOLDERS, COMMIT
   and DIFF labelled what the content already said — and the diff's header shows only with a file.
-  Empty states are text, without the icon discs. A SmartSVN-style popup review window is an
+  Empty states are text, without the icon discs. **A working copy with nothing listed — clean,
+  still loading, or blocked — shows only its message**: no tree, no diff, no commit box. The
+  strip's halves each show only with something in them, so committing the last change leaves the
+  log the whole strip, and write notices sit above the tree so an update of a clean copy still
+  says what it did. A SmartSVN-style popup review window is an
   acceptable alternative the operator named; it is not built.
 - **History** uses the same frame — the revisions table on top with the pinned "Local changes"
   line, and the picked revision's paths beside its diff beneath. The bottom strip is Changes' only.

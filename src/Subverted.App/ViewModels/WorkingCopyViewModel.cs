@@ -149,6 +149,12 @@ public sealed partial class WorkingCopyViewModel(
     public bool IsClean => State == WorkingCopyState.Ready && Changes.Count == 0;
 
     /// <summary>
+    /// There is a row to act on — a stale listing still counts. Until there is, the tree, the diff
+    /// and the composer have nothing to say, and the view shows only why.
+    /// </summary>
+    public bool HasChanges => Changes.Count > 0;
+
+    /// <summary>
     /// Something is wrong and there is no earlier listing to fall back on, so the view says what
     /// is wrong instead.
     /// </summary>
@@ -442,5 +448,6 @@ public sealed partial class WorkingCopyViewModel(
         OnPropertyChanged(nameof(IsClean));
         OnPropertyChanged(nameof(IsBlocked));
         OnPropertyChanged(nameof(IsStale));
+        OnPropertyChanged(nameof(HasChanges));
     }
 }

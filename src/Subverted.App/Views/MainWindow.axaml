@@ -60,7 +60,7 @@
       </Grid>
     </Border>
 
-    <Grid Grid.Column="1" RowDefinitions="44,*,Auto,Auto,Auto" Background="{DynamicResource BgBrush}">
+    <Grid Grid.Column="1" RowDefinitions="44,*,Auto,Auto" Background="{DynamicResource BgBrush}">
 
       <!-- Title bar: which working copy and where it points; a listing gone stale says so over the table.
            The drag area sits behind the controls, and the right margin leaves the caption buttons their strip. -->
@@ -141,23 +141,35 @@
       </Panel>
 
       <!-- The bottom strip, SmartSVN's: write a message on the left, read what every write said on the
-           right. The log takes its half only once there is something in it; UniformGrid skips it until then. -->
-      <Border Grid.Row="2" Height="1" Background="{DynamicResource LineBrush}" IsVisible="{Binding #Strip.IsVisible}" />
-      <UniformGrid Grid.Row="3" x:Name="Strip" Height="170" Rows="1">
-        <UniformGrid.IsVisible>
+           right. Each half shows only with something in it, and UniformGrid gives a hidden one no share. -->
+      <Panel Grid.Row="2">
+        <Panel.IsVisible>
           <MultiBinding Converter="{x:Static BoolConverters.And}">
             <Binding Path="HasWorkingCopy" />
             <Binding Path="IsShowingChanges" />
           </MultiBinding>
-        </UniformGrid.IsVisible>
-        <v:CommitComposerView x:Name="Composer" DataContext="{Binding Current.Composer, FallbackValue={x:Null}}" />
-        <Border Classes="line-left" IsVisible="{Binding !Log.IsEmpty}">
-          <v:OutputLogView x:Name="OutputLog" DataContext="{Binding Log}" />
-        </Border>
-      </UniformGrid>
+        </Panel.IsVisible>
+        <DockPanel>
+          <DockPanel.IsVisible>
+            <MultiBinding Converter="{x:Static BoolConverters.Or}">
+              <Binding Path="Current.HasChanges" FallbackValue="False" />
+              <Binding Path="!Log.IsEmpty" />
+            </MultiBinding>
+          </DockPanel.IsVisible>
+          <Border DockPanel.Dock="Top" Height="1" Background="{DynamicResource LineBrush}" />
+          <UniformGrid x:Name="Strip" Height="170" Rows="1">
+            <Panel IsVisible="{Binding Current.HasChanges, FallbackValue=False}">
+              <v:CommitComposerView x:Name="Composer" DataContext="{Binding Current.Composer, FallbackValue={x:Null}}" />
+            </Panel>
+            <Border Classes.line-left="{Binding Current.HasChanges, FallbackValue=False}" IsVisible="{Binding !Log.IsEmpty}">
+              <v:OutputLogView x:Name="OutputLog" DataContext="{Binding Log}" />
+            </Border>
+          </UniformGrid>
+        </DockPanel>
+      </Panel>
 
       <!-- First run: the one thing to do, said once, in the middle. -->
-      <StackPanel Grid.Row="1" Grid.RowSpan="3" Spacing="12" HorizontalAlignment="Center" VerticalAlignment="Center"
+      <StackPanel Grid.Row="1" Grid.RowSpan="2" Spacing="12" HorizontalAlignment="Center" VerticalAlignment="Center"
                   MaxWidth="420" IsVisible="{Binding !HasWorkingCopy}">
         <Path Classes="icon" Data="{StaticResource Icon.Folder}" Width="36" Height="36" StrokeThickness="1.5"
               HorizontalAlignment="Center" />
@@ -173,7 +185,7 @@
       </StackPanel>
 
       <!-- Status line, SmartSVN's: where this is and what it holds, in one row. -->
-      <Border Grid.Row="4" Classes="line-top" Height="24" Padding="12,0"
+      <Border Grid.Row="3" Classes="line-top" Height="24" Padding="12,0"
               IsVisible="{Binding HasWorkingCopy}">
         <Grid ColumnDefinitions="*,Auto">
           <TextBlock Classes="faint" FontSize="11.5" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"

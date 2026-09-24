@@ -185,6 +185,57 @@ public sealed class WorkingCopyViewModelTests
         await Assert.That(view.Message).Contains(nameof(AcknowledgedResponse));
     }
 
+    /// <summary>The panes, the tree and the composer only show while there is something to act on.</summary>
+    [Test]
+    public async Task There_are_changes_only_once_a_listing_holds_a_row()
+    {
+        var status = new FakeWorkingCopyStatus()
+            .Answers(Listing(Entry("a.png")))
+            .Answers(Listing());
+        var view = View("/studio/game", status);
+        var beforeAnyAnswer = view.HasChanges;
+
+        await view.RefreshAsync(None);
+        var withARow = view.HasChanges;
+        await view.RefreshAsync(None);
+
+        await Assert.That(beforeAnyAnswer).IsFalse();
+        await Assert.That(withARow).IsTrue();
+        await Assert.That(view.HasChanges).IsFalse();
+    }
+
+    [Test]
+    public async Task A_quiet_locked_row_is_still_a_change_to_show()
+    {
+        var status = new FakeWorkingCopyStatus().Answers(
+            Listing(Entry("a.png", NodeStatus.Unmodified, hasLockToken: true))
+        );
+        var view = View("/studio/game", status);
+
+        await view.RefreshAsync(None);
+
+        await Assert.That(view.HasChanges).IsTrue();
+    }
+
+    [Test]
+    public async Task A_stale_listing_still_has_its_changes_but_a_blocked_one_has_none()
+    {
+        var stale = View(
+            "/studio/game",
+            new FakeWorkingCopyStatus().Answers(Listing(Entry("a.png"))).IsUnreachable()
+        );
+        var blocked = View("/studio/game", new FakeWorkingCopyStatus().IsUnreachable());
+
+        await stale.RefreshAsync(None);
+        await stale.RefreshAsync(None);
+        await blocked.RefreshAsync(None);
+
+        await Assert.That(stale.IsStale).IsTrue();
+        await Assert.That(stale.HasChanges).IsTrue();
+        await Assert.That(blocked.IsBlocked).IsTrue();
+        await Assert.That(blocked.HasChanges).IsFalse();
+    }
+
     /// <summary>The derived flags drive visibility, so each has to announce itself when it moves.</summary>
     [Test]
     public async Task Every_flag_the_view_binds_to_is_announced_when_an_answer_arrives()
@@ -200,6 +251,7 @@ public sealed class WorkingCopyViewModelTests
             .Contains(nameof(WorkingCopyViewModel.IsClean))
             .And.Contains(nameof(WorkingCopyViewModel.IsBlocked))
             .And.Contains(nameof(WorkingCopyViewModel.IsStale))
+            .And.Contains(nameof(WorkingCopyViewModel.HasChanges))
             .And.Contains(nameof(WorkingCopyViewModel.Headline));
     }
 

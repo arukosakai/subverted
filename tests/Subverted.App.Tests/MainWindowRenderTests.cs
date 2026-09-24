@@ -249,6 +249,125 @@ public sealed class MainWindowRenderTests
         );
     }
 
+    /// <summary>With nothing listed, the tree, the diff and the commit box have nothing to say.</summary>
+    [Test]
+    public async Task A_clean_working_copy_shows_only_that_it_is_clean()
+    {
+        var clean = await PanesShownAsync(
+            new FakeWorkingCopyStatus().Answers(Listing()),
+            "clean-alone.png"
+        );
+        var changed = await PanesShownAsync(Studio(), "changed-panes.png");
+
+        await Assert.That(clean).IsEqualTo((false, false, false));
+        await Assert.That(changed).IsEqualTo((true, true, true));
+    }
+
+    /// <summary>Committing everything empties the listing, and what the commit said must not go with it.</summary>
+    [Test]
+    public async Task Committing_the_last_change_leaves_the_log_the_whole_strip()
+    {
+        var status = Studio();
+        var commits = new FakeWorkingCopyCommit().Answers(FakeWorkingCopyCommit.Committed(8));
+        var (logShown, composerShown, logShare) = await HeadlessApp.Session.Dispatch(
+            async () =>
+            {
+                var window = await ShowAsync(
+                    "Dark",
+                    new FakeRecentStore("/studio/game"),
+                    status,
+                    commits
+                );
+                var current = ((MainWindowViewModel)window.DataContext!).Current!;
+                current.Composer.Message = "Hero pass";
+                await current.Composer.CommitCommand.ExecuteAsync(null);
+                status.Answers(Listing());
+                await current.RefreshAsync(CancellationToken.None);
+                Dispatcher.UIThread.RunJobs();
+                window.UpdateLayout();
+                Save(window, "output-log-alone.png");
+
+                var strip = Named<UniformGrid>(window, "Strip");
+                var log = Named<OutputLogView>(window, "OutputLog");
+                var result = (
+                    log.IsEffectivelyVisible,
+                    Named<CommitComposerView>(window, "Composer").IsEffectivelyVisible,
+                    Math.Round(log.Bounds.Width / strip.Bounds.Width, 2)
+                );
+                window.Close();
+                return result;
+            },
+            CancellationToken.None
+        );
+
+        await Assert.That(commits.Commits.Single().Paths.Count).IsEqualTo(5);
+        await Assert.That(logShown).IsTrue();
+        await Assert.That(composerShown).IsFalse();
+        await Assert.That(logShare).IsEqualTo(1.0);
+    }
+
+    [Test]
+    public async Task An_update_on_a_clean_working_copy_still_shows_its_notice()
+    {
+        var updates = new FakeWorkingCopyUpdate().Answers(
+            new UpdateResponse(1826, 0, 0, "Updated to revision 1826.")
+        );
+        var shown = await HeadlessApp.Session.Dispatch(
+            async () =>
+            {
+                var window = await ShowAsync(
+                    "Dark",
+                    new FakeRecentStore("/studio/game"),
+                    new FakeWorkingCopyStatus().Answers(Listing()),
+                    updates: updates
+                );
+                Named<Button>(window, "UpdateButton").Command!.Execute(null);
+                for (var turn = 0; turn < 5; turn++)
+                {
+                    Dispatcher.UIThread.RunJobs();
+                    await Task.Yield();
+                }
+
+                Save(window, "update-clean-dark.png");
+                var card = Named<NoticeView>(window, "UpdateNotice").FindControl<Border>("Card")!;
+                var result = card.IsEffectivelyVisible;
+                window.Close();
+                return result;
+            },
+            CancellationToken.None
+        );
+
+        await Assert.That(shown).IsTrue();
+    }
+
+    private static Task<(bool Tree, bool Diff, bool Composer)> PanesShownAsync(
+        FakeWorkingCopyStatus status,
+        string file
+    ) =>
+        HeadlessApp.Session.Dispatch(
+            async () =>
+            {
+                var window = await ShowAsync("Dark", new FakeRecentStore("/studio/game"), status);
+                Save(window, file);
+                var result = (
+                    Named<ListBox>(window, "Folders").IsEffectivelyVisible,
+                    window
+                        .GetVisualDescendants()
+                        .OfType<DiffPaneView>()
+                        .Single()
+                        .IsEffectivelyVisible,
+                    Named<CommitComposerView>(window, "Composer").IsEffectivelyVisible
+                );
+                window.Close();
+                return result;
+            },
+            CancellationToken.None
+        );
+
+    private static T Named<T>(MainWindow window, string name)
+        where T : Control =>
+        window.GetVisualDescendants().OfType<T>().Single(control => control.Name == name);
+
     [Test]
     public async Task A_clean_working_copy_renders_no_rows()
     {
