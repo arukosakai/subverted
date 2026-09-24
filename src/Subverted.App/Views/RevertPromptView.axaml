@@ -22,7 +22,8 @@
         <TextBlock x:Name="Title" FontSize="16" FontWeight="SemiBold" TextWrapping="Wrap"
                    Text="{Binding Pending.Title}" />
         <TextBlock x:Name="Warning" FontWeight="Medium" TextWrapping="Wrap"
-                   Foreground="{DynamicResource Tone.Deleted}" Text="{Binding Pending.Warning}" />
+                   Classes.loses="{Binding Pending.LosesWork}" Classes.muted="{Binding !Pending.LosesWork}"
+                   Text="{Binding Pending.Warning}" />
         <TextBlock x:Name="Changed" FontWeight="Medium" TextWrapping="Wrap" IsVisible="{Binding HasChangedSinceAsked}"
                    Foreground="{DynamicResource Tone.Conflict}"
                    Text="The list changed since you were asked. Check it again before reverting." />

@@ -164,6 +164,23 @@ public sealed class DeletionPreviewTests
     }
 
     [Test]
+    [Arguments(NodeStatus.Modified, true)]
+    [Arguments(NodeStatus.Missing, false)]
+    public async Task It_loses_work_exactly_when_one_of_its_lines_does(
+        NodeStatus status,
+        bool loses
+    )
+    {
+        WorkingCopyEntry[] listing =
+        [
+            Node("art", kind: NodeKind.Directory),
+            Node("art/a.png", status),
+        ];
+
+        await Assert.That(DeletionPreview.Of("art", listing, Ordinal).LosesWork).IsEqualTo(loses);
+    }
+
+    [Test]
     public async Task The_same_lines_for_the_same_target_are_the_same_question()
     {
         WorkingCopyEntry[] listing = [Node("art", kind: NodeKind.Directory), Node("art/a.png")];

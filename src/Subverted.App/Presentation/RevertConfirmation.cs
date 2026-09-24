@@ -22,6 +22,9 @@ public sealed record RevertConfirmation(string Target, IReadOnlyList<RevertLine>
                 $"Revert {Lines.Count:N0} paths in {Target}?"
             );
 
+    /// <summary>Whether any line loses work for good, which is what the warning is drawn as.</summary>
+    public bool LosesWork => Lines.Any(line => line.LosesWork);
+
     /// <summary>What is lost for good, or that nothing is; said plainly above the list.</summary>
     public string Warning
     {
