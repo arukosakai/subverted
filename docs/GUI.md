@@ -245,8 +245,7 @@ one file, and Lock was offered. Not seen there: the clean copy's offer, a large 
 - Split view, intraline highlighting on paired `-`/`+` lines as a pure function, and the context
   dropdown.
 
-*Status: split view and intraline highlighting built; the context dropdown not, and blocked:
-1.8.15's `svn diff` has no way to ask for more context (below, "Measured").* Split is the
+*Status: split view, intraline highlighting and the context dropdown built.* Split is the
 default, with a Split / Unified toggle over the lines (operator: "the diff should be two-pane").
 `SplitLines` pairs a hunk's lines: context sits on both sides, and each run of changes between
 context pairs its removals with its additions in order, padding the shorter side with blank filler.
@@ -277,6 +276,19 @@ long split line's marks past the ellipsis are simply not visible. Seen in the re
 Default Light, and a test reads the frame's pixels to confirm the span is painted. Nothing on macOS. The 50k-line headless jump-to-end took ~175–185 ms in Debug with
 highlighting on; no before/after comparison was taken.
 
+The context dropdown sits beside Split / Unified in `DiffLinesView`, so Changes and History both
+have it: **3 lines / 10 lines / 25 lines / Whole file**. 1.8.15's `svn diff` cannot print more than
+three lines (Measured, below), so the daemon writes a wider diff itself (ARCHITECTURE, D36);
+3 lines is still `svn diff`'s own text, exactly as before. Each pane keeps its pick across
+selections and the once-a-second resync, and changing it asks the daemon again for what is on
+screen — the old diff stays until the answer replaces it, never rebuilt from memory. When the file
+cannot have the context — binary, `svn:keywords`, a property change, an add, copy or delete — the
+daemon answers with svn's three lines and says so, and a quiet line under the column names reads
+"Context unavailable for this file". Seen in the real app on Windows 11 (dark) on a throwaway
+fixture, clicked through UI Automation: 3 lines, then Whole file on an edited file, which refetched
+and showed every line. Not seen there: the "unavailable" line and History's dropdown (headless
+tests and renders only), and nothing on macOS.
+
 ## Not in M2
 
 The graph; stash, checkpoints and hunk staging (M3); image diff and other people's locks (M4);
@@ -302,6 +314,6 @@ Each of these is an assumption the plan leans on and has not been run:
   happens for History's form, `svn diff -c 2 -x -U1 <url>@2`. 1.8.15's `svn help diff` lists
   only `-u` (fixed at 3 lines), `-b`, `-w`, `--ignore-eol-style` and `-p` for the internal diff,
   and `-x -p` and `-x --ignore-eol-style` both run, so it is `-U` itself that is refused, not
-  `-x`. The daemon passes no `-x` today. Nothing was built on this. Any other way to get more
-  context (an external `--diff-cmd`, diffing pristine against the working file ourselves,
-  requiring a newer svn) is a design decision still to be made.
+  `-x`. The daemon passes no `-x` today. Nothing was built on this. The operator chose (forum #61)
+  to diff in-process instead: the daemon writes the wider diff itself, and `svn diff` stays the
+  answer at three lines (ARCHITECTURE, D36).

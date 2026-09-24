@@ -68,6 +68,11 @@ sv log / sv d
   → LogReport / DiffReport render, LogPalette / DiffPalette colour, ConsolePager pages
 ```
 
+A diff asked for with more than three lines of context goes one step further first (D36):
+`WorkingCopyContextDiff` (pristine + working file) or `RevisionContextDiff` (two `svn cat`s)
+writes it in-process, and declines back to `SvnDiffCommand` / `SvnRevisionDiffCommand` for
+anything `svn diff` would not print as two texts compared.
+
 The session is used for the root, not for the index: history and diff are never served from
 memory. Nothing warm can answer "what is on the server", and a diff read from an index that is a
 generation stale is worse than a slow one.
@@ -1646,6 +1651,84 @@ off the UI thread in the real app.
 
 *Status: implemented. All seven test binaries green; the new presentation rules and `CleanNode` at
 100% line and branch. The toggle is seen in headless view tests only, not in the real app.*
+
+### D36 — More context than svn prints is written in-process, and only where it is provably svn's diff
+
+GUI.md slice 6 wants 3 / more / whole-file context, and 1.8.15 refuses `svn diff -x -U<N>` in every
+form (GUI.md, Measured). The operator chose (forum #61) to diff in-process. **`svn diff` stays the
+answer whenever three lines will do**: a request without `Context`, or with three or fewer, runs
+exactly the path it ran before, and so does every file the in-process path declines. That keeps
+the escape hatch and the one implementation of SVN's semantics in charge of everything odd.
+
+**Protocol.** `DiffRequest.Context` and `RevisionDiffRequest.Context` are a `Core.DiffContext?`:
+null (and every older front-end) is svn's own three lines, `DiffContext(n)` is n lines, and
+`DiffContext.WholeFile` — `LinesAround` null — is every line. Null-versus-whole-file is two levels
+of null rather than a sentinel number, so neither can be mistaken for an amount. `DiffResponse.Context`
+says what the text holds: `DiffContext.Default` whenever svn wrote it, the requested context when
+the daemon did, null only from a daemon that predates the field. The App's "context unavailable"
+is exactly *asked for more, got something else*. A negative amount is refused.
+
+**Where the diff lives: `Subverted.Svn`, and why not Core.** The algorithm is not generic diff code
+— its correctness criterion is "the bytes `svn diff` prints", and every rule in it is an SVN fact:
+lines end at `\r\n`, lone `\r` and `\n`; hunks join only when fewer than 2N unchanged lines lie
+between them (five apart is one hunk at N = 3, six is two — GNU diff joins one line later); a
+count of one is dropped from `@@`; a missing final newline gets the platform's newline and then
+`\ No newline at end of file`; svn's own lines end in the platform's newline while content lines
+keep theirs. The search is a port of 1.8.15's `libsvn_diff/lcs.c` (Wu–Manber–Myers O(NP), its
+diagonal order and tie rule, lines only one side has skipped) with `diff_file.c`'s prefix and
+suffix trimming (50 suffix lines kept). A first version with textbook Wu tie-breaking disagreed
+with svn on ~1% of repetitive files — both minimal, different alignment; ported, it matched 5,000
+of 5,000 generated files. Output is svn-shaped text rather than a `DiffDocument`, so the parser,
+the CLI and the protocol are unchanged and "equal to svn" is a string comparison.
+
+**Working copy (`WorkingCopyContextDiff`).** BASE is the pristine named by `NODES.checksum`
+(`.svn/pristine/xx/<sha1>.svn-base`, `PRISTINE.compression` null, size checked against
+`PRISTINE.size`), compared with the working file brought to normal form. Measured on 1.8.15:
+`native` and `LF` are stored with `\n`, **`CRLF` with `\r\n` and `CR` with `\r`** (not all `\n`); a
+working file whose endings are all one kind — any kind — is compared with each replaced by the
+style's; one that mixes kinds makes `svn diff` fail with `E135000`. Answered in-process only for a
+file at op_depth 0, presence normal, not conflicted, no property change, readable plain file on disk,
+and properties `ComparableText` accepts. Declined, and left to `svn diff`: `svn:keywords` (svn
+contracts expanded keywords before comparing — measured, not reproduced), `svn:special`, any
+`svn:mime-type` not starting `text/` (svn's binary test; `text/plain` and `text/html` measured as
+text), an eol-style value svn would not accept, mixed endings, adds, copies (which diff against
+their source), deletes, missing files (svn prints nothing), property changes (svn prints a section),
+folders, and a wc.db this build cannot read.
+
+**History (`RevisionContextDiff`).** Four svn runs where `svn diff -c` is one: `diff --summarize
+--xml -c N` must name one file with `item="modified" props="none"`; `proplist -v --xml -r N`
+must be comparable; then `svn cat -r N-1` and `-r N`, both pegged at `URL@N` so history is followed
+as `-c` follows it. `svn cat` hands text back translated — a native file with this platform's
+endings, measured — so both sides are brought to normal form the same way. Revision 1, adds,
+deletes, copies, property changes and any failed run are declined.
+
+**Equivalence.** At three lines the in-process text must equal svn's, character for character — which
+implies the parsed documents are equal. Captured fixtures (`Svn.Tests/ContextDiff/Captures`, 21
+cases, both sides and svn's output as raw bytes) are compared byte for byte; the same cases run
+live against `svn diff` and `svn diff -c`, with the decline cases asserted to decline; and 100
+generated repetitive files are compared live on every run.
+
+**Cost, and the worst case.** Release, dev box (NVMe), a 50,000-line, 2.07 MB C#-like file with 5
+edited lines, 5 runs each: in-process **39–51 ms** at 10 lines and **46–84 ms** for the whole file
+with the file warm; **53–82 ms** with the working file and pristines evicted by
+`FILE_FLAG_NO_BUFFERING` (the read-only pass went 1.1–2.4 ms warm → 6.0–14.2 ms cold, which is what
+shows the eviction worked). `svn diff` of the same file through `SvnDiffCommand` took 2.3–3.1 s, not
+investigated. The search is O((M+N)·D) and stops after 10 million steps (`SvnStyleDiff.SearchBudget`),
+answering with svn's three lines and saying so: two unrelated 50,000-line files drawn from four
+distinct lines — the worst shape, since nothing is unique — gave up in **281–369 ms**. A plain
+rewrite is cheap regardless, because lines only one side has are skipped before the search.
+`tools/measure-context-diff.cs` re-takes all of it.
+
+**What it does not do.** Keyword files, binaries, property changes and tree changes never get more
+context. Two things are measured at three lines only, because no svn can print more: the hunk-join
+rule and header shape at other N are the same rules applied to N, not something svn was seen doing.
+The tie-breaking port is proven by sampling (5,000 files), not by proof.
+
+*Status: implemented. All seven test binaries green; the pure pieces at 100% line and branch.
+`WorkingCopyContextDiff`'s `SqliteException` catch is the one uncovered line — a query failing on a
+wc.db that opened — and no test reaches it. Seen in the real app: Changes at 3 lines and Whole file.
+Headless only: the "unavailable" line and History's dropdown. The live equivalence and alignment
+tests also pass against SlikSVN 1.14.5 on Windows (76 of 76); not run on Linux or macOS.*
 
 ### D3 — The working copy is authoritative
 
