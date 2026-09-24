@@ -52,7 +52,9 @@ SmartSVN**, in that look. This replaced the first shell's glass cards on 2026-09
   says "Live" — the stale banner over the table is what says it is not.
 - **Directory tree** on by default: every folder holding a change, with its count. Choosing one
   narrows the table exactly as the filter does, so what it hides is neither counted nor sent.
-- **File table** top right, flat, with its diff beneath at full width.
+- **File table** top right, flat, with its diff beneath at full width — **only once a row is
+  picked** (operator's call). Until then the table has the whole height; picking a row opens the
+  diff and scrolls the row back into view if the smaller table would hide it.
 - **Bottom strip:** the commit box beside an output log that keeps every commit and revert of the
   session with SVN's own text. The log takes its half only once a write is in it; until then, and
   after Clear, the commit box has the whole strip. Panes carry no caption rows — FOLDERS, COMMIT

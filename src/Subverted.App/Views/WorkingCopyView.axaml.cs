@@ -15,6 +15,19 @@ public sealed partial class WorkingCopyView : UserControl
         // Tunnelling, so Space and Enter reach the list's own commands before the ListBox or the
         // focused item treats them as selection keys. ↑/↓ are left to the ListBox.
         List.AddHandler(KeyDownEvent, OnListKeyDown, RoutingStrategies.Tunnel);
+        List.SizeChanged += OnListSizeChanged;
+    }
+
+    /// <summary>
+    /// Picking a row opens the diff beneath the table, which can shrink the table over the row
+    /// that was just clicked; this brings it back into view.
+    /// </summary>
+    private void OnListSizeChanged(object? sender, SizeChangedEventArgs e)
+    {
+        if (e.NewSize.Height < e.PreviousSize.Height && List.SelectedItem is { } picked)
+        {
+            List.ScrollIntoView(picked);
+        }
     }
 
     private void OnListKeyDown(object? sender, KeyEventArgs e)

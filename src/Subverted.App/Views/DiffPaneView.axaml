@@ -43,11 +43,6 @@
                          OpenInAppCommand="{Binding OpenInAppCommand}" />
 
         <StackPanel Spacing="10" HorizontalAlignment="Center" VerticalAlignment="Center"
-                    IsVisible="{Binding State, Converter={x:Static v:DiffPaneStateIs.NothingSelected}}">
-          <TextBlock Classes="faint" HorizontalAlignment="Center" Text="Select a change to see its diff" />
-        </StackPanel>
-
-        <StackPanel Spacing="10" HorizontalAlignment="Center" VerticalAlignment="Center"
                     IsVisible="{Binding State, Converter={x:Static v:DiffPaneStateIs.Loading}}">
           <ProgressBar Classes="spinner" />
           <TextBlock Classes="muted" HorizontalAlignment="Center" Text="Reading the diff…" />

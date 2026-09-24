@@ -29,7 +29,11 @@ public sealed partial class DiffPaneViewModel(
     private string? _path;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasSelection))]
     public partial DiffPaneState State { get; private set; } = DiffPaneState.NothingSelected;
+
+    /// <summary>A row is picked, whatever its diff came to — the pane is on screen only while it is.</summary>
+    public bool HasSelection => State != DiffPaneState.NothingSelected;
 
     /// <summary>The row whose diff is shown, which carries the badge the pane's header draws.</summary>
     [ObservableProperty]

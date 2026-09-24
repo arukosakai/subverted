@@ -35,6 +35,30 @@ public sealed class DiffPaneViewModelTests
         await Assert.That(pane.OpenInAppCommand.CanExecute(null)).IsFalse();
     }
 
+    /// <summary>The pane takes room only while a row is picked — a failed diff is still a picked row.</summary>
+    [Test]
+    public async Task The_pane_has_a_selection_from_the_pick_until_it_is_cleared()
+    {
+        _diffs.Answers(new ErrorResponse(DaemonErrorKind.SvnCommandFailed, "refused"));
+        var pane = Pane();
+        var announced = new List<string>();
+        pane.PropertyChanged += (_, change) => announced.Add(change.PropertyName!);
+        var beforeAnyPick = pane.HasSelection;
+
+        var selecting = pane.SelectAsync(Child, "/wc/sub/child.txt");
+        var whileLoading = pane.HasSelection;
+        _clock.Advance(Debounce);
+        await selecting;
+        var afterAFailure = (pane.State, pane.HasSelection);
+        pane.Clear();
+
+        await Assert.That(beforeAnyPick).IsFalse();
+        await Assert.That(whileLoading).IsTrue();
+        await Assert.That(afterAFailure).IsEqualTo((DiffPaneState.Failed, true));
+        await Assert.That(pane.HasSelection).IsFalse();
+        await Assert.That(announced).Contains(nameof(DiffPaneViewModel.HasSelection));
+    }
+
     [Test]
     public async Task A_selection_shows_as_loading_at_once_and_is_not_asked_about_before_the_debounce()
     {

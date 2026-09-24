@@ -260,7 +260,43 @@ public sealed class MainWindowRenderTests
         var changed = await PanesShownAsync(Studio(), "changed-panes.png");
 
         await Assert.That(clean).IsEqualTo((false, false, false, false));
-        await Assert.That(changed).IsEqualTo((true, true, true, true));
+        await Assert.That(changed).IsEqualTo((true, false, true, true));
+    }
+
+    /// <summary>The diff takes room only once a row is picked, and the table gives it back on a clear.</summary>
+    [Test]
+    public async Task Picking_a_row_opens_the_diff_beneath_the_table()
+    {
+        var (before, picked, cleared) = await HeadlessApp.Session.Dispatch(
+            async () =>
+            {
+                var window = await ShowAsync("Dark", new FakeRecentStore("/studio/game"), Studio());
+                var current = ((MainWindowViewModel)window.DataContext!).Current!;
+                var list = Named<ListBox>(window, "List");
+                var pane = window.GetVisualDescendants().OfType<DiffPaneView>().Single();
+                (bool Shown, double Height) Look()
+                {
+                    Dispatcher.UIThread.RunJobs();
+                    window.UpdateLayout();
+                    return (pane.IsEffectivelyVisible, list.Bounds.Height);
+                }
+
+                var before = Look();
+                current.Select("art/characters/hero.png");
+                var picked = Look();
+                Save(window, "diff-picked.png");
+                current.SelectedEntry = null;
+                var cleared = Look();
+                window.Close();
+                return (before, picked, cleared);
+            },
+            CancellationToken.None
+        );
+
+        await Assert.That(before.Shown).IsFalse();
+        await Assert.That(picked.Shown).IsTrue();
+        await Assert.That(picked.Height).IsLessThan(before.Height);
+        await Assert.That(cleared).IsEqualTo(before);
     }
 
     /// <summary>Committing everything empties the listing, and what the commit said must not go with it.</summary>

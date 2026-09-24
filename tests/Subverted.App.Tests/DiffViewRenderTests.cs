@@ -590,13 +590,14 @@ public sealed class DiffViewRenderTests
     }
 
     /// <summary>
-    /// Only the default state: the pane's other states are set by its view model's own behaviour,
+    /// Only the default state, which the Changes screen hides the pane in, so there is no hint to
+    /// read. The pane's other states are set by its view model's own behaviour,
     /// which has no public way in from a test of the view.
     /// </summary>
     [Test]
     [Arguments("Dark")]
     [Arguments("Light")]
-    public async Task The_diff_pane_with_nothing_selected_asks_for_a_selection(string variant)
+    public async Task The_diff_pane_with_nothing_selected_says_nothing(string variant)
     {
         var texts = await RenderAsync(
             variant,
@@ -606,9 +607,7 @@ public sealed class DiffViewRenderTests
             unframed: true
         );
 
-        await Assert
-            .That(texts)
-            .IsEquivalentTo(["Select a change to see its diff"], CollectionOrdering.Matching);
+        await Assert.That(texts).IsEmpty();
     }
 
     private static Task<T> RenderAsync<T>(

@@ -21,6 +21,10 @@
     <Style Selector="TextBlock.root">
       <Setter Property="FontWeight" Value="SemiBold" />
     </Style>
+    <!-- Until a row is picked the diff has nothing to show, and the table takes its rows too. -->
+    <Style Selector="DockPanel.alone">
+      <Setter Property="Grid.RowSpan" Value="3" />
+    </Style>
     <Style Selector="TextBlock.column">
       <Setter Property="FontSize" Value="11" />
       <Setter Property="FontWeight" Value="SemiBold" />
@@ -94,7 +98,7 @@
             <RowDefinition Height="*" MinHeight="140" />
           </Grid.RowDefinitions>
 
-          <DockPanel Grid.Row="0">
+          <DockPanel Grid.Row="0" Classes.alone="{Binding !Diff.HasSelection}">
             <!-- The filter, and what it hides. Acting on a row is its menu's job. -->
             <Border DockPanel.Dock="Top" Classes="pane-header" Height="40">
               <Grid ColumnDefinitions="260,Auto">
@@ -202,10 +206,11 @@
             </Panel>
           </DockPanel>
 
-          <Border Grid.Row="1" Background="{DynamicResource LineBrush}" />
-          <GridSplitter Grid.Row="1" Background="Transparent" Height="5" Margin="0,-2" ResizeDirection="Rows" />
+          <Border Grid.Row="1" Background="{DynamicResource LineBrush}" IsVisible="{Binding Diff.HasSelection}" />
+          <GridSplitter Grid.Row="1" Background="Transparent" Height="5" Margin="0,-2" ResizeDirection="Rows"
+                        IsVisible="{Binding Diff.HasSelection}" />
 
-          <v:DiffPaneView Grid.Row="2" DataContext="{Binding Diff}" />
+          <v:DiffPaneView Grid.Row="2" DataContext="{Binding Diff}" IsVisible="{Binding HasSelection}" />
         </Grid>
       </Grid>
 
