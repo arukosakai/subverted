@@ -9,21 +9,12 @@
   </UserControl.KeyBindings>
 
   <DockPanel>
-    <Border DockPanel.Dock="Top" Classes="pane-header">
-      <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-        <Path Classes="icon" Data="{StaticResource Icon.Commit}" Width="14" Height="14" />
-        <TextBlock Classes="section" Text="COMMIT" VerticalAlignment="Center" />
-      </StackPanel>
-    </Border>
-
-    <Grid DockPanel.Dock="Bottom" ColumnDefinitions="*,Auto" Margin="12,0,12,10">
-      <TextBlock Classes="faint" FontSize="11.5" VerticalAlignment="Center" Text="Ctrl+Enter" />
-      <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10">
-        <ProgressBar Classes="spinner" Width="60" VerticalAlignment="Center" IsVisible="{Binding IsCommitting}" />
-        <Button x:Name="CommitButton" Classes="accent" Content="{Binding ButtonText}"
-                Command="{Binding CommitCommand}" AutomationProperties.Name="{Binding ButtonText}" />
-      </StackPanel>
-    </Grid>
+    <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Spacing="10" HorizontalAlignment="Right"
+                Margin="12,0,12,10">
+      <ProgressBar Classes="spinner" Width="60" VerticalAlignment="Center" IsVisible="{Binding IsCommitting}" />
+      <Button x:Name="CommitButton" Classes="accent" Content="{Binding ButtonText}" ToolTip.Tip="Ctrl+Enter"
+              Command="{Binding CommitCommand}" AutomationProperties.Name="{Binding ButtonText}" />
+    </StackPanel>
 
     <v:NoticeView DockPanel.Dock="Bottom" x:Name="CommitNotice" Margin="12,0,12,8"
                   Notice="{Binding Notice}" DismissCommand="{Binding DismissNoticeCommand}" />

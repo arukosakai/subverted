@@ -62,6 +62,10 @@
     <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
     <Setter Property="BorderThickness" Value="0,0,1,0" />
   </Style>
+  <Style Selector="Border.line-left">
+    <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
+    <Setter Property="BorderThickness" Value="1,0,0,0" />
+  </Style>
   <Style Selector="Border.line-top">
     <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
     <Setter Property="BorderThickness" Value="0,1,0,0" />

@@ -151,19 +151,21 @@
         </Panel>
       </Panel>
 
-      <!-- The bottom strip, SmartSVN's: write a message on the left, read what every write said on the right. -->
+      <!-- The bottom strip, SmartSVN's: write a message on the left, read what every write said on the
+           right. The log takes its half only once there is something in it; UniformGrid skips it until then. -->
       <Border Grid.Row="2" Height="1" Background="{DynamicResource LineBrush}" IsVisible="{Binding #Strip.IsVisible}" />
-      <Grid Grid.Row="3" x:Name="Strip" Height="200" ColumnDefinitions="*,1,*">
-        <Grid.IsVisible>
+      <UniformGrid Grid.Row="3" x:Name="Strip" Height="170" Rows="1">
+        <UniformGrid.IsVisible>
           <MultiBinding Converter="{x:Static BoolConverters.And}">
             <Binding Path="HasWorkingCopy" />
             <Binding Path="IsShowingChanges" />
           </MultiBinding>
-        </Grid.IsVisible>
-        <v:CommitComposerView Grid.Column="0" x:Name="Composer" DataContext="{Binding Current.Composer, FallbackValue={x:Null}}" />
-        <Border Grid.Column="1" Background="{DynamicResource LineBrush}" />
-        <v:OutputLogView Grid.Column="2" x:Name="OutputLog" DataContext="{Binding Log}" />
-      </Grid>
+        </UniformGrid.IsVisible>
+        <v:CommitComposerView x:Name="Composer" DataContext="{Binding Current.Composer, FallbackValue={x:Null}}" />
+        <Border Classes="line-left" IsVisible="{Binding !Log.IsEmpty}">
+          <v:OutputLogView x:Name="OutputLog" DataContext="{Binding Log}" />
+        </Border>
+      </UniformGrid>
 
       <!-- First run: the one thing to do, said once, in the middle. -->
       <StackPanel Grid.Row="1" Grid.RowSpan="3" Spacing="12" HorizontalAlignment="Center" VerticalAlignment="Center"

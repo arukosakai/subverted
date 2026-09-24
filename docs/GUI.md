@@ -52,7 +52,9 @@ SmartSVN**, in that look. This replaced the first shell's glass cards on 2026-09
   narrows the table exactly as the filter does, so what it hides is neither counted nor sent.
 - **File table** top right, flat, with its diff beneath at full width.
 - **Bottom strip:** the commit box beside an output log that keeps every commit and revert of the
-  session with SVN's own text. A SmartSVN-style popup review window is an acceptable alternative the
+  session with SVN's own text. The log takes its half only once a write is in it; until then, and
+  after Clear, the commit box has the whole strip. Panes carry no caption rows — FOLDERS, COMMIT
+  and DIFF labelled what the content already said — and the diff's header shows only with a file. A SmartSVN-style popup review window is an acceptable alternative the
   operator named; it is not built.
 - **History** uses the same frame — the revisions table on top with the pinned "Local changes"
   line, and the picked revision's paths beside its diff beneath. The bottom strip is Changes' only.

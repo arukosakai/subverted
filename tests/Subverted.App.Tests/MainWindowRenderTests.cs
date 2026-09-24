@@ -1,5 +1,6 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.Headless;
 using Avalonia.Media.Imaging;
 using Avalonia.Styling;
@@ -194,6 +195,59 @@ public sealed class MainWindowRenderTests
                 Entry("notes.txt", NodeStatus.Unversioned)
             )
         );
+
+    /// <summary>The bottom strip is all commit box until a write has something to say.</summary>
+    [Test]
+    public async Task The_output_log_takes_half_the_strip_only_once_a_write_is_in_it()
+    {
+        var (before, after) = await HeadlessApp.Session.Dispatch(
+            async () =>
+            {
+                var window = await ShowAsync(
+                    "Dark",
+                    new FakeRecentStore("/studio/game"),
+                    Studio(),
+                    new FakeWorkingCopyCommit().Answers(FakeWorkingCopyCommit.Committed(8))
+                );
+                var before = StripShares(window);
+
+                var composer = ((MainWindowViewModel)window.DataContext!).Current!.Composer;
+                composer.Message = "Hero pass";
+                await composer.CommitCommand.ExecuteAsync(null);
+                Dispatcher.UIThread.RunJobs();
+                window.UpdateLayout();
+                Save(window, "output-log-after-commit.png");
+                var after = StripShares(window);
+
+                window.Close();
+                return (before, after);
+            },
+            CancellationToken.None
+        );
+
+        await Assert.That(before).IsEqualTo((false, 1.0));
+        await Assert.That(after).IsEqualTo((true, 0.5));
+    }
+
+    private static (bool LogShown, double ComposerShare) StripShares(MainWindow window)
+    {
+        var strip = window
+            .GetVisualDescendants()
+            .OfType<UniformGrid>()
+            .Single(g => g.Name == "Strip");
+        var composer = window
+            .GetVisualDescendants()
+            .OfType<CommitComposerView>()
+            .Single(view => view.Name == "Composer");
+        var log = window
+            .GetVisualDescendants()
+            .OfType<OutputLogView>()
+            .Single(view => view.Name == "OutputLog");
+        return (
+            log.IsEffectivelyVisible,
+            Math.Round(composer.Bounds.Width / strip.Bounds.Width, 2)
+        );
+    }
 
     [Test]
     public async Task A_clean_working_copy_renders_no_rows()

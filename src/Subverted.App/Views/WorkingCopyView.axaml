@@ -40,9 +40,6 @@
 
     <!-- Directory tree: every folder holding a change, with how many. Choosing one narrows the table. -->
     <DockPanel Grid.Column="0" Background="{DynamicResource SurfaceBrush}">
-      <Border DockPanel.Dock="Top" Classes="pane-header">
-        <TextBlock Classes="section" Text="FOLDERS" VerticalAlignment="Center" />
-      </Border>
       <ListBox x:Name="Folders" Classes="table" ItemsSource="{Binding Folders}"
                SelectedItem="{Binding SelectedFolder, Mode=TwoWay}" AutomationProperties.Name="Folders">
         <ListBox.Styles>
