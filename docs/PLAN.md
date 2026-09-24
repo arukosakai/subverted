@@ -419,8 +419,8 @@ Avalonia front-end over the same daemon. Update, commit, diff, log. Nothing clev
   was decided by running `svn delete --force` on 1.8.15 against every status a line can have.
   **An obstruction (`~`) wedges the working copy, and `svn cleanup` cannot undo that.** An external
   inside a folder is deleted with its edits, and SVN prints nothing for it. The rules are in
-  `Frontend`. Driven through the real view model, adapter and daemon on a throwaway repository;
-  not seen in the real app. **`sv rm` does not use them yet, and disagrees with them in three
+  `Frontend`. Driven through the real view model, adapter and daemon on a throwaway repository,
+  and seen in the real app deleting an edited file. **`sv rm` does not use them yet, and disagrees with them in three
   places:** its preview calls an added file recoverable, which it is not, it says nothing about an
   external's contents, and it will send an obstruction.
 - **A bug pass over what was built (2026-09-24).** Reviewed across the Changes screen, the diff

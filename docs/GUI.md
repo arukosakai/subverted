@@ -171,8 +171,10 @@ real `DeletePromptViewModel`, adapter and daemon on a throwaway repository: a fo
 edit, an add, a `?` and an ignored file listed all four as lost. A file saved into it while the
 question was open made Confirm ask again. The second Confirm deleted it, and `svn revert` then
 brought back exactly the versioned files, at their pristine. A clean file deleted, and an
-obstruction was refused with nothing written. Not seen in the real app: the menu item, the overlay
-and the notice (headless tests and a render only), and nothing on macOS.
+obstruction was refused with nothing written. **Seen in the real app** on a throwaway
+`subverted-delete-check`, clicked through UI Automation: Delete… on an edited file's menu, the
+overlay saying its edits go with it, then `D` in `svn status`, the notice and the log line; greyed
+on a `?` line. Not seen there: a folder, the re-ask, a refusal, and nothing on macOS.
 
 ### 4. History
 
