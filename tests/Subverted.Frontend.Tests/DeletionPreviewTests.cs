@@ -83,7 +83,10 @@ public sealed class DeletionPreviewTests
     {
         WorkingCopyEntry[] listing = [Node("art", kind: NodeKind.Directory), Node("Art/a.png")];
 
-        await Assert.That(DeletionPreview.Of("art", listing, comparison).Lines).Count().IsEqualTo(lines);
+        await Assert
+            .That(DeletionPreview.Of("art", listing, comparison).Lines)
+            .Count()
+            .IsEqualTo(lines);
     }
 
     [Test]
@@ -150,7 +153,9 @@ public sealed class DeletionPreviewTests
         WorkingCopyEntry[] listing =
         [
             Node("art", kind: NodeKind.Directory),
-            .. Enumerable.Range(0, 1200).Select(index => Node($"art/{index}.tmp", NodeStatus.Unversioned)),
+            .. Enumerable
+                .Range(0, 1200)
+                .Select(index => Node($"art/{index}.tmp", NodeStatus.Unversioned)),
         ];
 
         await Assert

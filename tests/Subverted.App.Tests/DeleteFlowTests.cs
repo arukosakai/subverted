@@ -243,7 +243,9 @@ public sealed class DeleteFlowTests
     public async Task While_deleting_the_question_can_be_neither_changed_confirmed_nor_cancelled()
     {
         var release = new TaskCompletionSource();
-        _deletions.Lists(Listing(Entry("a.png"), Entry("b.png"))).Answers(new DeleteResponse(""), release.Task);
+        _deletions
+            .Lists(Listing(Entry("a.png"), Entry("b.png")))
+            .Answers(new DeleteResponse(""), release.Task);
         var view = await ListedAsync(Listing(Entry("a.png"), Entry("b.png")));
         await view.DeleteCommand.ExecuteAsync(Line(view, "a.png"));
 
@@ -308,8 +310,12 @@ public sealed class DeleteFlowTests
         var folder = Entry("art", NodeStatus.Unmodified, kind: NodeKind.Directory);
         _deletions
             .Lists(Listing(folder, Entry("art/a.png")))
-            .Lists(Listing(folder, Entry("art/a.png"), Entry("art/new.psd", NodeStatus.Unversioned)));
-        var view = await ListedAsync(Listing(Entry("art", NodeStatus.Modified, kind: NodeKind.Directory)));
+            .Lists(
+                Listing(folder, Entry("art/a.png"), Entry("art/new.psd", NodeStatus.Unversioned))
+            );
+        var view = await ListedAsync(
+            Listing(Entry("art", NodeStatus.Modified, kind: NodeKind.Directory))
+        );
         await view.DeleteCommand.ExecuteAsync(Line(view, "art"));
 
         await view.DeletePrompt.ConfirmCommand.ExecuteAsync(null);
@@ -345,7 +351,9 @@ public sealed class DeleteFlowTests
     [Test]
     public async Task A_target_deleted_elsewhere_under_the_question_sends_nothing_and_says_so()
     {
-        _deletions.Lists(Listing(Entry("a.png"))).Lists(Listing(Entry("a.png", NodeStatus.Deleted)));
+        _deletions
+            .Lists(Listing(Entry("a.png")))
+            .Lists(Listing(Entry("a.png", NodeStatus.Deleted)));
         var view = await ListedAsync(Listing(Entry("a.png")));
         await view.DeleteCommand.ExecuteAsync(Line(view, "a.png"));
 

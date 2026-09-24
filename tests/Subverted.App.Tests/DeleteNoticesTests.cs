@@ -5,7 +5,8 @@ namespace Subverted.App.Tests;
 
 public sealed class DeleteNoticesTests
 {
-    private const string PartWay = "Some of it may already be deleted; the list shows what is left.";
+    private const string PartWay =
+        "Some of it may already be deleted; the list shows what is left.";
 
     [Test]
     public async Task A_delete_that_went_through_says_how_to_record_or_undo_it()
@@ -55,7 +56,12 @@ public sealed class DeleteNoticesTests
         await Assert
             .That(DeleteNotices.NothingLeft("art/a.png"))
             .IsEqualTo(
-                new Notice(NoticeKind.NothingWritten, "Nothing left to delete at art/a.png", null, null)
+                new Notice(
+                    NoticeKind.NothingWritten,
+                    "Nothing left to delete at art/a.png",
+                    null,
+                    null
+                )
             );
     }
 

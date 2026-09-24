@@ -170,7 +170,12 @@ public sealed class MainWindowRenderTests
     [Test]
     public async Task The_delete_question_renders_over_the_list()
     {
-        var props = Entry("art/props", NodeStatus.Unmodified, PropertyStatus.Modified, kind: NodeKind.Directory);
+        var props = Entry(
+            "art/props",
+            NodeStatus.Unmodified,
+            PropertyStatus.Modified,
+            kind: NodeKind.Directory
+        );
         var deletions = new FakeWorkingCopyDeletion().Lists(
             Listing(
                 props,

@@ -18,7 +18,12 @@ public sealed class DeletePromptViewTests
     {
         var deletions = new FakeWorkingCopyDeletion().Lists(
             Listing(
-                Entry("art", NodeStatus.Unmodified, PropertyStatus.Modified, kind: NodeKind.Directory),
+                Entry(
+                    "art",
+                    NodeStatus.Unmodified,
+                    PropertyStatus.Modified,
+                    kind: NodeKind.Directory
+                ),
                 Entry("art/a.png", NodeStatus.Unmodified),
                 Entry("art/notes.txt", NodeStatus.Unversioned)
             )

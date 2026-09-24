@@ -11,7 +11,7 @@ unpushed work lives. A bug here does not fail a build, it loses a day of someone
 ```bash
 dotnet tool restore                                   # once, after clone
 dotnet build Subverted.slnx
-tests/<Name>/bin/Debug/net10.0/<Name>.exe             # 3137 across seven, all must pass; needs `svn`
+tests/<Name>/bin/Debug/net10.0/<Name>.exe             # 3230 across seven, all must pass; needs `svn`
 bash tools/run-tests.sh                               # all seven in one go — what CI runs
 dotnet test                                           # often reports zero — read the note below
 dotnet test --coverage --coverage-output-format cobertura

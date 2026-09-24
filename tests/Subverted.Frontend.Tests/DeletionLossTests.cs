@@ -59,9 +59,7 @@ public sealed class DeletionLossTests
     {
         await Assert
             .That(DeletionLoss.For(Node("a.png", NodeStatus.Modified)))
-            .IsEqualTo(
-                new DeletionLine("a.png", "Deleted from disk, and its edits with it", true)
-            );
+            .IsEqualTo(new DeletionLine("a.png", "Deleted from disk, and its edits with it", true));
     }
 
     [Test]
