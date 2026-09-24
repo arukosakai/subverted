@@ -273,7 +273,9 @@ public sealed class LockFlowTests
         await Assert.That(worked.CanTick).IsTrue();
         await Assert.That(view.Ticked).IsEquivalentTo(["art/worked.psd"]);
         await Assert.That(view.Composer.ButtonText).IsEqualTo(CommitButtonText.For(1));
-        await Assert.That(string.Join(",", view.Changes.Select(row => row.RelPath))).IsEqualTo("art/worked.psd");
+        await Assert
+            .That(string.Join(",", view.Changes.Select(row => row.RelPath)))
+            .IsEqualTo("art/worked.psd");
         await Assert
             .That(view.Folders.Select(folder => (folder.Content.RelPath, folder.Content.Count)))
             .IsEquivalentTo([("", 1), ("art", 1)]);

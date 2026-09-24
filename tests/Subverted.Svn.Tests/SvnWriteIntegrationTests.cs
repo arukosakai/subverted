@@ -413,10 +413,9 @@ public sealed class SvnWriteIntegrationTests
     }
 
     private static async Task<bool> HoldsLockAsync(SvnWorkingCopy copy, string relPath) =>
-        (await Svn.RunAsync(copy.Root, ["info", copy.Absolute(relPath)], None)).StandardOutput.Contains(
-            "Lock Token:",
-            StringComparison.Ordinal
-        );
+        (
+            await Svn.RunAsync(copy.Root, ["info", copy.Absolute(relPath)], None)
+        ).StandardOutput.Contains("Lock Token:", StringComparison.Ordinal);
 
     private static SvnWorkingCopy OneCommit()
     {

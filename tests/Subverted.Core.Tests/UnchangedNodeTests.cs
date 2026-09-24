@@ -71,11 +71,7 @@ public sealed class UnchangedNodeTests
     [Test]
     public async Task A_held_lock_on_edited_content_is_a_change()
     {
-        var heldAndEdited = Untouched with
-        {
-            Status = NodeStatus.Modified,
-            HasLockToken = true,
-        };
+        var heldAndEdited = Untouched with { Status = NodeStatus.Modified, HasLockToken = true };
 
         await Assert.That(UnchangedNode.Is(heldAndEdited)).IsFalse();
     }
