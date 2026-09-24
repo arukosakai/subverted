@@ -40,6 +40,31 @@ internal sealed class SvnWorkingCopy : IDisposable
     /// behaviour, so without it there is nothing to assert against and pretending otherwise would
     /// be worse than skipping.
     /// </exception>
+    /// <summary>
+    /// The temp directory with any symlink in it resolved. svn reports real paths, and macOS's temp
+    /// directory is reached through <c>/var</c> → <c>/private/var</c>; a checkout under a user's
+    /// home, the case that matters, has no link in it.
+    /// </summary>
+    private static readonly Lazy<string> ResolvedTempPath = new(() =>
+        WithLinksResolved(Path.GetTempPath())
+    );
+
+    private static string WithLinksResolved(string path)
+    {
+        var full = Path.GetFullPath(path);
+        var resolved = Path.GetPathRoot(full)!;
+        foreach (
+            var segment in full[resolved.Length..]
+                .Split(Path.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries)
+        )
+        {
+            var next = new DirectoryInfo(Path.Combine(resolved, segment));
+            resolved = next.ResolveLinkTarget(returnFinalTarget: true)?.FullName ?? next.FullName;
+        }
+
+        return resolved;
+    }
+
     public static SvnWorkingCopy Create()
     {
         if (!Available.Value)
@@ -47,7 +72,7 @@ internal sealed class SvnWorkingCopy : IDisposable
             throw new SkipTestException("The svn command-line client is not on PATH.");
         }
 
-        var basePath = Path.Combine(Path.GetTempPath(), $"subverted-it-{Guid.NewGuid():N}");
+        var basePath = Path.Combine(ResolvedTempPath.Value, $"subverted-it-{Guid.NewGuid():N}");
         var repository = Path.Combine(basePath, "repo");
         var root = Path.Combine(basePath, "wc");
         Directory.CreateDirectory(basePath);
@@ -149,6 +174,11 @@ internal sealed class SvnWorkingCopy : IDisposable
         {
             startInfo.ArgumentList.Add(argument);
         }
+
+        startInfo.Environment["LC_ALL"] = SvnLocale.LcAllFor(
+            OperatingSystem.IsWindows(),
+            OperatingSystem.IsMacOS()
+        );
 
         try
         {

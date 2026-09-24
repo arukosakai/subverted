@@ -33,12 +33,12 @@ public sealed class SvnLockIntegrationTests
     }
 
     /// <summary>
-    /// The rule the whole design turns on. SVN writes a warning to stderr, locks nothing, and
-    /// <b>exits zero</b> — so an artist who trusts the exit code opens a file somebody else is
-    /// already painting, and one of the two afternoons is going to be thrown away.
+    /// The rule the whole design turns on. SVN writes a warning to stderr and locks nothing; 1.8
+    /// <b>exits zero</b>, so trusting the exit code opens a file somebody else is already editing,
+    /// and 1.14 exits one, so treating that as a failure would lose which paths did lock.
     /// </summary>
     [Test]
-    public async Task A_path_somebody_else_holds_is_refused_although_the_client_reports_success()
+    public async Task A_path_somebody_else_holds_is_refused_whatever_the_client_exits_with()
     {
         using var copy = OneCommit();
         using var teammate = copy.AnotherCheckout();
@@ -168,10 +168,10 @@ public sealed class SvnLockIntegrationTests
 
     /// <summary>
     /// How somebody finds out their lock was stolen. The token is gone from the server, SVN says so
-    /// as a warning and exits zero, and the local token is dropped either way.
+    /// as a warning — exiting zero on 1.8 and one on 1.14 — and the local token is dropped either way.
     /// </summary>
     [Test]
-    public async Task Unlocking_a_lock_that_was_stolen_is_refused_although_the_client_succeeds()
+    public async Task Unlocking_a_lock_that_was_stolen_is_refused_whatever_the_client_exits_with()
     {
         using var copy = OneCommit();
         copy.Svn("lock", "art/hero.png");

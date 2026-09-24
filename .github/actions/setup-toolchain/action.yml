@@ -3,6 +3,14 @@ description: >
   The .NET SDK global.json pins, the repo's local tools, and the `svn` command line — the test
   suite drives real working copies, and everything but `sv st` shells out to it.
 
+inputs:
+  svn-version:
+    description: >
+      Windows only: the SlikSVN release to unpack, e.g. 1.8.15 or 1.14.5. Linux and macOS take the
+      package manager's svn, which is 1.14 on both.
+    required: false
+    default: 1.14.5
+
 runs:
   using: composite
   steps:
@@ -20,12 +28,31 @@ runs:
       shell: bash
       run: command -v svn || brew install subversion
 
+    # SlikSVN 1.8 links MSVCR100.dll, which its installer brings along and unpacking does not.
+    - name: Install the VC++ 2010 runtime (Windows, svn 1.8)
+      if: runner.os == 'Windows' && startsWith(inputs.svn-version, '1.8.')
+      shell: pwsh
+      run: choco install vcredist2010 -y --no-progress
+
+    # Unpacked rather than installed, so the version is exactly the one asked for.
     - name: Install svn (Windows)
       if: runner.os == 'Windows'
       shell: pwsh
+      env:
+        SVN_VERSION: ${{ inputs.svn-version }}
       run: |
-        choco install sliksvn -y --no-progress
-        Add-Content $env:GITHUB_PATH 'C:\Program Files\SlikSvn\bin'
+        $msi = Join-Path $env:RUNNER_TEMP "slik-$env:SVN_VERSION.msi"
+        $target = Join-Path $env:RUNNER_TEMP "slik-$env:SVN_VERSION"
+        $log = Join-Path $env:RUNNER_TEMP "slik-$env:SVN_VERSION.log"
+        Invoke-WebRequest "https://sliksvn.com/pub/Slik-Subversion-$env:SVN_VERSION-x64.msi" -OutFile $msi
+        Write-Host "Downloaded $((Get-Item $msi).Length) bytes"
+        $unpack = Start-Process msiexec -PassThru -Wait -ArgumentList '/a', "`"$msi`"", '/qn', "TARGETDIR=`"$target`"", '/l*v', "`"$log`""
+        $svn = Get-ChildItem $target -Recurse -Filter svn.exe -ErrorAction SilentlyContinue | Select-Object -First 1
+        if (-not $svn) {
+          Get-Content $log -Tail 40 -ErrorAction SilentlyContinue
+          throw "msiexec exited $($unpack.ExitCode) and left no svn.exe under $target"
+        }
+        Add-Content $env:GITHUB_PATH $svn.DirectoryName
 
     - name: Show svn version
       shell: bash

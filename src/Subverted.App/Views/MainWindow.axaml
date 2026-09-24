@@ -24,7 +24,15 @@
         <SolidColorBrush Color="{DynamicResource RailColor}" Opacity="0.7" />
       </Border.Background>
       <Grid RowDefinitions="44,*,Auto">
-        <Border Grid.Row="0" Background="Transparent" WindowDecorationProperties.ElementRole="TitleBar" />
+        <!-- The title line runs on through the rail's corner, and the mark lets drags through to it. -->
+        <Border Grid.Row="0" Classes="line-bottom" Background="Transparent"
+                WindowDecorationProperties.ElementRole="TitleBar">
+          <Border x:Name="AppMark" Width="28" Height="28" CornerRadius="{StaticResource CardRadius}"
+                  Background="{DynamicResource SurfaceBrush}" IsHitTestVisible="False">
+            <Path Classes="icon" Data="{StaticResource Icon.Branch}" Width="16" Height="16"
+                  StrokeThickness="2" Stroke="{DynamicResource TextBrush}" />
+          </Border>
+        </Border>
 
         <StackPanel Grid.Row="1" Spacing="6" HorizontalAlignment="Center" Margin="0,6,0,0">
           <Button x:Name="ChangesView" Classes="nav" Classes.active="{Binding IsShowingChanges}"
@@ -112,11 +120,25 @@
                      TextTrimming="CharacterEllipsis" IsHitTestVisible="False"
                      Text="{Binding Current.RepositoryRoot, FallbackValue=''}" />
 
-          <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="7" VerticalAlignment="Center"
-                      IsHitTestVisible="False" ToolTip.Tip="Kept current by the daemon while this window is in front"
-                      IsVisible="{Binding Current.State, Converter={x:Static v:StateIs.Ready}, FallbackValue=False}">
-            <Ellipse Classes="live" VerticalAlignment="Center" />
-            <TextBlock Classes="muted" FontSize="12" Text="Live" />
+          <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="14" VerticalAlignment="Center">
+            <Button x:Name="UpdateButton" Classes="flat" IsVisible="{Binding HasWorkingCopy}"
+                    Command="{Binding Current.Updater.UpdateCommand, FallbackValue={x:Null}}"
+                    ToolTip.Tip="Bring in what has been committed since, merging it with your changes"
+                    AutomationProperties.Name="Update">
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <Path Classes="icon" Data="{StaticResource Icon.Download}" Width="14" Height="14" />
+                <TextBlock FontSize="12" Text="Updating…"
+                           IsVisible="{Binding Current.Updater.IsUpdating, FallbackValue=False}" />
+                <TextBlock FontSize="12" Text="Update"
+                           IsVisible="{Binding !Current.Updater.IsUpdating, FallbackValue=True}" />
+              </StackPanel>
+            </Button>
+            <StackPanel Orientation="Horizontal" Spacing="7" VerticalAlignment="Center"
+                        IsHitTestVisible="False" ToolTip.Tip="Kept current by the daemon while this window is in front"
+                        IsVisible="{Binding Current.State, Converter={x:Static v:StateIs.Ready}, FallbackValue=False}">
+              <Ellipse Classes="live" VerticalAlignment="Center" />
+              <TextBlock Classes="muted" FontSize="12" Text="Live" />
+            </StackPanel>
           </StackPanel>
       </Grid>
 

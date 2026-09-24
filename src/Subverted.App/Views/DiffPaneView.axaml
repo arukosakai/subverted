@@ -43,6 +43,7 @@
       <Panel>
         <v:DiffLinesView IsVisible="{Binding State, Converter={x:Static v:DiffPaneStateIs.Ready}}"
                          Document="{Binding Document}" SizeInBytes="{Binding SizeInBytes}"
+                         OldTitle="BASE" NewTitle="Working copy"
                          OpenInAppCommand="{Binding OpenInAppCommand}" />
 
         <StackPanel Spacing="10" HorizontalAlignment="Center" VerticalAlignment="Center"
