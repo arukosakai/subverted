@@ -17,6 +17,9 @@ public sealed class ListedLinesTests
     private static readonly ChangeRow Held = ChangeRow.From(
         Entry("art/held.psd", NodeStatus.Unmodified, hasLockToken: true)
     );
+    private static readonly ChangeRow HeldAndEdited = ChangeRow.From(
+        Entry("art/worked.psd", hasLockToken: true)
+    );
     private static readonly ChangeRow AddedFolder = ChangeRow.From(
         Entry("fx", NodeStatus.Added, kind: NodeKind.Directory)
     );
@@ -55,10 +58,20 @@ public sealed class ListedLinesTests
     }
 
     [Test]
-    public async Task A_row_is_unmodified_exactly_when_it_has_nothing_to_report()
+    public async Task A_row_is_clean_exactly_when_svn_status_would_leave_it_out()
+    {
+        await Assert.That(Untouched.IsClean).IsTrue();
+        await Assert.That(Held.IsClean).IsFalse();
+        await Assert.That(Edited.IsClean).IsFalse();
+    }
+
+    /// <summary>A held lock is listed, so it can be found and released, but is nothing to commit.</summary>
+    [Test]
+    public async Task A_row_is_unmodified_exactly_when_it_has_nothing_to_commit_whatever_it_holds()
     {
         await Assert.That(Untouched.IsUnmodified).IsTrue();
-        await Assert.That(Held.IsUnmodified).IsFalse();
+        await Assert.That(Held.IsUnmodified).IsTrue();
         await Assert.That(Edited.IsUnmodified).IsFalse();
+        await Assert.That(HeldAndEdited.IsUnmodified).IsFalse();
     }
 }

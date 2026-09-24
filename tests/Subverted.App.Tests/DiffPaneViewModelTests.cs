@@ -306,16 +306,30 @@ public sealed class DiffPaneViewModelTests
             .IsEqualTo("Unchanged: it matches the revision you last updated to.");
     }
 
-    /// <summary>A clean file listed for its lock is still asked about: it is a change row, not an unmodified one.</summary>
+    /// <summary>A lock changes nothing in the file, so the answer is known without asking.</summary>
     [Test]
-    public async Task A_clean_row_listed_for_its_lock_is_still_asked_about()
+    public async Task An_untouched_file_listed_for_its_lock_is_not_asked_about()
     {
         var held = ChangeRow.From(Entry("art/held.psd", NodeStatus.Unmodified, hasLockToken: true));
         var pane = Pane();
 
         await SelectAndWait(pane, held, "/wc/art/held.psd");
 
-        await Assert.That(_diffs.Paths).IsEquivalentTo(new[] { "/wc/art/held.psd" });
+        await Assert.That(_diffs.Paths).IsEmpty();
+        await Assert
+            .That(pane.Message)
+            .IsEqualTo("Unchanged: it matches the revision you last updated to.");
+    }
+
+    [Test]
+    public async Task An_edited_file_that_holds_a_lock_is_asked_about()
+    {
+        var worked = ChangeRow.From(Entry("art/worked.psd", hasLockToken: true));
+        var pane = Pane();
+
+        await SelectAndWait(pane, worked, "/wc/art/worked.psd");
+
+        await Assert.That(_diffs.Paths).IsEquivalentTo(new[] { "/wc/art/worked.psd" });
     }
 
     [Test]

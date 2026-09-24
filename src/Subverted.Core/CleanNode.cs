@@ -8,14 +8,10 @@ namespace Subverted.Core;
 public static class CleanNode
 {
     /// <remarks>
-    /// A held lock token, a conflict and a working-copy write lock each have their own
-    /// <c>svn status</c> column and print on content- and property-clean nodes, so none is clean.
-    /// An untouched node inside a copied directory is, as <c>svn status</c> hides it too.
+    /// An <see cref="UnchangedNode"/> can still hold a lock token or a working-copy write lock, and
+    /// each has its own <c>svn status</c> column, so neither is clean. An untouched node inside a
+    /// copied directory is, as <c>svn status</c> hides it too.
     /// </remarks>
     public static bool Is(WorkingCopyEntry entry) =>
-        entry.Status == NodeStatus.Unmodified
-        && entry.PropertyStatus == PropertyStatus.Unmodified
-        && !entry.IsConflicted
-        && !entry.HasLockToken
-        && !entry.IsWriteLocked;
+        UnchangedNode.Is(entry) && !entry.HasLockToken && !entry.IsWriteLocked;
 }

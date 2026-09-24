@@ -33,6 +33,48 @@ public sealed class ResolveFlowTests
         }
     }
 
+    /// <summary>The submenu header follows the picked line, and says so when the pick moves.</summary>
+    [Test]
+    public async Task The_resolve_submenu_is_offered_exactly_while_the_picked_line_has_a_conflict()
+    {
+        var view = await ListedAsync(Listing(Conflicted("art/hero.png"), Entry("notes.txt")));
+        var raised = 0;
+        view.PropertyChanged += (_, args) =>
+            raised += args.PropertyName == nameof(view.IsResolveOffered) ? 1 : 0;
+        var withNothingPicked = view.IsResolveOffered;
+
+        view.SelectedEntry = Line(view, "art/hero.png");
+        var onTheConflict = view.IsResolveOffered;
+        view.SelectedEntry = Line(view, "notes.txt");
+
+        await Assert.That(withNothingPicked).IsFalse();
+        await Assert.That(onTheConflict).IsTrue();
+        await Assert.That(view.IsResolveOffered).IsFalse();
+        await Assert.That(raised).IsEqualTo(2);
+    }
+
+    /// <summary>An update can put the picked line into conflict without the pick moving at all.</summary>
+    [Test]
+    public async Task A_resync_that_puts_the_picked_line_in_conflict_offers_the_submenu()
+    {
+        var status = new FakeWorkingCopyStatus()
+            .Answers(Listing(Entry("art/hero.png")))
+            .Answers(Listing(Conflicted("art/hero.png")));
+        var view = WorkingCopies.View(status);
+        await view.RefreshAsync(None);
+        view.SelectedEntry = Line(view, "art/hero.png");
+        var before = view.IsResolveOffered;
+        var raised = false;
+        view.PropertyChanged += (_, args) =>
+            raised |= args.PropertyName == nameof(view.IsResolveOffered);
+
+        await view.RefreshAsync(None);
+
+        await Assert.That(before).IsFalse();
+        await Assert.That(view.IsResolveOffered).IsTrue();
+        await Assert.That(raised).IsTrue();
+    }
+
     /// <summary>A conflicted folder resolves recursively, so its line is offered even with the conflict below it.</summary>
     [Test]
     public async Task A_listed_folder_with_a_conflict_beneath_it_is_offered()

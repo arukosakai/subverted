@@ -185,7 +185,8 @@ before, so a file an update left conflicted is offered for commit the moment it 
 
 Resolve is a **Resolve** submenu on a line's menu — Keep mine, Take theirs…, Mark as resolved —
 offered only where the line is conflicted or, for a listed folder, holds a conflict beneath it,
-since resolve recurses. Take theirs asks first with the exact list of conflicts it reaches; the
+since resolve recurses. Elsewhere the **Resolve** header itself is greyed, as Revert… is, rather
+than opening onto three disabled items. Take theirs asks first with the exact list of conflicts it reaches; the
 other two are sent at once, by D23's rule, which now lives in `Frontend` (`ResolutionRisk`) so
 `sv resolve` and the app cannot disagree. Base is not offered: it discards both edits, and
 nothing in a studio's day asks for it. The notice keeps D23's honesty — "nothing was conflicted"
@@ -211,14 +212,20 @@ sent, and stealing or breaking somebody else's lock is not offered (M4). **Seen 
 throwaway `subverted-gui-check`, clicked through UI Automation: Lock on an untouched file drew the
 notice, the log line and the lock icon, and `svn status` read `K`; Lock greys out while it is held
 and Unlock releases it; a lock a second checkout held was refused with SVN's `W160035` naming the
-holder. Not seen: an unlock whose lock had gone, and nothing on macOS. **Open:** a locked unchanged
-line takes an unticked box and counts in the tree's folder counts, while it still reads
-"Unchanged" and the status line does not count it. A file nobody has touched — the one an artist locks *before* starting —
+holder. Not seen: an unlock whose lock had gone, and nothing on macOS. **A lock alone is not a change**
+(lead's call): a locked, otherwise untouched file stays listed under Changed, so its holder can
+find it to release, and reads "Unchanged" in the quiet tone with its lock icon, Lock greyed and
+Unlock offered — but it has no tick box and counts nowhere changes are counted: the tree, the
+status line, "N changes hidden", the commit button and the commit set. A locked *edited* file is
+its edit, ticked as usual. Committing never takes the lock off an unticked file: the ticked set
+goes as `--depth empty` on the named nodes, and 1.8.15 was measured to release only the locks of
+nodes it names (ARCHITECTURE, D32). A file nobody has touched — the one an artist locks *before* starting —
 is reached through **All** (below).
 
 **Changed / All.** All asks the daemon for `IncludeUnmodified`, the field `sv st -v` already sent,
-so the daemon needed no new listing. An unmodified line (`CleanNode` in Core, the same rule the
-daemon's filter uses) has no tick box, reads "Unchanged" in the quiet tone, and its diff pane says
+so the daemon needed no new listing. Which lines Changed keeps is `CleanNode` in Core, the rule
+the daemon's filter uses; which of them are changes is `UnchangedNode`, the same rule less the two
+lock marks. An unmodified line (a locked one included) has no tick box, reads "Unchanged" in the quiet tone, and its diff pane says
 it matches the revision last updated to without asking `svn diff`. Unmodified folders are not
 lines; the tree already shows them through their files. Lock is on the line's menu as for any file
 the repository has; Revert, Resolve and ticking are not. A clean working copy's message offers "List
