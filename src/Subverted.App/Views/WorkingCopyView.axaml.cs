@@ -16,6 +16,37 @@ public sealed partial class WorkingCopyView : UserControl
         // focused item treats them as selection keys. ↑/↓ are left to the ListBox.
         List.AddHandler(KeyDownEvent, OnListKeyDown, RoutingStrategies.Tunnel);
         List.SizeChanged += OnListSizeChanged;
+        Folders.AddHandler(KeyDownEvent, OnFoldersKeyDown, RoutingStrategies.Tunnel);
+    }
+
+    /// <summary>
+    /// ←/→ collapse, expand and climb the directory pane. Focus goes after the chosen line: a
+    /// collapse can take the focused one away, and ↑/↓ move from wherever focus is.
+    /// </summary>
+    private void OnFoldersKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (DataContext is not WorkingCopyViewModel view || e.KeyModifiers != KeyModifiers.None)
+        {
+            return;
+        }
+
+        ICommand? command = e.Key switch
+        {
+            Key.Right => view.StepInCommand,
+            Key.Left => view.StepOutCommand,
+            _ => null,
+        };
+        if (command is null)
+        {
+            return;
+        }
+
+        e.Handled = true;
+        command.Execute(null);
+        if (view.SelectedFolder is { } chosen)
+        {
+            Folders.ContainerFromItem(chosen)?.Focus(NavigationMethod.Directional);
+        }
     }
 
     /// <summary>

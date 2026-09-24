@@ -72,6 +72,38 @@ public sealed class MainWindowRenderTests
         await Assert.That(lines).IsEqualTo(13);
     }
 
+    /// <summary>art/ collapsed while art/characters was chosen: the choice climbs to art/, which keeps its count and tone.</summary>
+    [Test]
+    public async Task A_collapsed_folder_renders_without_the_lines_below_it()
+    {
+        var (lines, chosen) = ("", "");
+        var rows = await RenderAsync(
+            "Dark",
+            Studio(),
+            "folders-collapsed-dark.png",
+            view =>
+            {
+                view.SelectedFolder = view.Folders.Single(folder =>
+                    folder.Content.RelPath == "art/characters"
+                );
+                view.ToggleFolderCommand.Execute(
+                    view.Folders.Single(folder => folder.Content.RelPath == "art")
+                );
+                lines = string.Join(
+                    ",",
+                    view.Folders.Select(folder =>
+                        folder.Content.RelPath + ":" + folder.Content.Count
+                    )
+                );
+                chosen = view.SelectedFolder!.Content.RelPath;
+            }
+        );
+
+        await Assert.That(lines).IsEqualTo(":8,art:4,levels:2,sound:1");
+        await Assert.That(chosen).IsEqualTo("art");
+        await Assert.That(rows).IsEqualTo(4);
+    }
+
     [Test]
     public async Task A_filter_renders_only_what_it_keeps()
     {

@@ -28,13 +28,24 @@ public static class ChangeFolders
             }
         }
 
+        var branches = folders
+            .Where(folder => folder.Length > 0)
+            .Select(ParentOf)
+            .ToHashSet(StringComparer.Ordinal);
         return
         [
-            .. folders.Order(TreeOrder.Instance).Select(folder => LineOf(folder, rows, rootName)),
+            .. folders
+                .Order(TreeOrder.Instance)
+                .Select(folder => LineOf(folder, rows, rootName, branches.Contains(folder))),
         ];
     }
 
-    private static FolderLine LineOf(string folder, IReadOnlyList<ChangeRow> rows, string rootName)
+    private static FolderLine LineOf(
+        string folder,
+        IReadOnlyList<ChangeRow> rows,
+        string rootName,
+        bool hasSubfolders
+    )
     {
         var held = rows.Where(row => Contains(folder, row)).ToList();
         return new FolderLine(
@@ -42,9 +53,13 @@ public static class ChangeFolders
             folder.Length == 0 ? rootName : NameOf(folder),
             DepthOf(folder),
             held.Count,
-            ChangeUrgency.MostUrgentOf(held.Select(row => row.Badge.Tone))
+            ChangeUrgency.MostUrgentOf(held.Select(row => row.Badge.Tone)),
+            hasSubfolders
         );
     }
+
+    private static string ParentOf(string folder) =>
+        folder.LastIndexOf('/') is var slash and >= 0 ? folder[..slash] : "";
 
     /// <summary>Whether choosing <paramref name="folder"/> keeps the row: the root keeps everything.</summary>
     public static bool Contains(string folder, ChangeRow row) =>

@@ -145,7 +145,7 @@ public sealed class WorkingCopyViewTests
                 )
         );
 
-        await Assert.That(names).IsEqualTo("game, 3 changes|sub, 1 change");
+        await Assert.That(names).IsEqualTo("game, 3 changes, expanded|sub, 1 change");
     }
 
     [Test]
@@ -179,7 +179,7 @@ public sealed class WorkingCopyViewTests
                     .Select(item =>
                         item.GetVisualDescendants()
                             .OfType<Avalonia.Controls.Shapes.Path>()
-                            .Single()
+                            .Single(path => path.Name == "FolderIcon")
                             .Stroke
                     )
                     .ToList();
@@ -245,6 +245,212 @@ public sealed class WorkingCopyViewTests
             );
         await Assert.That(historyEnabled).IsFalse();
         await Assert.That(resolveHeaders).IsEqualTo("Keep mine|Take theirs…|Mark as resolved");
+    }
+
+    [Test]
+    public async Task Clicking_a_chevron_collapses_its_folder_and_leaves_the_chosen_one_chosen()
+    {
+        var (lines, chosen, names) = await OnViewAsync(
+            (window, list, view) =>
+            {
+                var folders = FoldersOf(list);
+                view.SelectedFolder = FolderOf(view, "src");
+                Dispatcher.UIThread.RunJobs();
+
+                Click(window, ChevronOf(folders, FolderOf(view, "art")));
+
+                return (
+                    FolderPaths(view),
+                    view.SelectedFolder?.Content.RelPath,
+                    string.Join("|", ItemNames(folders))
+                );
+            },
+            status: NestedStatus()
+        );
+
+        await Assert.That(lines).IsEqualTo(",art,src");
+        await Assert.That(chosen).IsEqualTo("src");
+        await Assert
+            .That(names)
+            .IsEqualTo("game, 3 changes, expanded|art, 2 changes, collapsed|src, 1 change");
+    }
+
+    [Test]
+    public async Task Clicking_a_folder_s_name_chooses_it_without_collapsing_it()
+    {
+        var (lines, chosen) = await OnViewAsync(
+            (window, list, view) =>
+            {
+                var art = FoldersOf(list).ContainerFromItem(FolderOf(view, "art"))!;
+                Click(window, art.GetVisualDescendants().OfType<TextBlock>().First());
+                return (FolderPaths(view), view.SelectedFolder?.Content.RelPath);
+            },
+            status: NestedStatus()
+        );
+
+        await Assert.That(lines).IsEqualTo(",art,art/chars,src");
+        await Assert.That(chosen).IsEqualTo("art");
+    }
+
+    [Test]
+    public async Task Collapsing_above_the_chosen_folder_moves_the_choice_up_and_narrows_the_table_to_it()
+    {
+        var (chosen, keys) = await OnViewAsync(
+            (window, list, view) =>
+            {
+                view.SelectedFolder = FolderOf(view, "art/chars");
+                Dispatcher.UIThread.RunJobs();
+
+                Click(window, ChevronOf(FoldersOf(list), FolderOf(view, "art")));
+
+                return (
+                    FoldersOf(list).SelectedItem is FolderEntry entry
+                        ? entry.Content.RelPath
+                        : null,
+                    string.Join(",", view.Entries.Select(entry => entry.Key))
+                );
+            },
+            status: NestedStatus()
+        );
+
+        await Assert.That(chosen).IsEqualTo("art");
+        await Assert.That(keys).IsEqualTo("art/a.png,art/chars/hero.png");
+    }
+
+    /// <summary>A leaf has no chevron but keeps its column, so sibling names start at the same x.</summary>
+    [Test]
+    public async Task A_leaf_folder_s_name_lines_up_with_a_sibling_that_has_a_chevron()
+    {
+        var (artX, srcX, srcChevronShown) = await OnViewAsync(
+            (window, list, view) =>
+            {
+                var folders = FoldersOf(list);
+                double NameX(string relPath) =>
+                    folders
+                        .ContainerFromItem(FolderOf(view, relPath))!
+                        .GetVisualDescendants()
+                        .OfType<TextBlock>()
+                        .First()
+                        .TranslatePoint(default, window)!
+                        .Value.X;
+                return (
+                    NameX("art"),
+                    NameX("src"),
+                    ChevronOf(folders, FolderOf(view, "src")).IsVisible
+                );
+            },
+            status: NestedStatus()
+        );
+
+        await Assert.That(srcX).IsEqualTo(artX);
+        await Assert.That(srcChevronShown).IsFalse();
+    }
+
+    [Test]
+    public async Task Left_collapses_the_focused_folder_and_right_opens_it_again()
+    {
+        var (afterLeft, afterRight, chosen) = await OnViewAsync(
+            (window, list, view) =>
+            {
+                FocusFolder(FoldersOf(list), view, "art");
+                window.KeyPressQwerty(PhysicalKey.ArrowLeft, RawInputModifiers.None);
+                var collapsed = FolderPaths(view);
+                window.KeyPressQwerty(PhysicalKey.ArrowRight, RawInputModifiers.None);
+                return (collapsed, FolderPaths(view), view.SelectedFolder?.Content.RelPath);
+            },
+            status: NestedStatus()
+        );
+
+        await Assert.That(afterLeft).IsEqualTo(",art,src");
+        await Assert.That(afterRight).IsEqualTo(",art,art/chars,src");
+        await Assert.That(chosen).IsEqualTo("art");
+    }
+
+    /// <summary>Focus comes along to the parent, so the next ↓ moves from there.</summary>
+    [Test]
+    public async Task Left_on_a_folder_with_nothing_under_it_chooses_its_parent_and_down_carries_on_from_there()
+    {
+        var (afterLeft, afterDown) = await OnViewAsync(
+            (window, list, view) =>
+            {
+                FocusFolder(FoldersOf(list), view, "art/chars");
+                window.KeyPressQwerty(PhysicalKey.ArrowLeft, RawInputModifiers.None);
+                Dispatcher.UIThread.RunJobs();
+                var parent = view.SelectedFolder?.Content.RelPath;
+                window.KeyPressQwerty(PhysicalKey.ArrowDown, RawInputModifiers.None);
+                Dispatcher.UIThread.RunJobs();
+                return (parent, view.SelectedFolder?.Content.RelPath);
+            },
+            status: NestedStatus()
+        );
+
+        await Assert.That(afterLeft).IsEqualTo("art");
+        await Assert.That(afterDown).IsEqualTo("art/chars");
+    }
+
+    [Test]
+    public async Task Left_with_a_modifier_held_is_left_alone_in_the_folder_pane()
+    {
+        var lines = await OnViewAsync(
+            (window, list, view) =>
+            {
+                FocusFolder(FoldersOf(list), view, "art");
+                window.KeyPressQwerty(PhysicalKey.ArrowLeft, RawInputModifiers.Control);
+                return FolderPaths(view);
+            },
+            status: NestedStatus()
+        );
+
+        await Assert.That(lines).IsEqualTo(",art,art/chars,src");
+    }
+
+    private static FakeWorkingCopyStatus NestedStatus() =>
+        new FakeWorkingCopyStatus().Answers(
+            Listing(
+                Entry("art/a.png", NodeStatus.Unversioned),
+                Entry("art/chars/hero.png", NodeStatus.Unversioned),
+                Entry("src/b.cs", NodeStatus.Unversioned)
+            )
+        );
+
+    private static ListBox FoldersOf(ListBox list) =>
+        list.FindAncestorOfType<WorkingCopyView>()!.FindControl<ListBox>("Folders")!;
+
+    private static FolderEntry FolderOf(WorkingCopyViewModel view, string relPath) =>
+        view.Folders.Single(folder => folder.Content.RelPath == relPath);
+
+    private static string FolderPaths(WorkingCopyViewModel view) =>
+        string.Join(",", view.Folders.Select(folder => folder.Content.RelPath));
+
+    private static IEnumerable<string?> ItemNames(ListBox list) =>
+        list.GetVisualDescendants()
+            .OfType<ListBoxItem>()
+            .Select(item => AutomationProperties.GetName(item));
+
+    private static Button ChevronOf(ListBox folders, FolderEntry folder) =>
+        folders
+            .ContainerFromItem(folder)!
+            .GetVisualDescendants()
+            .OfType<Button>()
+            .Single(button => button.Name == "Chevron");
+
+    private static void FocusFolder(ListBox folders, WorkingCopyViewModel view, string relPath)
+    {
+        var folder = FolderOf(view, relPath);
+        view.SelectedFolder = folder;
+        Dispatcher.UIThread.RunJobs();
+        folders.ContainerFromItem(folder)!.Focus();
+        Dispatcher.UIThread.RunJobs();
+    }
+
+    private static void Click(Window window, Visual target)
+    {
+        var centre = target
+            .TranslatePoint(new Point(target.Bounds.Width / 2, target.Bounds.Height / 2), window)!
+            .Value;
+        window.MouseDown(centre, MouseButton.Left, RawInputModifiers.None);
+        window.MouseUp(centre, MouseButton.Left, RawInputModifiers.None);
+        Dispatcher.UIThread.RunJobs();
     }
 
     private static void Focus(ListBox list, int index)

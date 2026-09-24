@@ -30,6 +30,8 @@ public sealed partial class WorkingCopyViewModel(
 ) : ObservableObject
 {
     private readonly TickedPaths _ticks = new();
+    private readonly CollapsedFolders _collapsed = new();
+    private IReadOnlyList<FolderLine> _tree = [];
     private IReadOnlySet<string> _shown = new HashSet<string>();
     private CommitComposerViewModel? _composer;
     private RevertPromptViewModel? _revertPrompt;
@@ -58,7 +60,7 @@ public sealed partial class WorkingCopyViewModel(
     /// <summary>What the list shows: <see cref="Changes"/> through the filter, flat or as a tree.</summary>
     public ObservableCollection<ChangeListEntry> Entries { get; } = [];
 
-    /// <summary>The directory pane: every folder holding a change, the root first.</summary>
+    /// <summary>The directory pane: every folder holding a change, the root first, less what is collapsed.</summary>
     public ObservableCollection<FolderEntry> Folders { get; } = [];
 
     /// <summary>
@@ -252,23 +254,95 @@ public sealed partial class WorkingCopyViewModel(
     /// </summary>
     private void ShowFolders(IReadOnlyList<ChangeRow> rows, string rootName)
     {
+        _tree = ChangeFolders.Of(rows, rootName);
+        _collapsed.Follow(_tree);
+        ShowOutline();
+    }
+
+    /// <summary>
+    /// Lays the pane out for what is collapsed. A chosen folder that went out of sight hands the
+    /// choice to the collapsed folder above it, so the table is never narrowed by a hidden line.
+    /// </summary>
+    /// <returns>Whether the chosen folder moved, and with it what the table should show.</returns>
+    private bool ShowOutline()
+    {
         var chosen = SelectedFolder?.Content.RelPath ?? "";
+        var landing = FolderOutline.Landing(chosen, _collapsed.Paths);
         _isRelayingFolders = true;
         try
         {
             ListSlotSynchronizer.Apply(
                 Folders,
-                ChangeFolders.Of(rows, rootName),
+                FolderOutline.Shown(_tree, _collapsed.Paths),
                 line => line.RelPath,
                 line => new FolderEntry(line)
             );
             SelectedFolder =
-                Folders.FirstOrDefault(folder => folder.Content.RelPath == chosen)
+                Folders.FirstOrDefault(folder => folder.Content.RelPath == landing)
                 ?? Folders.FirstOrDefault();
         }
         finally
         {
             _isRelayingFolders = false;
+        }
+
+        return (SelectedFolder?.Content.RelPath ?? "") != chosen;
+    }
+
+    /// <summary>The chevron: collapses an open folder, opens a collapsed one, leaves the choice where it is unless it went out of sight.</summary>
+    [RelayCommand]
+    private void ToggleFolder(FolderEntry? folder)
+    {
+        if (folder?.Content is not { HasSubfolders: true } line)
+        {
+            return;
+        }
+
+        if (line.IsCollapsed)
+        {
+            _collapsed.Expand(line.RelPath);
+        }
+        else
+        {
+            _collapsed.Collapse(line.RelPath);
+        }
+
+        Relayout();
+    }
+
+    /// <summary>Right in a tree: a collapsed folder opens; anything else stays as it is.</summary>
+    [RelayCommand]
+    private void StepIn()
+    {
+        if (SelectedFolder?.Content is { CanExpand: true } line)
+        {
+            _collapsed.Expand(line.RelPath);
+            Relayout();
+        }
+    }
+
+    /// <summary>Left in a tree: an open folder collapses; a collapsed one, or one with nothing under it, hands the choice to its parent.</summary>
+    [RelayCommand]
+    private void StepOut()
+    {
+        switch (SelectedFolder?.Content)
+        {
+            case { CanCollapse: true } line:
+                _collapsed.Collapse(line.RelPath);
+                Relayout();
+                break;
+
+            case { Parent: { } parent }:
+                SelectedFolder = Folders.First(folder => folder.Content.RelPath == parent);
+                break;
+        }
+    }
+
+    private void Relayout()
+    {
+        if (ShowOutline())
+        {
+            LayOut();
         }
     }
 

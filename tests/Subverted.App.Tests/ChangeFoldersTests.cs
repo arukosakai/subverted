@@ -19,7 +19,7 @@ public sealed class ChangeFoldersTests
 
         await Assert
             .That(folders)
-            .IsEquivalentTo([new FolderLine("", "game", 0, 2, ChangeTone.Modified)]);
+            .IsEquivalentTo([new FolderLine("", "game", 0, 2, ChangeTone.Modified, false)]);
     }
 
     [Test]
@@ -30,9 +30,9 @@ public sealed class ChangeFoldersTests
         await Assert
             .That(folders)
             .IsEquivalentTo([
-                new FolderLine("", "game", 0, 1, ChangeTone.Modified),
-                new FolderLine("art", "art", 1, 1, ChangeTone.Modified),
-                new FolderLine("art/chars", "chars", 2, 1, ChangeTone.Modified),
+                new FolderLine("", "game", 0, 1, ChangeTone.Modified, true),
+                new FolderLine("art", "art", 1, 1, ChangeTone.Modified, true),
+                new FolderLine("art/chars", "chars", 2, 1, ChangeTone.Modified, false),
             ]);
     }
 
@@ -185,9 +185,7 @@ public sealed class ChangeFoldersTests
     [Arguments("art", false)]
     public async Task Only_the_root_is_the_root(string relPath, bool isRoot)
     {
-        await Assert
-            .That(new FolderLine(relPath, relPath, 0, 1, ChangeTone.Modified).IsRoot)
-            .IsEqualTo(isRoot);
+        await Assert.That(Line(relPath).IsRoot).IsEqualTo(isRoot);
     }
 
     [Test]
@@ -196,10 +194,100 @@ public sealed class ChangeFoldersTests
     [Arguments(1500, "art, 1,500 changes")]
     public async Task A_screen_reader_hears_the_folder_and_its_count(int count, string said)
     {
-        await Assert
-            .That(new FolderLine("art", "art", 1, count, ChangeTone.Modified).AutomationName)
-            .IsEqualTo(said);
+        await Assert.That((Line("art") with { Count = count }).AutomationName).IsEqualTo(said);
     }
+
+    [Test]
+    public async Task A_folder_has_subfolders_when_another_line_sits_directly_or_deeper_under_it()
+    {
+        var folders = ChangeFolders.Of(
+            [Row("art/chars/hero.png"), Row("art/b.png"), Row("src/main.cs"), Row("readme.txt")],
+            "game"
+        );
+
+        await Assert
+            .That(folders.Select(folder => (folder.RelPath, folder.HasSubfolders)))
+            .IsEquivalentTo([("", true), ("art", true), ("art/chars", false), ("src", false)]);
+    }
+
+    /// <summary>A sibling whose name only starts with the folder's is not under it.</summary>
+    [Test]
+    public async Task A_folder_beside_another_with_a_longer_name_has_no_subfolders()
+    {
+        var folders = ChangeFolders.Of([Row("art/a.png"), Row("art2/b.png")], "game");
+
+        await Assert
+            .That(folders.Single(folder => folder.RelPath == "art").HasSubfolders)
+            .IsFalse();
+    }
+
+    [Test]
+    [Arguments("art/chars", "art")]
+    [Arguments("art/chars/hero", "art/chars")]
+    [Arguments("art", "")]
+    public async Task A_folder_s_parent_is_one_level_up_and_a_top_level_one_s_is_the_root(
+        string relPath,
+        string parent
+    )
+    {
+        await Assert.That(Line(relPath).Parent).IsEqualTo(parent);
+    }
+
+    [Test]
+    public async Task The_root_has_no_parent()
+    {
+        await Assert.That(Line("").Parent).IsNull();
+    }
+
+    [Test]
+    [Arguments(true, false, true, false)]
+    [Arguments(true, true, false, true)]
+    [Arguments(false, false, false, false)]
+    public async Task Only_a_folder_with_subfolders_collapses_when_open_and_expands_when_collapsed(
+        bool hasSubfolders,
+        bool isCollapsed,
+        bool canCollapse,
+        bool canExpand
+    )
+    {
+        var line = Line("art") with { HasSubfolders = hasSubfolders, IsCollapsed = isCollapsed };
+
+        await Assert.That(line.CanCollapse).IsEqualTo(canCollapse);
+        await Assert.That(line.CanExpand).IsEqualTo(canExpand);
+    }
+
+    [Test]
+    [Arguments(false, false, "art, 2 changes")]
+    [Arguments(true, false, "art, 2 changes, expanded")]
+    [Arguments(true, true, "art, 2 changes, collapsed")]
+    public async Task A_screen_reader_hears_whether_a_folder_with_subfolders_is_open(
+        bool hasSubfolders,
+        bool isCollapsed,
+        string said
+    )
+    {
+        var line = Line("art") with
+        {
+            Count = 2,
+            HasSubfolders = hasSubfolders,
+            IsCollapsed = isCollapsed,
+        };
+
+        await Assert.That(line.AutomationName).IsEqualTo(said);
+    }
+
+    [Test]
+    [Arguments(false, "Collapse art")]
+    [Arguments(true, "Expand art")]
+    public async Task The_chevron_is_named_for_what_pressing_it_does(bool isCollapsed, string said)
+    {
+        var line = Line("art") with { HasSubfolders = true, IsCollapsed = isCollapsed };
+
+        await Assert.That(line.ToggleName).IsEqualTo(said);
+    }
+
+    private static FolderLine Line(string relPath) =>
+        new(relPath, relPath, 0, 1, ChangeTone.Modified, false);
 
     private static ChangeRow Row(string relPath, NodeStatus status = NodeStatus.Modified) =>
         ChangeRow.From(Entry(relPath, status));
