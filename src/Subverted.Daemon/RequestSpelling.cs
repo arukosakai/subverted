@@ -30,6 +30,7 @@ public static class RequestSpelling
         typeof(ShutdownRequest),
         typeof(RevisionDiffRequest),
         typeof(WorkingCopyRevisionRequest),
+        typeof(IncomingRequest),
     };
 
     /// <param name="respell">Maps one absolute path to its one spelling.</param>
@@ -67,6 +68,7 @@ public static class RequestSpelling
                 WorkingCopyPath = respell(revisionDiff.WorkingCopyPath),
             },
             WorkingCopyRevisionRequest revision => revision with { Path = respell(revision.Path) },
+            IncomingRequest incoming => incoming with { Path = respell(incoming.Path) },
             _ => request,
         };
 

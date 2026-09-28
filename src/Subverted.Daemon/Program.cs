@@ -76,6 +76,12 @@ builder.Services.AddSingleton<ReadBaseRevisionRange>(
     new BaseRevisionRangeReader(new SvnVersionCommand(new SvnCommand("svnversion"))).ReadAsync
 );
 
+// What an update would bring. A server round trip like log, and SVN walks the copy to answer it, so
+// the app asks on a slow timer rather than with the status poll.
+builder.Services.AddSingleton<ReadIncomingChanges>(provider =>
+    new SvnIncomingCommand(provider.GetRequiredService<SvnCommand>()).ReadAsync
+);
+
 // The eight that change a working copy. They go through the client for the same reason log and diff
 // do — it is the only implementation of SVN's semantics anyone has agreed on — and the daemon drops
 // its held index afterwards rather than waiting for the watcher to tell it what it already knows.

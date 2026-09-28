@@ -31,6 +31,7 @@ namespace Subverted.Protocol;
 [JsonDerivedType(typeof(AcknowledgedResponse), "ack")]
 [JsonDerivedType(typeof(ErrorResponse), "error")]
 [JsonDerivedType(typeof(WorkingCopyRevisionResponse), "working-copy-revision")]
+[JsonDerivedType(typeof(IncomingResponse), "incoming")]
 public abstract record DaemonResponse
 {
     private protected DaemonResponse() { }

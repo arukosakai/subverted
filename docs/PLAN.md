@@ -456,6 +456,14 @@ Avalonia front-end over the same daemon. Update, commit, diff, log. Nothing clev
   covered by headless tests only. Not fixed: a safe resolve sent while a Take theirs question is
   open would drop that question, but the question's overlay covers the table, so it cannot be
   reached.
+- **The incoming count on the Update button** (GUI.md slice 5, D37, forum #66). A badge reads how
+  many changes an update would bring, from `svn status -u` of the opened folder: asked when a copy
+  opens in front, on coming back to the front unless the last answer is under a minute old, every
+  five minutes while it stays there, and after each update. A failed check clears the badge and says
+  nothing. `svn log -r BASE:HEAD` was measured and rejected: on a mixed copy it counts revisions a
+  folder already has. Seen in the real app on `subverted-history\wc-behind` (root r3, HEAD r9):
+  "Update 4", the four paths `svn status -u` lists. Not seen: the badge changing after an update, a
+  server out of reach, macOS.
 - Commit, log and update — the next slices, one at a time. Their order and the screens they
   build are in `docs/GUI.md`.
 - **macOS's Liquid Glass is not built.** The styling speaks the same language, but the real material
@@ -570,7 +578,7 @@ These need a human decision and are deliberately not resolved in code:
 ## Status
 
 M0 complete; M1 partly done and M2 begun, see their sections for exactly which parts. Solution builds clean with
-zero warnings, **3544 tests green** across seven test projects, status output diffed against
+zero warnings, **3615 tests green** across seven test projects, status output diffed against
 `svn status --no-ignore` on eight fixture working copies — column 4 included, as of D28 — with only
 the two divergences above.
 

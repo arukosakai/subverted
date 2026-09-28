@@ -121,13 +121,23 @@
                     VerticalAlignment="Center"
                     Command="{Binding Current.Updater.UpdateCommand, FallbackValue={x:Null}}"
                     ToolTip.Tip="Bring in what has been committed since, merging it with your changes"
-                    AutomationProperties.Name="Update">
+                    AutomationProperties.Name="Update"
+                    AutomationProperties.HelpText="{Binding Current.Updater.IncomingSentence, FallbackValue={x:Null}}">
               <StackPanel Orientation="Horizontal" Spacing="6">
                 <Path Classes="icon" Data="{StaticResource Icon.Download}" Width="14" Height="14" />
                 <TextBlock FontSize="12" Text="Updating…"
                            IsVisible="{Binding Current.Updater.IsUpdating, FallbackValue=False}" />
                 <TextBlock FontSize="12" Text="Update"
                            IsVisible="{Binding !Current.Updater.IsUpdating, FallbackValue=True}" />
+                <!-- How much is waiting on the server, asked on a slow timer; absent until it answers. -->
+                <Border x:Name="IncomingBadge" CornerRadius="8" Padding="6,0" MinWidth="18" VerticalAlignment="Center"
+                        Background="{DynamicResource AccentBrush}"
+                        ToolTip.Tip="{Binding Current.Updater.IncomingSentence, FallbackValue={x:Null}}"
+                        IsVisible="{Binding Current.Updater.IncomingBadge, Converter={x:Static ObjectConverters.IsNotNull}, FallbackValue=False}">
+                  <TextBlock FontSize="11" FontWeight="SemiBold" HorizontalAlignment="Center"
+                             Foreground="{DynamicResource OnAccentBrush}"
+                             Text="{Binding Current.Updater.IncomingBadge, FallbackValue=''}" />
+                </Border>
               </StackPanel>
             </Button>
       </Grid>

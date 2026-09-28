@@ -30,6 +30,7 @@ namespace Subverted.Protocol;
 [JsonDerivedType(typeof(ShutdownRequest), "shutdown")]
 [JsonDerivedType(typeof(RevisionDiffRequest), "revision-diff")]
 [JsonDerivedType(typeof(WorkingCopyRevisionRequest), "working-copy-revision")]
+[JsonDerivedType(typeof(IncomingRequest), "incoming")]
 public abstract record DaemonRequest
 {
     private protected DaemonRequest() { }

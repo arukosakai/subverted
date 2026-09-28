@@ -23,6 +23,7 @@ public sealed class DaemonRequestHandler(
     ReadWorkingCopyContextDiff readWorkingCopyContextDiff,
     ReadRevisionContextDiff readRevisionContextDiff,
     ReadBaseRevisionRange readBaseRevisionRange,
+    ReadIncomingChanges readIncomingChanges,
     ScheduleAddition scheduleAddition,
     RevertChanges revertChanges,
     ScheduleDeletion scheduleDeletion,
@@ -75,6 +76,7 @@ public sealed class DaemonRequestHandler(
                 revision,
                 cancellationToken
             ),
+            IncomingRequest incoming => await IncomingAsync(incoming, cancellationToken),
             AddRequest add => await AddAsync(add, cancellationToken),
             RevertRequest revert => await RevertAsync(revert, cancellationToken),
             DeleteRequest delete => await DeleteAsync(delete, cancellationToken),
@@ -316,6 +318,22 @@ public sealed class DaemonRequestHandler(
             request.Path,
             async session => new WorkingCopyRevisionResponse(
                 await readBaseRevisionRange(session.Info.RootPath, request.Path, cancellationToken)
+            ),
+            cancellationToken
+        );
+
+    /// <remarks>
+    /// Not a write, though SVN walks the copy to answer: it changes nothing on disk, so the held
+    /// index stands.
+    /// </remarks>
+    private Task<DaemonResponse> IncomingAsync(
+        IncomingRequest request,
+        CancellationToken cancellationToken
+    ) =>
+        ShellingOutAsync(
+            request.Path,
+            async session => new IncomingResponse(
+                await readIncomingChanges(session.Info.RootPath, request.Path, cancellationToken)
             ),
             cancellationToken
         );

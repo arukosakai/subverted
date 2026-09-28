@@ -1733,6 +1733,52 @@ wc.db that opened — and no test reaches it. Seen in the real app: Changes at 3
 Headless only: the "unavailable" line and History's dropdown. The live equivalence and alignment
 tests also pass against SlikSVN 1.14.5 on Windows (76 of 76); not run on Linux or macOS.*
 
+### D37 — What is incoming is asked per node with `svn status -u`, not counted from the log
+
+GUI.md slice 5 wants a count of what is waiting on the server. Two queries were measured on 1.8.15
+against `subverted-history\wc-behind`, a mixed copy: root at r3, `art/` at r5, HEAD r9.
+**`svn log -r BASE:HEAD` returns r3..r9, seven revisions, and is wrong twice.** It includes BASE
+itself, and it counts r5, which `art/` already has. **`svn status -u --xml` lists exactly the four
+paths an update would bring** (one edit, one delete, one add, one more edit), and it copes with a
+copy updated in parts because SVN compares each node against its own BASE. The operator chose it
+(forum #66), and chose to count paths rather than revisions.
+
+**The shape SVN writes, measured on a throwaway fixture.** `<repos-status>` carries the server's
+side. It is `none` on both axes, or missing altogether, for anything changed only here or
+unversioned. Those are dropped. A folder is marked `modified` when a child was added, deleted or
+replaced, and **not** when a child's content changed. A folder deleted on the server is listed
+without its children, and one added on the server is listed with each of them. A change to
+properties alone reads `item="none" props="modified"`. `SvnIncomingXml` models exactly
+`none`/`added`/`deleted`/`modified`/`replaced` and `none`/`modified`, and fails on anything else.
+`normal` was never seen on the server's side, and reading it as "nothing" would be a guess. A
+document with no `<against>` never asked the server, and fails too.
+
+**Counting (`Frontend.IncomingCount`).** A path is counted unless another marked path lies beneath
+it. The exception is a folder whose own properties changed, which counts too. So a new file is one,
+not the file plus the folder SVN also marks, and a new folder with two files is two. It is in
+Frontend because both front-ends would count the same way. It is not in Svn because the list SVN
+gave is the fact, and how it reads to a person is presentation.
+
+**Cost.** One server round trip, plus a local walk: SVN works out the copy's own status in the same
+run, and there is no flag that skips it. On `subverted-100k/wc` (State B, file cache not dropped),
+against `file://`: 9.4 s the first run, then 3.0 s. Plain `svn status` there took 2.1 s. Externals
+are left out (`--ignore-externals`), because each one is a checkout of its own, maybe on another
+server, and a slow one would hold up the answer. The daemon holds nothing for it: asking writes
+nothing, so the held index stands (tested). The App asks on a five-minute timer while the window is
+in front, and when the window comes back to the front unless the last answer is under a minute old.
+It also asks after every update and when a copy opens.
+
+**Disproved, not built: counting from the log with the warm index.** `svn log -v` past the lowest
+BASE, filtered by each path's own BASE from wc.db, would skip the local walk. It would also have to
+map repository paths to working-copy paths through copies and moves, which is SVN's job and exactly
+where a guess misreports. Revisit it only if the walk shows up as a cost on a real studio checkout.
+
+*Status: implemented. All seven test binaries green, 3615. `SvnIncomingXml`, `SvnIncomingCommand`,
+`IncomingCount`, `IncomingText` and `UpdateViewModel` at 100% line and branch. Integration tests run
+against real repositories: a mixed copy, a folder target, a path with `@`, a server out of reach.
+Seen in the real app on `wc-behind`: "Update 4". Not measured over a network. Not run on Linux or
+macOS.*
+
 ### D3 — The working copy is authoritative
 
 Local history (M3) lives in a separate content-addressed store that is purely derived. It is never

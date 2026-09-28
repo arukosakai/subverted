@@ -488,6 +488,51 @@ public sealed class DaemonRequestHandlerTests
     }
 
     [Test]
+    public async Task Incoming_is_asked_at_the_root_for_the_path_given()
+    {
+        (string Root, string Path)? read = null;
+        var incoming = new IncomingChanges(
+            9,
+            [new IncomingChange("art/hero.png", PathChange.Modified, PropertiesChanged: false)]
+        );
+        var handler = Handler(
+            _ => new WorkingCopySession(new FakeWorkingCopyScan("/wc"), new FakeChangeNotifier()),
+            readIncomingChanges: (root, path, _) =>
+            {
+                read = (root, path);
+                return Task.FromResult(incoming);
+            }
+        );
+
+        var response = await handler.HandleAsync(
+            new IncomingRequest(Path.GetFullPath("/wc/art")),
+            None
+        );
+
+        await Assert.That(response).IsEqualTo(new IncomingResponse(incoming));
+        await Assert.That(read).IsEqualTo(("/wc", Path.GetFullPath("/wc/art")));
+    }
+
+    /// <summary>
+    /// Asking changes nothing on disk, so the listing the daemon holds is still the truth and the
+    /// next status must not pay for a rescan.
+    /// </summary>
+    [Test]
+    public async Task Asking_what_is_incoming_leaves_the_held_index_standing()
+    {
+        var handler = Handler(
+            _ => new WorkingCopySession(new FakeWorkingCopyScan(Root), new FakeChangeNotifier()),
+            readIncomingChanges: (_, _, _) => Task.FromResult(new IncomingChanges(2, []))
+        );
+        await handler.HandleAsync(Status("/wc"), None);
+
+        await handler.HandleAsync(new IncomingRequest(Root), None);
+        var after = (StatusResponse)await handler.HandleAsync(Status("/wc"), None);
+
+        await Assert.That(after.ServedFromWarmIndex).IsTrue();
+    }
+
+    [Test]
     public async Task A_history_read_that_svn_refuses_is_reported_as_an_svn_failure()
     {
         var handler = Handler(
@@ -495,7 +540,9 @@ public sealed class DaemonRequestHandlerTests
             readRevisionDiff: (_, _, _, _, _) =>
                 throw new SvnCommandException("svn: E160013: path not found"),
             readBaseRevisionRange: (_, _, _) =>
-                throw new SvnCommandException("svn: E155021: client too old")
+                throw new SvnCommandException("svn: E155021: client too old"),
+            readIncomingChanges: (_, _, _) =>
+                throw new SvnCommandException("svn: E170013: Unable to connect")
         );
 
         foreach (
@@ -503,6 +550,7 @@ public sealed class DaemonRequestHandlerTests
                 [
                     new RevisionDiffRequest(Path.GetFullPath("/wc"), "/a.txt", 2),
                     new WorkingCopyRevisionRequest(Path.GetFullPath("/wc")),
+                    new IncomingRequest(Path.GetFullPath("/wc")),
                 ]
         )
         {
@@ -1561,6 +1609,7 @@ public sealed class DaemonRequestHandlerTests
         ReadWorkingCopyContextDiff? readWorkingCopyContextDiff = null,
         ReadRevisionContextDiff? readRevisionContextDiff = null,
         ReadBaseRevisionRange? readBaseRevisionRange = null,
+        ReadIncomingChanges? readIncomingChanges = null,
         ScheduleAddition? scheduleAddition = null,
         RevertChanges? revertChanges = null,
         ScheduleDeletion? scheduleDeletion = null,
@@ -1586,6 +1635,7 @@ public sealed class DaemonRequestHandlerTests
             readWorkingCopyContextDiff ?? NoContextDiff,
             readRevisionContextDiff ?? NoRevisionContextDiff,
             readBaseRevisionRange ?? NoBaseRevisionRange,
+            readIncomingChanges ?? NoIncoming,
             scheduleAddition ?? NoAdd,
             revertChanges ?? NoRevert,
             scheduleDeletion ?? NoDelete,
@@ -1612,6 +1662,12 @@ public sealed class DaemonRequestHandlerTests
         HistoryStart? start,
         CancellationToken cancellationToken
     ) => throw new InvalidOperationException("This test should not have read the log.");
+
+    private static Task<IncomingChanges> NoIncoming(
+        string root,
+        string path,
+        CancellationToken cancellationToken
+    ) => throw new InvalidOperationException("This test should not have asked the server.");
 
     private static Task<string> NoDiff(
         string root,

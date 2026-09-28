@@ -215,7 +215,7 @@ the quiet tone rather than the danger red, in Revert and Delete both.
   status poll, and far less often, because every tick is a server round trip. A new request, since
   no warm index can answer what is on the server.
 
-*Status: Update, resolve and locks built; the incoming count not.* An Update button in the title bar
+*Status: Update, resolve, locks and the incoming count built.* An Update button in the title bar
 sends `UpdateRequest` for the opened folder, not the root, the same scope the listing has. It asks
 nothing first, since an update takes no local change away. The result shows as a notice above the
 table and a line in the output log, with SVN's own text. Conflicts or skipped paths make it
@@ -335,6 +335,18 @@ fixture, clicked through UI Automation: 3 lines, then Whole file on an edited fi
 and showed every line. Not seen there: the "unavailable" line and History's dropdown (headless
 tests and renders only), and nothing on macOS.
 
+**The incoming count** is a badge on the Update button (D37). It shows how many changes an update of
+the opened folder would bring, as `IncomingCount` counts `svn status -u`'s marks. A folder SVN
+marks only because a child came or went does not count beside that child. The window asks when a
+copy opens in front, on coming back to the front unless the last answer is under a minute old
+(`IncomingFreshFor`), every five minutes while it stays there (`IncomingInterval`), and after every
+update. Nothing is asked from the back. Starting an update takes the badge away, and an answer to a
+question asked before the update started is dropped. A check that fails (server out of reach, no
+password, no daemon) clears the badge without a notice: that is news when someone presses Update,
+not before. No badge also means "nothing new"; the tooltip and the button's help text tell the two
+apart. **Seen in the real app** on `subverted-history\wc-behind`: "Update 4". Not seen there: the
+badge after an update, a failed check, macOS.
+
 ## Not in M2
 
 The graph; stash, checkpoints and hunk staging (M3); image diff and other people's locks (M4);
@@ -344,11 +356,9 @@ switching branches (M5).
 
 Each of these is an assumption the plan leans on and has not been run:
 
-- **What query the incoming count uses.** `svn log -r BASE:HEAD` includes BASE itself, and a
-  mixed-revision working copy has no single BASE. Settle both against a real checkout before slice 5
-  picks one.
-- **The timer's interval.** Minutes, not seconds; the number should come from what one check costs
-  against the studio's server rather than be picked here.
+- **The incoming count's interval against the studio's server.** Five minutes is the operator's
+  pick (forum #66). What one check costs was measured only against `file://` (D37), not over the
+  network.
 
 ## Measured
 

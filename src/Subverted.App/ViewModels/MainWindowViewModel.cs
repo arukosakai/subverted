@@ -24,7 +24,21 @@ public sealed partial class MainWindowViewModel(
     /// <summary>Once a second: the daemon answers warm in about a millisecond.</summary>
     public static readonly TimeSpan RefreshInterval = TimeSpan.FromSeconds(1);
 
+    /// <summary>
+    /// Every five minutes: each check is a server round trip, and SVN walks the copy to answer —
+    /// about 3 s on a warm 100k-file checkout.
+    /// </summary>
+    public static readonly TimeSpan IncomingInterval = TimeSpan.FromMinutes(5);
+
+    /// <summary>
+    /// Coming to the front asks the server again only once the last answer is this old, so
+    /// switching back and forth to an editor is not a round trip each time.
+    /// </summary>
+    public static readonly TimeSpan IncomingFreshFor = TimeSpan.FromMinutes(1);
+
     private StatusPolling? _polling;
+    private StatusPolling? _incomingPolling;
+    private DateTimeOffset? _incomingAskedAt;
     private bool _isInFront;
     private int _opens;
     private bool _historyIsBehind;
@@ -113,9 +127,16 @@ public sealed partial class MainWindowViewModel(
         }
 
         _polling = new StatusPolling(clock, RefreshInterval, shown.RefreshAsync);
+        _incomingPolling = new StatusPolling(
+            clock,
+            IncomingInterval,
+            cancellationToken => AskIncomingAsync(shown, cancellationToken)
+        );
+        _incomingAskedAt = null;
         if (_isInFront)
         {
             _polling.Start();
+            StartAskingIncoming(shown);
         }
     }
 
@@ -129,6 +150,7 @@ public sealed partial class MainWindowViewModel(
             if (_isInFront && ReferenceEquals(_polling, polling))
             {
                 polling.Start();
+                StartAskingIncoming(shown);
             }
         }
     }
@@ -141,6 +163,32 @@ public sealed partial class MainWindowViewModel(
         {
             await polling.StopAsync();
         }
+
+        if (_incomingPolling is { } incoming)
+        {
+            await incoming.StopAsync();
+        }
+    }
+
+    /// <summary>
+    /// Starts the slow timer, and asks at once unless the last answer is still fresh. Not awaited:
+    /// the server can take seconds, and the listing should not wait for it.
+    /// </summary>
+    private void StartAskingIncoming(WorkingCopyViewModel shown)
+    {
+        _incomingPolling?.Start();
+        var isFresh =
+            _incomingAskedAt is { } askedAt && clock.GetUtcNow() - askedAt < IncomingFreshFor;
+        if (!isFresh)
+        {
+            _ = AskIncomingAsync(shown, CancellationToken.None);
+        }
+    }
+
+    private Task AskIncomingAsync(WorkingCopyViewModel shown, CancellationToken cancellationToken)
+    {
+        _incomingAskedAt = clock.GetUtcNow();
+        return shown.Updater.CheckIncomingAsync(cancellationToken);
     }
 
     /// <summary>
@@ -204,6 +252,12 @@ public sealed partial class MainWindowViewModel(
         {
             _polling = null;
             await polling.DisposeAsync();
+        }
+
+        if (_incomingPolling is { } incoming)
+        {
+            _incomingPolling = null;
+            await incoming.DisposeAsync();
         }
     }
 

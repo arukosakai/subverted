@@ -977,6 +977,7 @@ public sealed class DaemonEndToEndTests
                 new BaseRevisionRangeReader(
                     new SvnVersionCommand(new SvnCommand("svnversion"))
                 ).ReadAsync,
+                new SvnIncomingCommand(svn).ReadAsync,
                 new SvnAddCommand(svn).AddAsync,
                 new SvnRevertCommand(svn).RevertAsync,
                 new SvnDeleteCommand(svn).DeleteAsync,
