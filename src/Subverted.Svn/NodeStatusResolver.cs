@@ -112,5 +112,10 @@ internal static class NodeStatusResolver
     }
 
     /// <summary>Converts to APR time — microseconds since the Unix epoch, as stored by SVN.</summary>
-    private static long ToAprTime(DateTime utc) => (long)(utc - AprEpoch).TotalMicroseconds;
+    /// <remarks>
+    /// Integer ticks, never <see cref="TimeSpan.TotalMicroseconds"/>: today's tick count is past
+    /// 2^53, so the double rounds and can carry a file into the next microsecond.
+    /// </remarks>
+    private static long ToAprTime(DateTime utc) =>
+        (utc - AprEpoch).Ticks / TimeSpan.TicksPerMicrosecond;
 }

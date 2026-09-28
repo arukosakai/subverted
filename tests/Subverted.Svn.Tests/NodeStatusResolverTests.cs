@@ -360,6 +360,32 @@ public sealed class NodeStatusResolverTests
             .IsEqualTo(NodeStatus.NeedsPristineCompare);
     }
 
+    /// <summary>
+    /// NTFS keeps 100 ns ticks and SVN records whole microseconds, dropping the remainder. 1.9 µs
+    /// is where a conversion through <see cref="double"/> rounds up to 2 µs on a present-day date,
+    /// which put ~5% of a fresh checkout past the fast path.
+    /// </summary>
+    [Test]
+    [Arguments(9L, 0L)]
+    [Arguments(19L, 1L)]
+    public async Task Sub_microsecond_ticks_are_truncated_the_way_svn_records_them(
+        long ticksPastRecordedTime,
+        long recordedMicrosecondsPastRecordedTime
+    )
+    {
+        var row = Row(
+            recordedModTime: 1_704_067_200_000_000 + recordedMicrosecondsPastRecordedTime
+        );
+        var snapshot = MatchingSnapshot with
+        {
+            LastWriteTimeUtc = RecordedTime.AddTicks(ticksPastRecordedTime),
+        };
+
+        await Assert
+            .That(NodeStatusResolver.Resolve(row, snapshot))
+            .IsEqualTo(NodeStatus.Unmodified);
+    }
+
     [Test]
     [Arguments(null, 1_704_067_200_000_000L)]
     [Arguments(100L, null)]
